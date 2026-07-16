@@ -31,7 +31,12 @@ export function useAuth() {
 
   const signUp = useCallback(async (email, password) => {
     if (!isSupabaseConfigured) return { error: 'Sync is not configured.' };
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      // Confirmation email (if enabled) sends the user back to this same site.
+      options: { emailRedirectTo: window.location.origin },
+    });
     if (error) return { error: error.message };
     // With email confirmation enabled, signUp returns a user but no session.
     const needsConfirm = data.user && !data.session;
