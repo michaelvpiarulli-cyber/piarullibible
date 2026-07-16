@@ -11,6 +11,7 @@ import WeekCard from './components/WeekCard';
 import NotesView from './components/NotesView';
 import ProgressView from './components/ProgressView';
 import VerseActionSheet from './components/VerseActionSheet';
+import AccountMenu from './components/AccountMenu';
 
 const TITLES = { today: 'Today', plan: 'Plan', notes: 'Notes & Highlights', progress: 'Progress' };
 
@@ -38,6 +39,7 @@ function App() {
         <div className="app-body">
           <header className="app-bar">
             <h1>{TITLES[tab]}</h1>
+            <AccountMenu />
           </header>
 
           <main className="app-main">

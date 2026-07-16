@@ -1,0 +1,37 @@
+-- Bible in a Year — per-user data
+-- Run this once in the Supabase dashboard: SQL Editor → New query → paste → Run.
+--
+-- One row per signed-in user. Progress, highlights, and notes are stored as
+-- JSON blobs matching the shapes the app already uses in localStorage:
+--   progress   { "d1-t0": true, ... }        completed reading ids
+--   highlights { "Genesis 1:1": "yellow" }   verse -> highlight colour
+--   notes      { "Genesis 1:1": "text" }      verse -> note text
+
+create table if not exists public.user_data (
+  user_id    uuid primary key references auth.users (id) on delete cascade,
+  progress   jsonb       not null default '{}'::jsonb,
+  highlights jsonb       not null default '{}'::jsonb,
+  notes      jsonb       not null default '{}'::jsonb,
+  start_date text,
+  updated_at timestamptz not null default now()
+);
+
+-- Row-level security: a user may only ever see or change their own row.
+alter table public.user_data enable row level security;
+
+drop policy if exists "own row read"   on public.user_data;
+drop policy if exists "own row insert" on public.user_data;
+drop policy if exists "own row update" on public.user_data;
+
+create policy "own row read"
+  on public.user_data for select
+  using (auth.uid() = user_id);
+
+create policy "own row insert"
+  on public.user_data for insert
+  with check (auth.uid() = user_id);
+
+create policy "own row update"
+  on public.user_data for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

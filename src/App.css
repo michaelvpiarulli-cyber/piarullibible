@@ -65,6 +65,10 @@
   backdrop-filter: saturate(180%) blur(12px);
   border-bottom: 1px solid var(--border);
   padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .app-bar h1 {
@@ -72,6 +76,147 @@
   font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+
+/* ---------- account menu ---------- */
+
+.account {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.account-signin {
+  background: var(--surface-alt);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.account-signin:hover {
+  background: #eeeeee;
+}
+
+.account-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.account-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.account-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.14);
+  padding: 14px;
+  min-width: 210px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.account-popover.wide {
+  min-width: 280px;
+}
+
+.account-email {
+  font-size: 0.9rem;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.sync-line {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.sync-line.synced {
+  color: #2e9e5b;
+}
+
+.sync-line.error {
+  color: var(--accent);
+}
+
+.account-popover .btn-text {
+  align-self: flex-start;
+  padding-left: 0;
+}
+
+.account-form-title,
+.account-sent-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.account-form-sub,
+.account-sent-sub {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.account-form input {
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.account-form input:focus {
+  outline: none;
+  border-color: var(--text);
+}
+
+.account-error {
+  font-size: 0.78rem;
+  color: var(--accent);
+}
+
+.account-info {
+  font-size: 0.78rem;
+  color: #2e9e5b;
+}
+
+.account-toggle-mode {
+  background: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  padding: 4px 0 0;
+  text-align: left;
+}
+
+.account-toggle-mode:hover {
+  color: var(--text);
 }
 
 .app-body {

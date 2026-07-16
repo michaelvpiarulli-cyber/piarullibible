@@ -1,38 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
+import { useData } from '../context/DataProvider';
 
-const STORAGE_KEY = 'bible-plan-progress';
-
-function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
+/** Thin view over the shared data store (localStorage + Supabase sync). */
 export function useProgress() {
-  const [done, setDone] = useState(load);
+  const { progress, toggleProgress } = useData();
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(done));
-  }, [done]);
+  const isDone = useCallback((id) => Boolean(progress[id]), [progress]);
 
-  const isDone = useCallback((id) => Boolean(done[id]), [done]);
-
-  const toggle = useCallback((id) => {
-    setDone((prev) => {
-      const next = { ...prev };
-      if (next[id]) {
-        delete next[id];
-      } else {
-        next[id] = true;
-      }
-      return next;
-    });
-  }, []);
-
-  const doneCount = Object.keys(done).length;
-
-  return { isDone, toggle, doneCount };
+  return { isDone, toggle: toggleProgress, doneCount: Object.keys(progress).length };
 }

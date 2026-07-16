@@ -1,30 +1,15 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { DAYS, DAYS_PER_WEEK } from '../data/generatePlan';
+import { useData } from '../context/DataProvider';
 
-const STORAGE_KEY = 'bible-plan-start-date';
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
- * Local calendar date, not UTC. toISOString() would roll over to tomorrow for
- * anyone west of UTC in the evening, defaulting the plan to start a day late.
+ * Derives the current day/week and date helpers from the plan start date, which
+ * now lives in the shared data store (localStorage + Supabase sync).
  */
-function todayISO() {
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
-function load() {
-  return localStorage.getItem(STORAGE_KEY) || todayISO();
-}
-
 export function usePlanStart() {
-  const [startDate, setStartDateState] = useState(load);
-
-  const setStartDate = useCallback((value) => {
-    setStartDateState(value);
-    localStorage.setItem(STORAGE_KEY, value);
-  }, []);
+  const { startDate, setStartDate } = useData();
 
   const start = new Date(`${startDate}T00:00:00`);
   const now = new Date();
