@@ -711,34 +711,73 @@
 
 .note-tooltip {
   position: fixed;
-  transform: translate(-50%, calc(-100% - 9px));
+  transform: translate(-50%, calc(-100% - 11px));
   z-index: 60;
-  max-width: 260px;
-  background: var(--text);
-  color: #fff;
-  font-size: 0.82rem;
-  line-height: 1.45;
-  padding: 8px 11px;
-  border-radius: 9px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  width: max-content;
+  max-width: 280px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  padding: 11px 13px 12px;
   pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05), 0 14px 40px rgba(18, 18, 18, 0.18);
+  transform-origin: bottom center;
+  animation: note-pop 0.17s cubic-bezier(0.18, 0.9, 0.32, 1.1);
+}
+
+@keyframes note-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - 3px)) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, calc(-100% - 11px)) scale(1);
+  }
+}
+
+.note-tooltip-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.note-tooltip-label svg {
+  width: 12px;
+  height: 12px;
+}
+
+.note-tooltip-body {
+  display: -webkit-box;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--text);
   white-space: pre-wrap;
   word-break: break-word;
   /* Preview only — long notes truncate; open the verse to read in full. */
-  display: -webkit-box;
-  -webkit-line-clamp: 8;
+  -webkit-line-clamp: 7;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
+/* Diamond pointer that inherits the card's surface + border. */
 .note-tooltip::after {
   content: '';
   position: absolute;
   left: 50%;
-  top: 100%;
-  transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: var(--text);
+  bottom: -6px;
+  width: 11px;
+  height: 11px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  transform: translateX(-50%) rotate(45deg);
 }
 
 /* ---------- commentary ---------- */
