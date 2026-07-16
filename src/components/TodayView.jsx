@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import ReadingRow from './ReadingRow';
 import { DAYS, DAYS_PER_WEEK } from '../data/generatePlan';
+import { prayerForDay } from '../data/prayers';
 
 export default function TodayView({ plan, currentDay, dayDate, isDone, toggle }) {
   const [selectedDay, setSelectedDay] = useState(currentDay);
@@ -97,6 +98,20 @@ export default function TodayView({ plan, currentDay, dayDate, isDone, toggle })
           />
         ))}
       </ul>
+
+      {(() => {
+        const prayer = prayerForDay(selectedDay);
+        return (
+          <section className="prayer-card">
+            <span className="prayer-label">Closing Prayer</span>
+            <p className="prayer-text">{prayer.text}</p>
+            <p className="prayer-author">
+              {prayer.attributed ? 'attributed to ' : '— '}
+              {prayer.author} · {prayer.era}
+            </p>
+          </section>
+        );
+      })()}
 
       <div className="day-pager">
         <button

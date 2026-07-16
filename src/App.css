@@ -503,6 +503,43 @@
   cursor: default;
 }
 
+/* ---------- closing prayer ---------- */
+
+.prayer-card {
+  margin-top: 22px;
+  padding: 26px 22px 24px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-alt);
+  text-align: center;
+}
+
+.prayer-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.prayer-text {
+  margin: 14px auto 16px;
+  max-width: 44ch;
+  font-family: Georgia, 'Iowan Old Style', Palatino, 'Times New Roman', serif;
+  font-size: 1.1rem;
+  font-style: italic;
+  line-height: 1.72;
+  color: var(--text);
+}
+
+.prayer-author {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
 /* ---------- stat tiles ---------- */
 
 .stat-grid {
