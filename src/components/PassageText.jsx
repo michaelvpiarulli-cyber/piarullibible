@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { colorValue, verseId } from '../hooks/useAnnotations';
 import { useVerseAnnotations } from '../context/annotations';
 import Commentary from './Commentary';
@@ -47,6 +48,47 @@ async function fetchChapter(book, chapter) {
   throw new Error(`Couldn't load ${reference} (${lastErr.message})`);
 }
 
+/**
+ * The note indicator on a verse. On hover (pointer devices only) it previews
+ * the note text in a fixed-position tooltip rendered to <body>, so the reader's
+ * scroll container can't clip it. On touch, tapping the verse opens the sheet.
+ */
+function NoteFlag({ note }) {
+  const [coords, setCoords] = useState(null);
+
+  const show = (e) => {
+    if (!window.matchMedia('(hover: hover)').matches) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    // Clamp so a ~260px tooltip stays on screen at the edges.
+    const x = Math.min(Math.max(r.left + r.width / 2, 140), window.innerWidth - 140);
+    setCoords({ x, y: r.top });
+  };
+  const hide = () => setCoords(null);
+
+  // Any scroll dismisses it so the fixed tooltip can't drift from the icon.
+  useEffect(() => {
+    if (!coords) return;
+    const onScroll = () => setCoords(null);
+    window.addEventListener('scroll', onScroll, true);
+    return () => window.removeEventListener('scroll', onScroll, true);
+  }, [coords]);
+
+  return (
+    <span className="note-flag-wrap" onMouseEnter={show} onMouseLeave={hide} onClick={hide}>
+      <svg className="note-flag" viewBox="0 0 24 24" fill="currentColor" aria-label={`Note: ${note}`}>
+        <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+      </svg>
+      {coords &&
+        createPortal(
+          <div className="note-tooltip" style={{ left: coords.x, top: coords.y }} role="tooltip">
+            {note}
+          </div>,
+          document.body
+        )}
+    </span>
+  );
+}
+
 function ReaderChapter({ part, highlights, notes, onSelectVerse }) {
   const [showCommentary, setShowCommentary] = useState(false);
 
@@ -79,11 +121,7 @@ function ReaderChapter({ part, highlights, notes, onSelectVerse }) {
             >
               <span className="verse-number">{v.number}</span>
               <span className="verse-content">{v.text}</span>
-              {hasNote && (
-                <svg className="note-flag" viewBox="0 0 24 24" fill="currentColor" aria-label="Has note">
-                  <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                </svg>
-              )}{' '}
+              {hasNote && <NoteFlag note={notes[id]} />}{' '}
             </span>
           );
         })}

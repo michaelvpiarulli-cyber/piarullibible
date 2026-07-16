@@ -693,12 +693,52 @@
   margin-right: 3px;
 }
 
+.note-flag-wrap {
+  cursor: pointer;
+}
+
 .note-flag {
   width: 12px;
   height: 12px;
   margin-left: 3px;
   color: var(--accent);
   vertical-align: super;
+}
+
+.note-flag-wrap:hover .note-flag {
+  color: var(--accent-press);
+}
+
+.note-tooltip {
+  position: fixed;
+  transform: translate(-50%, calc(-100% - 9px));
+  z-index: 60;
+  max-width: 260px;
+  background: var(--text);
+  color: #fff;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  padding: 8px 11px;
+  border-radius: 9px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+  /* Preview only — long notes truncate; open the verse to read in full. */
+  display: -webkit-box;
+  -webkit-line-clamp: 8;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.note-tooltip::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--text);
 }
 
 /* ---------- commentary ---------- */
