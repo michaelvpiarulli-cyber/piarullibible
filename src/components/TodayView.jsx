@@ -103,11 +103,12 @@ export default function TodayView({ plan, currentDay, dayDate, isDone, toggle })
         const prayer = prayerForDay(selectedDay);
         return (
           <section className="prayer-card">
-            <span className="prayer-label">Closing Prayer</span>
+            <span className="prayer-label">{prayer.label || 'Closing Prayer'}</span>
             <p className="prayer-text">{prayer.text}</p>
             <p className="prayer-author">
-              {prayer.attributed ? 'attributed to ' : '— '}
-              {prayer.author} · {prayer.era}
+              {prayer.cite
+                ? prayer.cite
+                : `${prayer.attributed ? 'attributed to ' : '— '}${prayer.author} · ${prayer.era}`}
             </p>
           </section>
         );

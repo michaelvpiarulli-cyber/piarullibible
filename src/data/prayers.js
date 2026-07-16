@@ -1,12 +1,25 @@
 /**
- * Prayers from the church fathers and saints, shown at the close of each day.
+ * Prayers shown at the close of each day, from three streams: the church
+ * fathers and saints, Scripture itself, and a few modern voices.
  *
- * Provenance: entries flagged `attributed: true` are traditional prayers long
- * associated with the named figure but not always firmly documented in their
- * own hand; the rest are drawn from their known writings. Prayers commonly
- * MISattributed (e.g. the "Peace Prayer" popularly tied to St. Francis, or
- * "Christ has no body now but yours" to St. Teresa) are deliberately excluded.
- * All are public domain. Some longer prayers are gently excerpted.
+ * Provenance:
+ * - `attributed: true` marks traditional prayers long associated with a figure
+ *   but not always firmly documented in their own hand; the rest are from their
+ *   known writings.
+ * - Scripture prayers use the World English Bible (public domain), matching the
+ *   app's reader.
+ * - Modern entries are only included where a genuine, documented prayer exists.
+ *   John Piper's is his well-attested daily "IOUS" pattern — four Psalms he
+ *   prays, so the words are Scripture, not his own composition. Short excerpts
+ *   from copyrighted modern works are used sparingly and attributed.
+ *
+ * Prayers commonly MISattributed (e.g. the "Peace Prayer" popularly tied to St.
+ * Francis, or "Christ has no body now but yours" to St. Teresa) are deliberately
+ * excluded. Some longer prayers are gently excerpted.
+ *
+ * Fields: { text, author, era, attributed?, label?, cite? }
+ * `label` overrides the "Closing Prayer" heading; `cite` overrides the
+ * "— Author · era" credit line.
  */
 export const PRAYERS = [
   {
@@ -156,6 +169,103 @@ export const PRAYERS = [
     text: 'O Lord, support me by your grace, that I may never presume upon your mercy, but always remember the greatness of your love, and walk before you in reverence and gladness all my days.',
     author: 'Basil the Great',
     era: '330–379',
+    attributed: true,
+  },
+
+  // --- Prayers straight from Scripture (World English Bible, public domain) ---
+  {
+    text: 'Our Father in heaven, may your name be kept holy. Let your Kingdom come. Let your will be done, as in heaven, so on earth. Give us today our daily bread. Forgive us our debts, as we also forgive our debtors. Bring us not into temptation, but deliver us from the evil one. For yours is the Kingdom, the power, and the glory forever. Amen.',
+    label: 'The Lord’s Prayer',
+    cite: 'Matthew 6:9–13 · World English Bible',
+  },
+  {
+    text: 'Yahweh is my shepherd: I shall lack nothing. He makes me lie down in green pastures. He leads me beside still waters. He restores my soul. He guides me in the paths of righteousness for his name’s sake. Even though I walk through the valley of the shadow of death, I will fear no evil, for you are with me. Your rod and your staff, they comfort me. You prepare a table before me in the presence of my enemies. You anoint my head with oil. My cup runs over. Surely goodness and loving kindness shall follow me all the days of my life, and I will dwell in Yahweh’s house forever.',
+    label: 'A Prayer from Scripture',
+    cite: 'Psalm 23 · World English Bible',
+  },
+  {
+    text: 'Yahweh bless you, and keep you. Yahweh make his face to shine on you, and be gracious to you. Yahweh lift up his face toward you, and give you peace.',
+    label: 'A Blessing from Scripture',
+    cite: 'Numbers 6:24–26 · World English Bible',
+  },
+  {
+    text: 'Create in me a clean heart, O God. Renew a right spirit within me. Don’t throw me from your presence, and don’t take your holy Spirit from me. Restore to me the joy of your salvation. Uphold me with a willing spirit.',
+    label: 'A Prayer from Scripture',
+    cite: 'Psalm 51:10–12 · World English Bible',
+  },
+  {
+    text: 'Let the words of my mouth and the meditation of my heart be acceptable in your sight, Yahweh, my rock, and my redeemer.',
+    label: 'A Prayer from Scripture',
+    cite: 'Psalm 19:14 · World English Bible',
+  },
+  {
+    text: 'Search me, God, and know my heart. Try me, and know my thoughts. See if there is any wicked way in me, and lead me in the everlasting way.',
+    label: 'A Prayer from Scripture',
+    cite: 'Psalm 139:23–24 · World English Bible',
+  },
+  {
+    text: 'So teach us to count our days, that we may gain a heart of wisdom.',
+    label: 'A Prayer from Scripture',
+    cite: 'Psalm 90:12 · World English Bible',
+  },
+  {
+    text: 'I pray that you may be strengthened with power through his Spirit in the inward man, that Christ may dwell in your hearts through faith; that you, being rooted and grounded in love, may comprehend with all the saints the width and length and height and depth, and to know Christ’s love which surpasses knowledge, that you may be filled with all the fullness of God.',
+    label: 'A Prayer from Scripture',
+    cite: 'Ephesians 3:16–19 · World English Bible',
+  },
+  {
+    text: 'This I pray, that your love may abound yet more and more in knowledge and all discernment, so that you may approve the things that are excellent, that you may be sincere and without offense to the day of Christ, being filled with the fruits of righteousness, which are through Jesus Christ, to the glory and praise of God.',
+    label: 'A Prayer from Scripture',
+    cite: 'Philippians 1:9–11 · World English Bible',
+  },
+  {
+    text: 'Now may the God of hope fill you with all joy and peace in believing, that you may abound in hope, in the power of the Holy Spirit.',
+    label: 'A Prayer from Scripture',
+    cite: 'Romans 15:13 · World English Bible',
+  },
+  {
+    text: 'Now may the God of peace, who brought again from the dead the great shepherd of the sheep with the blood of an eternal covenant, our Lord Jesus, make you complete in every good work to do his will, working in you that which is well pleasing in his sight, through Jesus Christ, to whom be the glory forever and ever. Amen.',
+    label: 'A Prayer from Scripture',
+    cite: 'Hebrews 13:20–21 · World English Bible',
+  },
+  {
+    text: 'Now to him who is able to keep you from stumbling, and to present you faultless before the presence of his glory in great joy, to God our Savior, who alone is wise, be glory and majesty, dominion and power, both now and forever. Amen.',
+    label: 'A Prayer from Scripture',
+    cite: 'Jude 24–25 · World English Bible',
+  },
+  {
+    text: 'Though the fig tree doesn’t flourish, nor fruit be in the vines; though the labor of the olive fails, and the fields yield no food; though the flocks are cut off from the fold, and there is no herd in the stalls: yet I will rejoice in Yahweh. I will be joyful in the God of my salvation!',
+    label: 'A Prayer from Scripture',
+    cite: 'Habakkuk 3:17–18 · World English Bible',
+  },
+  {
+    text: 'The grace of the Lord Jesus Christ, God’s love, and the fellowship of the Holy Spirit, be with you all. Amen.',
+    label: 'A Blessing from Scripture',
+    cite: '2 Corinthians 13:14 · World English Bible',
+  },
+
+  // --- Modern voices (see note in header re: sourcing) ---
+  {
+    // The four Scriptures John Piper is widely documented to pray daily; the
+    // acronym I-O-U-S is his. Words are Scripture (WEB), not his own composition.
+    text: 'Turn my heart toward your statutes, not toward selfish gain. Open my eyes, that I may see wondrous things out of your law. Make my heart undivided to fear your name. Satisfy us in the morning with your loving kindness, that we may rejoice and be glad all our days.',
+    label: 'A Prayer from Scripture',
+    cite: 'John Piper’s daily “IOUS” prayer · Psalm 119, 86 & 90 (WEB)',
+  },
+  {
+    text: 'O God, early in the morning I cry to you. Help me to pray, and to gather my thoughts to you; I cannot do this alone. In me it is dark, but with you there is light. I am lonely, but you do not leave me. I am restless, but with you there is peace.',
+    author: 'Dietrich Bonhoeffer',
+    era: '1906–1945',
+  },
+  {
+    text: 'From prayer that asks that I may be sheltered from winds that beat on Thee, from fearing when I should aspire, from faltering when I should climb higher — from silken self, O Captain, free Thy soldier who would follow Thee.',
+    author: 'Amy Carmichael',
+    era: '1867–1951',
+  },
+  {
+    text: 'O God, I have tasted your goodness, and it has both satisfied me and made me thirsty for more. I am painfully conscious of my need of further grace. Show me your glory, I pray, that I may know you indeed.',
+    author: 'A.W. Tozer',
+    era: '1897–1963',
     attributed: true,
   },
 ];
