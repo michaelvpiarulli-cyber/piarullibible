@@ -3,9 +3,9 @@ import { colorValue, verseId } from '../hooks/useAnnotations';
 import { useVerseAnnotations } from '../context/annotations';
 import Commentary from './Commentary';
 
-/** American Standard Version (1901), public domain. */
-export const TRANSLATION = 'asv';
-export const TRANSLATION_LABEL = 'ASV';
+/** World English Bible — modern-English public-domain revision of the ASV. */
+export const TRANSLATION = 'web';
+export const TRANSLATION_LABEL = 'WEB';
 
 const textCache = new Map();
 
