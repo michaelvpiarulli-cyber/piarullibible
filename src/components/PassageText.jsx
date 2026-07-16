@@ -97,6 +97,18 @@ function NoteFlag({ note }) {
 
 function ReaderChapter({ part, highlights, notes, onSelectVerse }) {
   const [showCommentary, setShowCommentary] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+
+  // Notes for this chapter, in verse order, carrying verse text so tapping one
+  // reopens the sheet with the right verse.
+  const chapterNotes = part.verses
+    .map((v) => {
+      const id = verseId(part.book, part.chapter, v.number);
+      return notes[id]
+        ? { id, number: v.number, text: v.text, note: notes[id], color: colorValue(highlights[id]) }
+        : null;
+    })
+    .filter(Boolean);
 
   return (
     <article className="reader-chapter">
@@ -134,6 +146,20 @@ function ReaderChapter({ part, highlights, notes, onSelectVerse }) {
       </p>
 
       <div className="commentary-toggle-row">
+        {chapterNotes.length > 0 && (
+          <button
+            type="button"
+            className={`commentary-toggle${showNotes ? ' active' : ''}`}
+            onClick={() => setShowNotes(!showNotes)}
+            aria-expanded={showNotes}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+            {showNotes ? 'Hide notes' : `Notes (${chapterNotes.length})`}
+          </button>
+        )}
+
         <button
           type="button"
           className={`commentary-toggle${showCommentary ? ' active' : ''}`}
@@ -147,6 +173,23 @@ function ReaderChapter({ part, highlights, notes, onSelectVerse }) {
           {showCommentary ? 'Hide commentary' : 'Commentary'}
         </button>
       </div>
+
+      {showNotes && chapterNotes.length > 0 && (
+        <div className="chapter-notes">
+          {chapterNotes.map((n) => (
+            <button
+              key={n.id}
+              type="button"
+              className="chapter-note"
+              onClick={() => onSelectVerse({ id: n.id, text: n.text })}
+            >
+              <span className="chapter-note-num">{n.number}</span>
+              <span className="chapter-note-text">{n.note}</span>
+              {n.color && <span className="chapter-note-dot" style={{ background: n.color }} />}
+            </button>
+          ))}
+        </div>
+      )}
 
       {showCommentary && (
         <Commentary
