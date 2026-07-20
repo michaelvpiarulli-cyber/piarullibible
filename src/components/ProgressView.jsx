@@ -1,5 +1,6 @@
 import { TRACKS } from '../data/books';
 import { DAYS, TOTAL_CHAPTERS } from '../data/generatePlan';
+import { computeStreak } from '../data/streaks';
 
 const TRACK_LIST = [TRACKS.LAW_HISTORY, TRACKS.WISDOM, TRACKS.PROPHETS, TRACKS.NEW_TESTAMENT];
 
@@ -23,6 +24,8 @@ export default function ProgressView({
   const daysComplete = plan.filter(
     (d) => d.readings.length > 0 && d.readings.every((r) => isDone(r.id))
   ).length;
+
+  const streak = computeStreak(plan, isDone, currentDay);
 
   const perTrack = TRACK_LIST.map((name) => {
     const readings = allReadings.filter((r) => r.trackName === name);
@@ -58,6 +61,22 @@ export default function ProgressView({
         <div className="stat-tile">
           <span className="tile-num">{currentWeek}</span>
           <span className="tile-label">of 52 weeks</span>
+        </div>
+      </div>
+
+      <h3 className="section-title">Streak</h3>
+      <div className="stat-grid">
+        <div className="stat-tile">
+          <span className="tile-num">{streak.current}</span>
+          <span className="tile-label">Current streak</span>
+        </div>
+        <div className="stat-tile">
+          <span className="tile-num">{streak.best}</span>
+          <span className="tile-label">Best streak</span>
+        </div>
+        <div className="stat-tile">
+          <span className="tile-num">{streak.behind}</span>
+          <span className="tile-label">{streak.behind === 0 ? 'Caught up' : 'Days behind'}</span>
         </div>
       </div>
 

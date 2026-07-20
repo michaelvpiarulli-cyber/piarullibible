@@ -288,6 +288,53 @@
   border-color: var(--text);
 }
 
+/* ---------- streak / catch-up row ---------- */
+
+.streak-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.streak-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.streak-pill svg {
+  width: 15px;
+  height: 15px;
+}
+
+.streak-pill > svg:first-child {
+  color: var(--accent);
+}
+
+.streak-pill.behind {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.streak-pill.behind:hover {
+  background: var(--accent-press);
+  border-color: var(--accent-press);
+}
+
+.streak-pill.caught-up svg {
+  color: #2e9e5b;
+}
+
 /* ---------- today ---------- */
 
 .today-hero {

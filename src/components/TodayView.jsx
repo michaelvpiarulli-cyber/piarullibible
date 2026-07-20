@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react';
 import ReadingRow from './ReadingRow';
 import { DAYS, DAYS_PER_WEEK } from '../data/generatePlan';
 import { prayerForDay } from '../data/prayers';
+import { computeStreak } from '../data/streaks';
 
 export default function TodayView({ plan, currentDay, dayDate, isDone, toggle }) {
   const [selectedDay, setSelectedDay] = useState(currentDay);
   const [expandedId, setExpandedId] = useState(null);
+
+  const streak = computeStreak(plan, isDone, currentDay);
 
   // If the plan's start date changes, follow it back to the real "today".
   useEffect(() => {
@@ -57,6 +60,35 @@ export default function TodayView({ plan, currentDay, dayDate, isDone, toggle })
             </button>
           );
         })}
+      </div>
+
+      <div className="streak-row">
+        <div className="streak-pill">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2c1.5 3.5-.5 5.5-2 7-1.7 1.7-3 3.4-3 6a5 5 0 0 0 10 0c0-1.6-.6-2.8-1.3-3.8.3 1.3-.2 2.6-1 3-.1-2-1-3.4-2.2-4.4C13.7 8.2 14 5 12 2Z" />
+          </svg>
+          <span>{streak.current > 0 ? `${streak.current}-day streak` : 'Start your streak'}</span>
+        </div>
+
+        {streak.behind > 0 ? (
+          <button
+            type="button"
+            className="streak-pill behind"
+            onClick={() => {
+              setSelectedDay(streak.firstIncomplete);
+              setExpandedId(null);
+            }}
+          >
+            {streak.behind} {streak.behind === 1 ? 'day' : 'days'} behind · Catch up
+          </button>
+        ) : (
+          <div className="streak-pill caught-up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="m5 12.5 4.5 4.5L19 7.5" />
+            </svg>
+            <span>Caught up</span>
+          </div>
+        )}
       </div>
 
       <div className="today-hero">
