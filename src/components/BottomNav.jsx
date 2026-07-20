@@ -20,6 +20,16 @@ const TABS = [
     icon: <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />,
   },
   {
+    id: 'family',
+    label: 'Family',
+    icon: (
+      <>
+        <circle cx="9" cy="8" r="3" />
+        <path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 6.2a3 3 0 0 1 0 5.6M15.6 20a6.5 6.5 0 0 0-1.6-4.3" />
+      </>
+    ),
+  },
+  {
     id: 'progress',
     label: 'Progress',
     icon: (

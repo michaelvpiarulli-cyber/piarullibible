@@ -10,10 +10,18 @@ import TodayView from './components/TodayView';
 import WeekCard from './components/WeekCard';
 import NotesView from './components/NotesView';
 import ProgressView from './components/ProgressView';
+import GroupView from './components/GroupView';
 import VerseActionSheet from './components/VerseActionSheet';
 import AccountMenu from './components/AccountMenu';
+import { computeStreak } from './data/streaks';
 
-const TITLES = { today: 'Today', plan: 'Plan', notes: 'Notes & Highlights', progress: 'Progress' };
+const TITLES = {
+  today: 'Today',
+  plan: 'Plan',
+  notes: 'Notes & Highlights',
+  family: 'Family',
+  progress: 'Progress',
+};
 
 function App() {
   const plan = useMemo(() => buildPlan(), []);
@@ -30,6 +38,16 @@ function App() {
     () => ({ highlights, notes, onSelectVerse: setSelectedVerse }),
     [highlights, notes]
   );
+
+  // Shared summary for family groups — progress only, no notes/highlights.
+  // Keys must match the group_members columns exactly (they're written as-is).
+  const myStats = useMemo(() => {
+    const { current } = computeStreak(plan, isDone, currentDay);
+    const completed = plan.filter(
+      (d) => d.readings.length > 0 && d.readings.every((r) => isDone(r.id))
+    ).length;
+    return { current_day: currentDay, streak: current, completed_days: completed };
+  }, [plan, isDone, currentDay]);
 
   return (
     <AnnotationsProvider value={annotations}>
@@ -78,6 +96,8 @@ function App() {
                 setNote={setNote}
               />
             )}
+
+            {tab === 'family' && <GroupView myStats={myStats} />}
 
             {tab === 'progress' && (
               <ProgressView
