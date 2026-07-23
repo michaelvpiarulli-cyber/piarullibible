@@ -864,6 +864,86 @@
   transform: translateX(-50%) rotate(45deg);
 }
 
+/* ---------- drawing / marginalia ---------- */
+
+.chapter-page {
+  position: relative;
+}
+
+.draw-canvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* read normally; ink is just visible */
+  z-index: 2;
+}
+
+.draw-canvas.active {
+  pointer-events: auto;
+  touch-action: none; /* let the stylus draw instead of scrolling the page */
+  cursor: crosshair;
+}
+
+/* Tint the page while drawing so the mode is obvious. */
+.chapter-page.drawing {
+  border-radius: 10px;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.ink-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: var(--surface-alt);
+  border-radius: 12px;
+}
+
+.ink-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ink-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+  transition: transform 0.12s, border-color 0.12s;
+}
+
+.ink-swatch:hover {
+  transform: scale(1.1);
+}
+
+.ink-swatch.active {
+  border-color: var(--text);
+}
+
+.ink-tool {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ink-tool:hover {
+  border-color: var(--text-dim);
+}
+
+.ink-tool.active {
+  background: var(--text);
+  border-color: var(--text);
+  color: #fff;
+}
+
 /* ---------- commentary ---------- */
 
 .commentary-toggle-row {

@@ -1,8 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { colorValue, verseId } from '../hooks/useAnnotations';
 import { useVerseAnnotations } from '../context/annotations';
 import Commentary from './Commentary';
+import DrawCanvas from './DrawCanvas';
+
+const INK_COLORS = [
+  { id: 'ink', value: '#121212', label: 'Black' },
+  { id: 'red', value: '#ff3d4d', label: 'Red' },
+  { id: 'blue', value: '#2f6fd0', label: 'Blue' },
+  { id: 'green', value: '#2e9e5b', label: 'Green' },
+];
 
 /** World English Bible — modern-English public-domain revision of the ASV. */
 export const TRANSLATION = 'web';
@@ -98,6 +106,12 @@ function NoteFlag({ note }) {
 function ReaderChapter({ part, highlights, notes, onSelectVerse }) {
   const [showCommentary, setShowCommentary] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
+  const [drawing, setDrawing] = useState(false);
+  const [tool, setTool] = useState({ mode: 'pen', color: '#121212', width: 0.006 });
+  const drawApi = useRef(null);
+  const registerApi = useCallback((api) => {
+    drawApi.current = api;
+  }, []);
 
   // Notes for this chapter, in verse order, carrying verse text so tapping one
   // reopens the sheet with the right verse.
@@ -117,6 +131,7 @@ function ReaderChapter({ part, highlights, notes, onSelectVerse }) {
         <span className="reader-translation">{TRANSLATION_LABEL}</span>
       </h4>
 
+      <div className={`chapter-page${drawing ? ' drawing' : ''}`}>
       <p className="reader-body">
         {part.verses.map((v) => {
           const id = verseId(part.book, part.chapter, v.number);
@@ -145,7 +160,77 @@ function ReaderChapter({ part, highlights, notes, onSelectVerse }) {
         })}
       </p>
 
+        <DrawCanvas
+          chapterKey={part.heading}
+          active={drawing}
+          tool={tool}
+          registerApi={registerApi}
+        />
+      </div>
+
+      {drawing && (
+        <div className="ink-bar">
+          <div className="ink-group">
+            {INK_COLORS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={`ink-swatch${tool.color === c.value && tool.mode !== 'erase' ? ' active' : ''}`}
+                style={{ background: c.value }}
+                aria-label={c.label}
+                onClick={() => setTool((t) => ({ ...t, color: c.value, mode: t.mode === 'erase' ? 'pen' : t.mode }))}
+              />
+            ))}
+          </div>
+
+          <div className="ink-group">
+            <button
+              type="button"
+              className={`ink-tool${tool.mode === 'pen' ? ' active' : ''}`}
+              onClick={() => setTool((t) => ({ ...t, mode: 'pen' }))}
+            >
+              Pen
+            </button>
+            <button
+              type="button"
+              className={`ink-tool${tool.mode === 'circle' ? ' active' : ''}`}
+              onClick={() => setTool((t) => ({ ...t, mode: 'circle' }))}
+            >
+              Circle
+            </button>
+            <button
+              type="button"
+              className={`ink-tool${tool.mode === 'erase' ? ' active' : ''}`}
+              onClick={() => setTool((t) => ({ ...t, mode: 'erase' }))}
+            >
+              Erase
+            </button>
+          </div>
+
+          <div className="ink-group">
+            <button type="button" className="ink-tool" onClick={() => drawApi.current?.undo()}>
+              Undo
+            </button>
+            <button type="button" className="ink-tool" onClick={() => drawApi.current?.clear()}>
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="commentary-toggle-row">
+        <button
+          type="button"
+          className={`commentary-toggle${drawing ? ' active' : ''}`}
+          onClick={() => setDrawing(!drawing)}
+          aria-expanded={drawing}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+          </svg>
+          {drawing ? 'Done drawing' : 'Draw'}
+        </button>
+
         {chapterNotes.length > 0 && (
           <button
             type="button"
