@@ -108,6 +108,9 @@ function ReaderChapter({ part, highlights, notes, onSelectVerse }) {
   const [showNotes, setShowNotes] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [tool, setTool] = useState({ mode: 'pen', color: '#121212', width: 0.006 });
+  // Off by default so a finger scrolls and only a stylus/mouse inks — the
+  // iPad + Apple Pencil case. Turn on to draw with a fingertip.
+  const [fingerDraws, setFingerDraws] = useState(false);
   const drawApi = useRef(null);
   const registerApi = useCallback((api) => {
     drawApi.current = api;
@@ -164,6 +167,7 @@ function ReaderChapter({ part, highlights, notes, onSelectVerse }) {
           chapterKey={part.heading}
           active={drawing}
           tool={tool}
+          fingerDraws={fingerDraws}
           registerApi={registerApi}
         />
       </div>
@@ -213,6 +217,17 @@ function ReaderChapter({ part, highlights, notes, onSelectVerse }) {
             </button>
             <button type="button" className="ink-tool" onClick={() => drawApi.current?.clear()}>
               Clear
+            </button>
+          </div>
+
+          <div className="ink-group">
+            <button
+              type="button"
+              className={`ink-tool${fingerDraws ? ' active' : ''}`}
+              onClick={() => setFingerDraws(!fingerDraws)}
+              title="Off: finger scrolls, stylus draws. On: draw with your finger."
+            >
+              {fingerDraws ? 'Finger draws' : 'Finger scrolls'}
             </button>
           </div>
         </div>

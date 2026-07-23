@@ -879,8 +879,14 @@
 
 .draw-canvas.active {
   pointer-events: auto;
-  touch-action: none; /* let the stylus draw instead of scrolling the page */
   cursor: crosshair;
+  /* Default: a finger still scrolls the page; stylus/mouse draw. */
+  touch-action: pan-y;
+}
+
+/* Finger-draw mode: capture every gesture so a fingertip can draw. */
+.draw-canvas.active.finger-draws {
+  touch-action: none;
 }
 
 /* Tint the page while drawing so the mode is obvious. */

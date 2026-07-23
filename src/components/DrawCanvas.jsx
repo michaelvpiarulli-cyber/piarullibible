@@ -48,7 +48,7 @@ function paintStroke(ctx, s, w, h) {
   }
 }
 
-export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
+export default function DrawCanvas({ chapterKey, active, tool, fingerDraws, registerApi }) {
   const canvasRef = useRef(null);
   const [strokes, saveStrokes] = useChapterDrawing(chapterKey);
 
@@ -129,8 +129,12 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
     if (near.length) saveStrokes(strokesRef.current.filter((s) => !near.includes(s)));
   };
 
+  // When finger-draw is off, touch is left alone so it scrolls the page and
+  // only a stylus or mouse puts ink down.
+  const ignores = (e) => !fingerDraws && e.pointerType === 'touch';
+
   const onPointerDown = (e) => {
-    if (!active) return;
+    if (!active || ignores(e)) return;
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
@@ -151,7 +155,7 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
   };
 
   const onPointerMove = (e) => {
-    if (!active || !e.buttons) return;
+    if (!active || !e.buttons || ignores(e)) return;
     const { x, y } = toNorm(e);
 
     if (toolRef.current.mode === 'erase') {
@@ -189,7 +193,7 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
   return (
     <canvas
       ref={canvasRef}
-      className={`draw-canvas${active ? ' active' : ''}`}
+      className={`draw-canvas${active ? ' active' : ''}${fingerDraws ? ' finger-draws' : ''}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
