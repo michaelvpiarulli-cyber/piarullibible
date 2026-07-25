@@ -1793,27 +1793,10 @@
 
   .nav-brand {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
     padding: 0 12px 24px;
-  }
-
-  .nav-brand-mark {
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    background: var(--accent);
-    color: #fff;
-    font-weight: 700;
-    font-size: 0.95rem;
-    display: grid;
-    place-items: center;
-  }
-
-  .nav-brand-text {
-    font-size: 0.98rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
   }
 
   .nav-tabs {
@@ -1914,22 +1897,17 @@
  * vanish — so lighten it via filter rather than rewriting stored strokes.
  */
 :root[data-theme='dark'] .verse[style*='background'] {
-  color: #14161a;
+  color: var(--text-inverse);
   border-radius: 3px;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
 }
 
 :root[data-theme='dark'] .verse[style*='background'] .verse-number {
-  color: #45484f;
+  color: #55575c;
 }
 
 :root[data-theme='dark'] .draw-canvas {
   filter: invert(1) hue-rotate(180deg);
-}
-
-/* Serif prayer text can look heavy on dark; ease it slightly. */
-:root[data-theme='dark'] .prayer-text {
-  color: #dfe1e6;
 }
 
 /* ---------- Katin-style headings ---------- */
@@ -1959,4 +1937,30 @@
 .member-name,
 .note-ref {
   letter-spacing: 0.02em;
+}
+
+/* ---------- brand lockup ---------- */
+/*
+ * Echoes the surf-label convention: a script wordmark set in a light block,
+ * with a small tracked-out descriptor beneath.
+ */
+.brand-lockup {
+  font-family: Kalam, 'Brush Script MT', cursive;
+  font-weight: 700;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--accent);
+  background: var(--surface-alt);
+  padding: 7px 14px 9px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.brand-sub {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--text-dim);
+  padding-left: 2px;
 }

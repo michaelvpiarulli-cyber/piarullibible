@@ -10,7 +10,7 @@ function apply(pref) {
   document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
   // Keep the mobile browser chrome in step with the page.
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', dark ? '#14161a' : '#ffffff');
+  if (meta) meta.setAttribute('content', dark ? '#15181d' : '#fbfbfb');
 }
 
 /** Theme preference: follow the system, or pin light/dark. */

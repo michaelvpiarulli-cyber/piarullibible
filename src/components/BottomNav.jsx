@@ -45,8 +45,8 @@ export default function BottomNav({ active, onChange }) {
   return (
     <nav className="app-nav">
       <div className="nav-brand">
-        <span className="nav-brand-mark">B</span>
-        <span className="nav-brand-text">Bible in a Year</span>
+        <span className="brand-lockup">Piarulli</span>
+        <span className="brand-sub">Bible in a Year</span>
       </div>
 
       <div className="nav-tabs">

@@ -4,6 +4,7 @@ import '@fontsource/karla/400.css'
 import '@fontsource/karla/500.css'
 import '@fontsource/karla/600.css'
 import '@fontsource/karla/700.css'
+import '@fontsource/kalam/700.css' // script wordmark
 import './index.css'
 import App from './App.jsx'
 import { DataProvider } from './context/DataProvider.jsx'

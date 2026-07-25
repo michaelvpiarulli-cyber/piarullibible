@@ -5,23 +5,24 @@
   font-weight: 400;
   color-scheme: light;
 
-  --bg: #ffffff;
+  /* Katin-inspired: off-white paper, charcoal ink, washed-navy accent. */
+  --bg: #fbfbfb;
   --surface: #ffffff;
-  --surface-alt: #f6f6f6;
-  --surface-hover: #eeeeee;
-  --border: #e6e6e6;
-  --text: #121212;
-  --text-dim: #777a7b;
-  --text-inverse: #ffffff; /* text sitting on a --text-colored fill */
-  --accent: #ff3d4d;
-  --accent-press: #e02f3e;
-  --success: #2e9e5b;
+  --surface-alt: #f1f1ef;
+  --surface-hover: #e7e7e4;
+  --border: #e2e2df;
+  --text: #2e2e2e;
+  --text-dim: #7b7b78;
+  --text-inverse: #fbfbfb; /* text sitting on a --text-colored fill */
+  --accent: #3e5782;
+  --accent-press: #32476b;
+  --success: #4a7c59;
 
-  --surface-blur: rgba(255, 255, 255, 0.86); /* frosted bars */
-  --check-border: #cfd0d1;
-  --today-tint: #fff5f6;
-  --scrim: rgba(0, 0, 0, 0.28);
-  --shadow: rgba(0, 0, 0, 0.16);
+  --surface-blur: rgba(251, 251, 251, 0.86); /* frosted bars */
+  --check-border: #c9c9c4;
+  --today-tint: #eef1f7;
+  --scrim: rgba(46, 46, 46, 0.3);
+  --shadow: rgba(46, 46, 46, 0.16);
 
   --nav-height: 60px;
 
@@ -34,21 +35,22 @@
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --bg: #14161a;
-  --surface: #1b1e24;
-  --surface-alt: #23262e;
-  --surface-hover: #2b2f39;
-  --border: #34383f;
-  --text: #e9eaed;
-  --text-dim: #9aa0ac;
-  --text-inverse: #14161a;
-  --accent: #ff4d5a;
-  --accent-press: #ff6671;
-  --success: #45c47e;
+  /* Night version of the same palette — navy-tinted rather than neutral grey. */
+  --bg: #15181d;
+  --surface: #1c2027;
+  --surface-alt: #242932;
+  --surface-hover: #2d323d;
+  --border: #353b45;
+  --text: #e8e8e6;
+  --text-dim: #979ba2;
+  --text-inverse: #15181d;
+  --accent: #8fa8d4;
+  --accent-press: #a8bde0;
+  --success: #7fb08c;
 
-  --surface-blur: rgba(20, 22, 26, 0.82);
-  --check-border: #474b56;
-  --today-tint: #2c1e20;
+  --surface-blur: rgba(21, 24, 29, 0.82);
+  --check-border: #464c57;
+  --today-tint: #1f2634;
   --scrim: rgba(0, 0, 0, 0.55);
   --shadow: rgba(0, 0, 0, 0.5);
 }
