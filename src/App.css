@@ -1931,3 +1931,32 @@
 :root[data-theme='dark'] .prayer-text {
   color: #dfe1e6;
 }
+
+/* ---------- Katin-style headings ---------- */
+/*
+ * Katin sets headings uppercase, bold, with wide letter-spacing. Applied to the
+ * app's display type; scripture and prayers keep their reading typography.
+ */
+.app-bar h1,
+.today-hero h2,
+.week-card-head h3,
+.group-card-head h3,
+.stat-big,
+.empty-title,
+.account-form-title,
+.account-sent-title {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.today-hero h2,
+.stat-big {
+  letter-spacing: 0.04em; /* large sizes need less */
+}
+
+.reading-label,
+.member-name,
+.note-ref {
+  letter-spacing: 0.02em;
+}
