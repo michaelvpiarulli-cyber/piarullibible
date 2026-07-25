@@ -1964,3 +1964,287 @@
   color: var(--text-dim);
   padding-left: 2px;
 }
+
+/* ---------- journal ---------- */
+
+.section-switch {
+  margin-bottom: 20px;
+}
+
+.journal-compose {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kind-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.journal-compose textarea,
+.journal-edit {
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  resize: vertical;
+}
+
+.journal-compose textarea:focus,
+.journal-edit:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.journal-compose-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.journal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.journal-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.journal-card.answered {
+  border-color: var(--success);
+}
+
+.journal-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.journal-kind {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+
+.journal-kind.praise {
+  color: var(--success);
+}
+
+.journal-kind.thought {
+  color: var(--text-dim);
+}
+
+.journal-date {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.journal-text {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.answered-badge {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--success);
+}
+
+.journal-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  margin-top: 6px;
+}
+
+/* ---------- memorize ---------- */
+
+.daily-note {
+  margin: 12px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.memorize-add {
+  display: flex;
+  gap: 8px;
+  margin: 20px 0 18px;
+}
+
+.memorize-add input {
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 11px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.memorize-add input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.verse-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.memo-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.memo-card.mastered {
+  border-color: var(--success);
+}
+
+.memo-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.memo-ref {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.memo-level {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-dim);
+}
+
+.memo-level.lvl-5 {
+  color: var(--success);
+}
+
+.memo-pips {
+  display: flex;
+  gap: 4px;
+  margin: 9px 0 10px;
+}
+
+.pip {
+  width: 26px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+}
+
+.pip.on {
+  background: var(--accent);
+}
+
+.memo-card.mastered .pip.on {
+  background: var(--success);
+}
+
+.memo-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.memo-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.memo-meta {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+/* ---------- drill ---------- */
+
+.drill-card {
+  border: 1px solid var(--accent);
+  border-radius: 16px;
+  padding: 22px 20px;
+  margin: 20px 0;
+  text-align: center;
+}
+
+.drill-ref {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+
+.drill-text {
+  margin: 0 auto 18px;
+  max-width: 46ch;
+  font-family: Georgia, 'Iowan Old Style', Palatino, serif;
+  font-size: 1.08rem;
+  line-height: 1.85;
+}
+
+.blank {
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+
+.drill-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.drill-actions .btn-secondary {
+  width: auto;
+  padding: 9px 20px;
+  border-radius: 999px;
+}

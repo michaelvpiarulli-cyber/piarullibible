@@ -9,6 +9,8 @@ import BottomNav from './components/BottomNav';
 import TodayView from './components/TodayView';
 import WeekCard from './components/WeekCard';
 import NotesView from './components/NotesView';
+import JournalView from './components/JournalView';
+import MemorizeView from './components/MemorizeView';
 import ProgressView from './components/ProgressView';
 import GroupView from './components/GroupView';
 import VerseActionSheet from './components/VerseActionSheet';
@@ -19,10 +21,17 @@ import { computeStreak } from './data/streaks';
 const TITLES = {
   today: 'Today',
   plan: 'Plan',
-  notes: 'Notes & Highlights',
+  notes: 'Journal',
   family: 'Family',
   progress: 'Progress',
 };
+
+/* The Notes tab hosts three related workspaces. */
+const NOTES_SECTIONS = [
+  { id: 'journal', label: 'Journal' },
+  { id: 'memorize', label: 'Memorize' },
+  { id: 'highlights', label: 'Highlights' },
+];
 
 function App() {
   const plan = useMemo(() => buildPlan(), []);
@@ -33,6 +42,7 @@ function App() {
   const { startDate, setStartDate, currentDay, currentWeek, dayDate, weekDateRange } = usePlanStart();
   const { highlights, notes, setHighlight, setNote } = useAnnotations();
   const [tab, setTab] = useState('today');
+  const [notesSection, setNotesSection] = useState('journal');
   const [selectedVerse, setSelectedVerse] = useState(null);
 
   const annotations = useMemo(
@@ -92,13 +102,32 @@ function App() {
             )}
 
             {tab === 'notes' && (
-              <NotesView
-                highlights={highlights}
-                notes={notes}
-                onSelectVerse={setSelectedVerse}
-                setHighlight={setHighlight}
-                setNote={setNote}
-              />
+              <>
+                <div className="filter-row section-switch">
+                  {NOTES_SECTIONS.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={`chip${notesSection === s.id ? ' active' : ''}`}
+                      onClick={() => setNotesSection(s.id)}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+
+                {notesSection === 'journal' && <JournalView currentDay={currentDay} />}
+                {notesSection === 'memorize' && <MemorizeView />}
+                {notesSection === 'highlights' && (
+                  <NotesView
+                    highlights={highlights}
+                    notes={notes}
+                    onSelectVerse={setSelectedVerse}
+                    setHighlight={setHighlight}
+                    setNote={setNote}
+                  />
+                )}
+              </>
             )}
 
             {tab === 'family' && <GroupView myStats={myStats} />}
