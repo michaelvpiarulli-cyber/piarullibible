@@ -21,17 +21,12 @@ import { computeStreak } from './data/streaks';
 const TITLES = {
   today: 'Today',
   plan: 'Plan',
-  notes: 'Journal',
+  prayer: 'Prayer Journal',
+  memorize: 'Memorize',
+  notes: 'Notes & Highlights',
   family: 'Family',
   progress: 'Progress',
 };
-
-/* The Notes tab hosts three related workspaces. */
-const NOTES_SECTIONS = [
-  { id: 'journal', label: 'Journal' },
-  { id: 'memorize', label: 'Memorize' },
-  { id: 'highlights', label: 'Highlights' },
-];
 
 function App() {
   const plan = useMemo(() => buildPlan(), []);
@@ -42,7 +37,6 @@ function App() {
   const { startDate, setStartDate, currentDay, currentWeek, dayDate, weekDateRange } = usePlanStart();
   const { highlights, notes, setHighlight, setNote } = useAnnotations();
   const [tab, setTab] = useState('today');
-  const [notesSection, setNotesSection] = useState('journal');
   const [selectedVerse, setSelectedVerse] = useState(null);
 
   const annotations = useMemo(
@@ -101,33 +95,18 @@ function App() {
               </div>
             )}
 
-            {tab === 'notes' && (
-              <>
-                <div className="filter-row section-switch">
-                  {NOTES_SECTIONS.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      className={`chip${notesSection === s.id ? ' active' : ''}`}
-                      onClick={() => setNotesSection(s.id)}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
+            {tab === 'prayer' && <JournalView currentDay={currentDay} />}
 
-                {notesSection === 'journal' && <JournalView currentDay={currentDay} />}
-                {notesSection === 'memorize' && <MemorizeView />}
-                {notesSection === 'highlights' && (
-                  <NotesView
-                    highlights={highlights}
-                    notes={notes}
-                    onSelectVerse={setSelectedVerse}
-                    setHighlight={setHighlight}
-                    setNote={setNote}
-                  />
-                )}
-              </>
+            {tab === 'memorize' && <MemorizeView />}
+
+            {tab === 'notes' && (
+              <NotesView
+                highlights={highlights}
+                notes={notes}
+                onSelectVerse={setSelectedVerse}
+                setHighlight={setHighlight}
+                setNote={setNote}
+              />
             )}
 
             {tab === 'family' && <GroupView myStats={myStats} />}

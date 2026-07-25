@@ -1,34 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useMemory, LEVELS, MAX_LEVEL } from '../hooks/useMemory';
 import { TRANSLATION, TRANSLATION_LABEL } from './PassageText';
+import { GAMES } from './memory/games';
+import BlanksGame from './memory/BlanksGame';
+import TypeGame from './memory/TypeGame';
+import ScrambleGame from './memory/ScrambleGame';
+import LettersGame from './memory/LettersGame';
 
-/**
- * Hide a share of the words so recall is active, not just recognition.
- *
- * Words are ranked by a stable pseudo-random score and the lowest-scoring share
- * is hidden. That guarantees the intended proportion actually gets blanked (a
- * modulo test does not — it clumps) while staying deterministic per verse, so
- * the same drill looks the same each time.
- */
-function blankOut(text, level) {
-  const share = Math.min(0.2 + level * 0.15, 0.85);
-  const tokens = text.split(/(\s+)/);
-
-  const candidates = [];
-  tokens.forEach((w, i) => {
-    if (!/^\s+$/.test(w) && w.replace(/[^A-Za-z]/g, '').length > 2) {
-      // cheap stable hash of the word + position
-      let h = i * 2654435761;
-      for (let c = 0; c < w.length; c++) h = (h ^ w.charCodeAt(c)) * 16777619;
-      candidates.push({ i, score: Math.abs(h % 10000) });
-    }
-  });
-
-  candidates.sort((a, b) => a.score - b.score);
-  const hide = new Set(candidates.slice(0, Math.round(candidates.length * share)).map((c) => c.i));
-
-  return tokens.map((w, i) => ({ w, hidden: hide.has(i) }));
-}
+const GAME_COMPONENTS = {
+  blanks: BlanksGame,
+  type: TypeGame,
+  scramble: ScrambleGame,
+  letters: LettersGame,
+};
 
 export default function MemorizeView() {
   const { verses, due, mastered, points, dailyCount, addVerse, removeVerse, review } = useMemory();
@@ -36,8 +20,8 @@ export default function MemorizeView() {
   const [ref, setRef] = useState('');
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState(null);
-  const [drill, setDrill] = useState(null); // { ref, text, level }
-  const [revealed, setRevealed] = useState(false);
+  const [game, setGame] = useState('blanks');
+  const [drill, setDrill] = useState(null); // the verse being practised
 
   const lookup = async (e) => {
     e.preventDefault();
@@ -60,16 +44,12 @@ export default function MemorizeView() {
     setAdding(false);
   };
 
-  const parts = useMemo(
-    () => (drill ? blankOut(drill.text, drill.level) : []),
-    [drill]
-  );
-
   const grade = (correct) => {
     review(drill.ref, correct);
     setDrill(null);
-    setRevealed(false);
   };
+
+  const GameComponent = GAME_COMPONENTS[game];
 
   return (
     <div className="memorize-view">
@@ -88,55 +68,34 @@ export default function MemorizeView() {
         </div>
       </div>
 
-      {dailyCount > 0 && (
-        <p className="daily-note">{dailyCount} reviewed today — keep going.</p>
-      )}
+      {dailyCount > 0 && <p className="daily-note">{dailyCount} reviewed today — keep going.</p>}
 
-      {/* --- drill --- */}
+      {/* --- active drill --- */}
       {drill && (
         <section className="drill-card">
           <span className="drill-ref">{drill.ref}</span>
-          <p className="drill-text">
-            {revealed
-              ? drill.text
-              : parts.map((p, i) =>
-                  p.hidden ? (
-                    <span key={i} className="blank">
-                      {'_'.repeat(Math.min(p.w.length, 9))}
-                    </span>
-                  ) : (
-                    <span key={i}>{p.w}</span>
-                  )
-                )}
-          </p>
-
-          {revealed ? (
-            <div className="drill-actions">
-              <button type="button" className="btn-secondary" onClick={() => grade(false)}>
-                Missed it
-              </button>
-              <button type="button" className="btn-primary" onClick={() => grade(true)}>
-                Got it
-              </button>
-            </div>
-          ) : (
-            <div className="drill-actions">
-              <button
-                type="button"
-                className="btn-text"
-                onClick={() => {
-                  setDrill(null);
-                  setRevealed(false);
-                }}
-              >
-                Exit
-              </button>
-              <button type="button" className="btn-primary" onClick={() => setRevealed(true)}>
-                Reveal
-              </button>
-            </div>
-          )}
+          <GameComponent verse={drill} onGrade={grade} onExit={() => setDrill(null)} />
         </section>
+      )}
+
+      {/* --- game picker --- */}
+      {!drill && verses.length > 0 && (
+        <>
+          <h3 className="section-title">Game</h3>
+          <div className="game-grid">
+            {GAMES.map((g) => (
+              <button
+                key={g.id}
+                type="button"
+                className={`game-card${game === g.id ? ' active' : ''}`}
+                onClick={() => setGame(g.id)}
+              >
+                <span className="game-name">{g.label}</span>
+                <span className="game-blurb">{g.blurb}</span>
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       {/* --- add a verse --- */}
@@ -186,14 +145,7 @@ export default function MemorizeView() {
                       {v.streak > 1 ? ` · ${v.streak} in a row` : ''}
                     </span>
                     <div>
-                      <button
-                        type="button"
-                        className="btn-text"
-                        onClick={() => {
-                          setDrill({ ref: v.ref, text: v.text, level: v.level });
-                          setRevealed(false);
-                        }}
-                      >
+                      <button type="button" className="btn-text" onClick={() => setDrill(v)}>
                         Practice
                       </button>
                       <button
@@ -219,8 +171,8 @@ export default function MemorizeView() {
           </svg>
           <p className="empty-title">Hide his word in your heart</p>
           <p className="empty-sub">
-            Add a verse above. Practice earns points and levels it up — from Learning all the way
-            to Mastered ({TRANSLATION_LABEL}).
+            Add a verse above, then practise it four ways — fill the blanks, type it out, unscramble
+            it, or recite from first letters ({TRANSLATION_LABEL}).
           </p>
         </div>
       )}
