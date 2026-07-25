@@ -11,7 +11,7 @@
   right: 0;
   height: var(--nav-height);
   display: flex;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--surface-blur);
   backdrop-filter: saturate(180%) blur(12px);
   border-top: 1px solid var(--border);
   padding-bottom: env(safe-area-inset-bottom);
@@ -61,7 +61,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(255, 255, 255, 0.86);
+  background: var(--surface-blur);
   backdrop-filter: saturate(180%) blur(12px);
   border-bottom: 1px solid var(--border);
   padding: 14px 20px;
@@ -76,6 +76,34 @@
   font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+
+.app-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.theme-toggle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-dim);
+  display: grid;
+  place-items: center;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.theme-toggle svg {
+  width: 19px;
+  height: 19px;
+}
+
+.theme-toggle:hover {
+  background: var(--surface-alt);
+  color: var(--text);
 }
 
 /* ---------- account menu ---------- */
@@ -95,7 +123,7 @@
 }
 
 .account-signin:hover {
-  background: #eeeeee;
+  background: var(--surface-hover);
 }
 
 .account-avatar {
@@ -124,7 +152,7 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.14);
+  box-shadow: 0 12px 34px var(--shadow);
   padding: 14px;
   min-width: 210px;
   display: flex;
@@ -148,7 +176,7 @@
 }
 
 .sync-line.synced {
-  color: #2e9e5b;
+  color: var(--success);
 }
 
 .sync-line.error {
@@ -203,7 +231,7 @@
 
 .account-info {
   font-size: 0.78rem;
-  color: #2e9e5b;
+  color: var(--success);
 }
 
 .account-toggle-mode {
@@ -332,7 +360,7 @@
 }
 
 .streak-pill.caught-up svg {
-  color: #2e9e5b;
+  color: var(--success);
 }
 
 /* ---------- today ---------- */
@@ -517,7 +545,7 @@
 }
 
 .day-row.today .day-head {
-  background: #fff5f6;
+  background: var(--today-tint);
 }
 
 /* ---------- day pager ---------- */
@@ -628,7 +656,7 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 1.5px solid #cfd0d1;
+  border: 1.5px solid var(--check-border);
   background: transparent;
   display: grid;
   place-items: center;
@@ -804,7 +832,7 @@
   border-radius: 13px;
   padding: 11px 13px 12px;
   pointer-events: none;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05), 0 14px 40px rgba(18, 18, 18, 0.18);
+  box-shadow: 0 2px 6px var(--shadow), 0 14px 40px var(--shadow);
   transform-origin: bottom center;
   animation: note-pop 0.17s cubic-bezier(0.18, 0.9, 0.32, 1.1);
 }
@@ -947,7 +975,7 @@
 .ink-tool.active {
   background: var(--text);
   border-color: var(--text);
-  color: #fff;
+  color: var(--text-inverse);
 }
 
 /* ---------- commentary ---------- */
@@ -1049,7 +1077,7 @@
 .commentary-toggle.active {
   background: var(--text);
   border-color: var(--text);
-  color: #fff;
+  color: var(--text-inverse);
 }
 
 .commentary {
@@ -1303,7 +1331,7 @@
 .chip.active {
   background: var(--text);
   border-color: var(--text);
-  color: #fff;
+  color: var(--text-inverse);
 }
 
 .note-list {
@@ -1543,7 +1571,7 @@
 .sheet-scrim {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.28);
+  background: var(--scrim);
   z-index: 40;
   animation: fade-in 0.15s ease;
 }
@@ -1558,7 +1586,7 @@
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
   padding: 8px 20px calc(20px + env(safe-area-inset-bottom));
-  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 -8px 40px var(--shadow);
   animation: slide-up 0.2s ease;
 }
 
@@ -1578,7 +1606,7 @@
   width: 38px;
   height: 4px;
   border-radius: 999px;
-  background: #d8d8d8;
+  background: var(--check-border);
   margin: 0 auto 12px;
 }
 
@@ -1648,7 +1676,7 @@
   color: var(--text-dim);
   display: grid;
   place-items: center;
-  border: 1px dashed #c9c9c9;
+  border: 1px dashed var(--border);
 }
 
 .swatch.clear svg {
@@ -1720,7 +1748,7 @@
 }
 
 .btn-secondary:hover {
-  background: #eeeeee;
+  background: var(--surface-hover);
 }
 
 .btn-text {
@@ -1876,4 +1904,30 @@
       transform: translateX(-50%) translateY(10px);
     }
   }
+}
+
+/* ---------- dark-mode fixes for user-authored colour ---------- */
+
+/*
+ * Highlight pastels and ink are chosen for a white page. On a dark page the
+ * text sitting on a highlight must flip to dark, and near-black ink would
+ * vanish — so lighten it via filter rather than rewriting stored strokes.
+ */
+:root[data-theme='dark'] .verse[style*='background'] {
+  color: #14161a;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+:root[data-theme='dark'] .verse[style*='background'] .verse-number {
+  color: #45484f;
+}
+
+:root[data-theme='dark'] .draw-canvas {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Serif prayer text can look heavy on dark; ease it slightly. */
+:root[data-theme='dark'] .prayer-text {
+  color: #dfe1e6;
 }

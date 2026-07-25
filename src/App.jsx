@@ -13,6 +13,7 @@ import ProgressView from './components/ProgressView';
 import GroupView from './components/GroupView';
 import VerseActionSheet from './components/VerseActionSheet';
 import AccountMenu from './components/AccountMenu';
+import ThemeToggle from './components/ThemeToggle';
 import { computeStreak } from './data/streaks';
 
 const TITLES = {
@@ -57,7 +58,10 @@ function App() {
         <div className="app-body">
           <header className="app-bar">
             <h1>{TITLES[tab]}</h1>
-            <AccountMenu />
+            <div className="app-bar-actions">
+              <ThemeToggle />
+              <AccountMenu />
+            </div>
           </header>
 
           <main className="app-main">
