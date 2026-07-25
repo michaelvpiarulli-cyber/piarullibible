@@ -11,6 +11,7 @@ import WeekCard from './components/WeekCard';
 import NotesView from './components/NotesView';
 import JournalView from './components/JournalView';
 import MemorizeView from './components/MemorizeView';
+import SermonView from './components/SermonView';
 import ProgressView from './components/ProgressView';
 import GroupView from './components/GroupView';
 import VerseActionSheet from './components/VerseActionSheet';
@@ -23,10 +24,16 @@ const TITLES = {
   plan: 'Plan',
   prayer: 'Prayer Journal',
   memorize: 'Memorize',
-  notes: 'Notes & Highlights',
+  notes: 'Notes',
   family: 'Family',
   progress: 'Progress',
 };
+
+/* The Notes tab holds two related workspaces. */
+const NOTE_SECTIONS = [
+  { id: 'sermons', label: 'Sermon Notes' },
+  { id: 'highlights', label: 'Highlights' },
+];
 
 function App() {
   const plan = useMemo(() => buildPlan(), []);
@@ -37,6 +44,7 @@ function App() {
   const { startDate, setStartDate, currentDay, currentWeek, dayDate, weekDateRange } = usePlanStart();
   const { highlights, notes, setHighlight, setNote } = useAnnotations();
   const [tab, setTab] = useState('today');
+  const [noteSection, setNoteSection] = useState('sermons');
   const [selectedVerse, setSelectedVerse] = useState(null);
 
   const annotations = useMemo(
@@ -100,13 +108,32 @@ function App() {
             {tab === 'memorize' && <MemorizeView />}
 
             {tab === 'notes' && (
-              <NotesView
-                highlights={highlights}
-                notes={notes}
-                onSelectVerse={setSelectedVerse}
-                setHighlight={setHighlight}
-                setNote={setNote}
-              />
+              <>
+                <div className="filter-row section-switch">
+                  {NOTE_SECTIONS.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={`chip${noteSection === s.id ? ' active' : ''}`}
+                      onClick={() => setNoteSection(s.id)}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+
+                {noteSection === 'sermons' ? (
+                  <SermonView />
+                ) : (
+                  <NotesView
+                    highlights={highlights}
+                    notes={notes}
+                    onSelectVerse={setSelectedVerse}
+                    setHighlight={setHighlight}
+                    setNote={setNote}
+                  />
+                )}
+              </>
             )}
 
             {tab === 'family' && <GroupView myStats={myStats} />}
