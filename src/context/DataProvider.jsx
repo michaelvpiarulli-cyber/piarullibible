@@ -16,7 +16,11 @@ const KEYS = {
   highlights: 'bible-plan-highlights',
   notes: 'bible-plan-notes',
   startDate: 'bible-plan-start-date',
+  journal: 'bible-plan-journal',
+  memory: 'bible-plan-memory',
 };
+
+const EMPTY_MEMORY = { verses: [], reviewedOn: null, dailyCount: 0 };
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -26,12 +30,12 @@ function todayISO() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-function loadObject(key) {
+function loadObject(key, fallback = {}) {
   try {
     const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : {};
+    return raw ? JSON.parse(raw) : fallback;
   } catch {
-    return {};
+    return fallback;
   }
 }
 
@@ -46,6 +50,8 @@ export function DataProvider({ children }) {
   const [startDate, setStartDateState] = useState(
     () => localStorage.getItem(KEYS.startDate) || todayISO()
   );
+  const [journal, setJournal] = useState(() => loadObject(KEYS.journal, []));
+  const [memory, setMemory] = useState(() => loadObject(KEYS.memory, EMPTY_MEMORY));
 
   const [syncState, setSyncState] = useState('idle'); // idle | syncing | synced | error
 
@@ -54,6 +60,8 @@ export function DataProvider({ children }) {
   useEffect(() => localStorage.setItem(KEYS.highlights, JSON.stringify(highlights)), [highlights]);
   useEffect(() => localStorage.setItem(KEYS.notes, JSON.stringify(notes)), [notes]);
   useEffect(() => localStorage.setItem(KEYS.startDate, startDate), [startDate]);
+  useEffect(() => localStorage.setItem(KEYS.journal, JSON.stringify(journal)), [journal]);
+  useEffect(() => localStorage.setItem(KEYS.memory, JSON.stringify(memory)), [memory]);
 
   // hydratedFor holds the user id we've already pulled+merged for, so changes
   // only start pushing after the initial merge (and never before login).
@@ -73,7 +81,7 @@ export function DataProvider({ children }) {
       setSyncState('syncing');
       const { data, error } = await supabase
         .from('user_data')
-        .select('progress, highlights, notes, start_date')
+        .select('progress, highlights, notes, start_date, journal, memory')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -85,25 +93,50 @@ export function DataProvider({ children }) {
 
       // Merge: union completed readings; local wins per-verse on annotations;
       // remote start date wins when it exists. Merge-only never drops data.
-      const merged = {
-        progress: { ...(data?.progress || {}), ...progress },
-        highlights: { ...(data?.highlights || {}), ...highlights },
-        notes: { ...(data?.notes || {}), ...notes },
-        startDate: data?.start_date || startDate,
+      const mergedProgress = { ...(data?.progress || {}), ...progress };
+      const mergedHighlights = { ...(data?.highlights || {}), ...highlights };
+      const mergedNotes = { ...(data?.notes || {}), ...notes };
+      const mergedStart = data?.start_date || startDate;
+
+      // Journal is a list: union by id, newest first, so entries written on one
+      // device don't overwrite another's.
+      const byId = new Map();
+      [...(data?.journal || []), ...journal].forEach((e) => e && e.id && byId.set(e.id, e));
+      const mergedJournal = [...byId.values()].sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+
+      // Memory verses: union by ref, keeping whichever copy is further along.
+      const byRef = new Map();
+      [...(data?.memory?.verses || []), ...(memory.verses || [])].forEach((v) => {
+        if (!v || !v.ref) return;
+        const prev = byRef.get(v.ref);
+        if (!prev || (v.reviews || 0) >= (prev.reviews || 0)) byRef.set(v.ref, v);
+      });
+      const mergedMemory = {
+        verses: [...byRef.values()],
+        reviewedOn: memory.reviewedOn || data?.memory?.reviewedOn || null,
+        dailyCount: Math.max(memory.dailyCount || 0, data?.memory?.dailyCount || 0),
       };
 
-      setProgress(merged.progress);
-      setHighlights(merged.highlights);
-      setNotes(merged.notes);
-      setStartDateState(merged.startDate);
+      setProgress(mergedProgress);
+      setHighlights(mergedHighlights);
+      setNotes(mergedNotes);
+      setStartDateState(mergedStart);
+      setJournal(mergedJournal);
+      setMemory(mergedMemory);
 
       hydratedFor.current = user.id;
 
       // Push the merged result up so the remote row is created/reconciled.
       const { error: upErr } = await supabase.from('user_data').upsert({
         user_id: user.id,
-        ...merged,
-        start_date: merged.startDate,
+        progress: mergedProgress,
+        highlights: mergedHighlights,
+        notes: mergedNotes,
+        start_date: mergedStart,
+        journal: mergedJournal,
+        memory: mergedMemory,
         updated_at: new Date().toISOString(),
       });
       if (!cancelled) setSyncState(upErr ? 'error' : 'synced');
@@ -130,13 +163,15 @@ export function DataProvider({ children }) {
         highlights,
         notes,
         start_date: startDate,
+        journal,
+        memory,
         updated_at: new Date().toISOString(),
       });
       setSyncState(error ? 'error' : 'synced');
     }, 800);
 
     return () => clearTimeout(pushTimer.current);
-  }, [progress, highlights, notes, startDate, available, user]);
+  }, [progress, highlights, notes, startDate, journal, memory, available, user]);
 
   // --- mutators (same shapes the old hooks exposed) --------------------------
   const toggleProgress = useCallback((id) => {
@@ -172,7 +207,11 @@ export function DataProvider({ children }) {
     highlights,
     notes,
     startDate,
+    journal,
+    memory,
     setStartDate: setStartDateState,
+    setJournal,
+    setMemory,
     toggleProgress,
     setHighlight,
     setNote,
