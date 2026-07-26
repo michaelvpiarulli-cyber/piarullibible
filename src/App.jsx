@@ -12,6 +12,7 @@ import NotesView from './components/NotesView';
 import JournalView from './components/JournalView';
 import MemorizeView from './components/MemorizeView';
 import SermonView from './components/SermonView';
+import ReadView from './components/ReadView';
 import ProgressView from './components/ProgressView';
 import GroupView from './components/GroupView';
 import VerseActionSheet from './components/VerseActionSheet';
@@ -22,6 +23,7 @@ import { computeStreak } from './data/streaks';
 const TITLES = {
   today: 'Today',
   plan: 'Plan',
+  read: 'Read',
   prayer: 'Prayer Journal',
   memorize: 'Memorize',
   notes: 'Notes',
@@ -102,6 +104,8 @@ function App() {
                 ))}
               </div>
             )}
+
+            {tab === 'read' && <ReadView />}
 
             {tab === 'prayer' && <JournalView currentDay={currentDay} />}
 

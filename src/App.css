@@ -2668,3 +2668,125 @@
 :root[data-theme='dark'] .sketch-canvas {
   filter: invert(1) hue-rotate(180deg);
 }
+
+/* ---------- read (free browsing) ---------- */
+
+.read-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.read-where {
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-align: center;
+}
+
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.book-chip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.book-chip:hover {
+  border-color: var(--accent);
+  background: var(--surface-alt);
+}
+
+.chapter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 7px;
+}
+
+.chapter-chip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.chapter-chip:hover {
+  border-color: var(--accent);
+  background: var(--surface-alt);
+}
+
+.results-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.results-head .section-title {
+  margin: 0;
+}
+
+.result-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.result-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 11px 13px;
+  transition: border-color 0.15s;
+}
+
+.result-row:hover {
+  border-color: var(--accent);
+}
+
+.result-ref {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--accent);
+}
+
+.result-text {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+/* Casual reading flows with the page instead of scrolling inside a box. */
+.read-flow .reader {
+  max-height: none;
+  overflow-y: visible;
+  padding-left: 0;
+  padding-right: 0;
+}
