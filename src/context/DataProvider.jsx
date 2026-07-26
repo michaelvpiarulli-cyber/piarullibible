@@ -23,6 +23,35 @@ const KEYS = {
 
 const EMPTY_MEMORY = { verses: [], reviewedOn: null, dailyCount: 0 };
 
+/**
+ * Journal, memory, and sermon notes are stored inside the `progress` jsonb
+ * column under this reserved key, so they sync to the account on the schema as
+ * it stands (no extra columns needed). Reading ids look like "d12-t3", so the
+ * key can't collide.
+ *
+ * If dedicated columns are added later, these two helpers are the only place
+ * that needs to change.
+ */
+const EXTRAS_KEY = '__extras';
+
+/** Split a stored progress blob into real progress plus the extras payload. */
+function unpackExtras(stored) {
+  const raw = stored || {};
+  const { [EXTRAS_KEY]: extras, ...progress } = raw;
+  return {
+    progress,
+    journal: Array.isArray(extras?.journal) ? extras.journal : [],
+    memory: extras?.memory && typeof extras.memory === 'object' ? extras.memory : EMPTY_MEMORY,
+    sermons: Array.isArray(extras?.sermons) ? extras.sermons : [],
+  };
+}
+
+/** Recombine for writing. Progress keys stay top-level so nothing else breaks. */
+function packExtras(progress, journal, memory, sermons) {
+  const { [EXTRAS_KEY]: _drop, ...clean } = progress || {};
+  return { ...clean, [EXTRAS_KEY]: { journal, memory, sermons } };
+}
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 function todayISO() {
@@ -84,7 +113,7 @@ export function DataProvider({ children }) {
       setSyncState('syncing');
       const { data, error } = await supabase
         .from('user_data')
-        .select('progress, highlights, notes, start_date, journal, memory, sermons')
+        .select('progress, highlights, notes, start_date')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -94,9 +123,14 @@ export function DataProvider({ children }) {
         return;
       }
 
+      // Journal, memory, and sermons ride inside the progress column under a
+      // reserved key (see EXTRAS_KEY) so they sync without needing extra
+      // columns. unpackExtras keeps them out of the reading-progress map.
+      const remote = unpackExtras(data?.progress);
+
       // Merge: union completed readings; local wins per-verse on annotations;
       // remote start date wins when it exists. Merge-only never drops data.
-      const mergedProgress = { ...(data?.progress || {}), ...progress };
+      const mergedProgress = { ...remote.progress, ...progress };
       const mergedHighlights = { ...(data?.highlights || {}), ...highlights };
       const mergedNotes = { ...(data?.notes || {}), ...notes };
       const mergedStart = data?.start_date || startDate;
@@ -104,29 +138,29 @@ export function DataProvider({ children }) {
       // Journal is a list: union by id, newest first, so entries written on one
       // device don't overwrite another's.
       const byId = new Map();
-      [...(data?.journal || []), ...journal].forEach((e) => e && e.id && byId.set(e.id, e));
+      [...remote.journal, ...journal].forEach((e) => e && e.id && byId.set(e.id, e));
       const mergedJournal = [...byId.values()].sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
 
       // Sermon notes merge the same way — union by id, newest first.
       const sermonById = new Map();
-      [...(data?.sermons || []), ...sermons].forEach((s) => s && s.id && sermonById.set(s.id, s));
+      [...remote.sermons, ...sermons].forEach((s) => s && s.id && sermonById.set(s.id, s));
       const mergedSermons = [...sermonById.values()].sort(
         (a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt)
       );
 
       // Memory verses: union by ref, keeping whichever copy is further along.
       const byRef = new Map();
-      [...(data?.memory?.verses || []), ...(memory.verses || [])].forEach((v) => {
+      [...(remote.memory.verses || []), ...(memory.verses || [])].forEach((v) => {
         if (!v || !v.ref) return;
         const prev = byRef.get(v.ref);
         if (!prev || (v.reviews || 0) >= (prev.reviews || 0)) byRef.set(v.ref, v);
       });
       const mergedMemory = {
         verses: [...byRef.values()],
-        reviewedOn: memory.reviewedOn || data?.memory?.reviewedOn || null,
-        dailyCount: Math.max(memory.dailyCount || 0, data?.memory?.dailyCount || 0),
+        reviewedOn: memory.reviewedOn || remote.memory.reviewedOn || null,
+        dailyCount: Math.max(memory.dailyCount || 0, remote.memory.dailyCount || 0),
       };
 
       setProgress(mergedProgress);
@@ -142,13 +176,10 @@ export function DataProvider({ children }) {
       // Push the merged result up so the remote row is created/reconciled.
       const { error: upErr } = await supabase.from('user_data').upsert({
         user_id: user.id,
-        progress: mergedProgress,
+        progress: packExtras(mergedProgress, mergedJournal, mergedMemory, mergedSermons),
         highlights: mergedHighlights,
         notes: mergedNotes,
         start_date: mergedStart,
-        journal: mergedJournal,
-        memory: mergedMemory,
-        sermons: mergedSermons,
         updated_at: new Date().toISOString(),
       });
       if (!cancelled) setSyncState(upErr ? 'error' : 'synced');
@@ -171,13 +202,10 @@ export function DataProvider({ children }) {
     pushTimer.current = setTimeout(async () => {
       const { error } = await supabase.from('user_data').upsert({
         user_id: user.id,
-        progress,
+        progress: packExtras(progress, journal, memory, sermons),
         highlights,
         notes,
         start_date: startDate,
-        journal,
-        memory,
-        sermons,
         updated_at: new Date().toISOString(),
       });
       setSyncState(error ? 'error' : 'synced');
