@@ -15,6 +15,7 @@ import SermonView from './components/SermonView';
 import ReadView from './components/ReadView';
 import ExamenView from './components/ExamenView';
 import RuleView from './components/RuleView';
+import YearReview from './components/YearReview';
 import ProgressView from './components/ProgressView';
 import GroupView from './components/GroupView';
 import VerseActionSheet from './components/VerseActionSheet';
@@ -40,6 +41,12 @@ const PRAYER_SECTIONS = [
   { id: 'rule', label: 'Rule of Life' },
 ];
 
+/* The Progress tab holds stats and the year-end look back. */
+const PROGRESS_SECTIONS = [
+  { id: 'stats', label: 'Stats' },
+  { id: 'year', label: 'Year in Review' },
+];
+
 /* The Notes tab holds two related workspaces. */
 const NOTE_SECTIONS = [
   { id: 'sermons', label: 'Sermon Notes' },
@@ -57,6 +64,7 @@ function App() {
   const [tab, setTab] = useState('today');
   const [noteSection, setNoteSection] = useState('sermons');
   const [prayerSection, setPrayerSection] = useState('journal');
+  const [progressSection, setProgressSection] = useState('stats');
   const [selectedVerse, setSelectedVerse] = useState(null);
 
   const annotations = useMemo(
@@ -172,6 +180,23 @@ function App() {
             {tab === 'family' && <GroupView myStats={myStats} />}
 
             {tab === 'progress' && (
+              <>
+                <div className="filter-row section-switch">
+                  {PROGRESS_SECTIONS.map((sec) => (
+                    <button
+                      key={sec.id}
+                      type="button"
+                      className={`chip${progressSection === sec.id ? ' active' : ''}`}
+                      onClick={() => setProgressSection(sec.id)}
+                    >
+                      {sec.label}
+                    </button>
+                  ))}
+                </div>
+
+                {progressSection === 'year' ? (
+                  <YearReview plan={plan} currentDay={currentDay} />
+                ) : (
               <ProgressView
                 plan={plan}
                 isDone={isDone}
@@ -182,6 +207,8 @@ function App() {
                 currentDay={currentDay}
                 currentWeek={currentWeek}
               />
+                )}
+              </>
             )}
           </main>
         </div>

@@ -3020,3 +3020,99 @@
   flex-direction: column;
   gap: 12px;
 }
+
+/* ---------- year in review ---------- */
+
+.year-hero {
+  text-align: center;
+  padding: 18px 0 26px;
+}
+
+.year-big {
+  display: block;
+  font-size: 3.6rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-top: 8px;
+  color: var(--accent);
+}
+
+.year-big-label {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.95rem;
+  color: var(--text-dim);
+}
+
+.answered-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.answered-card {
+  border: 1px solid var(--success);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.answered-card p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.answered-when {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--success);
+}
+
+.tally-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tally {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 11px 2px;
+}
+
+.tally + .tally {
+  border-top: 1px solid var(--border);
+}
+
+.tally-n {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  min-width: 3ch;
+}
+
+.tally-label {
+  font-size: 0.92rem;
+  color: var(--text-dim);
+}
+
+.year-footer {
+  margin: 28px 0 0;
+  text-align: center;
+  font-family: Georgia, 'Iowan Old Style', Palatino, serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--text-dim);
+}
