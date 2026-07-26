@@ -19,9 +19,12 @@ const KEYS = {
   journal: 'bible-plan-journal',
   memory: 'bible-plan-memory',
   sermons: 'bible-plan-sermons',
+  examens: 'bible-plan-examens',
+  rule: 'bible-plan-rule',
 };
 
 const EMPTY_MEMORY = { verses: [], reviewedOn: null, dailyCount: 0 };
+const EMPTY_RULE = { habits: [] };
 
 /**
  * Journal, memory, and sermon notes are stored inside the `progress` jsonb
@@ -43,13 +46,15 @@ function unpackExtras(stored) {
     journal: Array.isArray(extras?.journal) ? extras.journal : [],
     memory: extras?.memory && typeof extras.memory === 'object' ? extras.memory : EMPTY_MEMORY,
     sermons: Array.isArray(extras?.sermons) ? extras.sermons : [],
+    examens: Array.isArray(extras?.examens) ? extras.examens : [],
+    rule: extras?.rule && typeof extras.rule === 'object' ? extras.rule : EMPTY_RULE,
   };
 }
 
 /** Recombine for writing. Progress keys stay top-level so nothing else breaks. */
-function packExtras(progress, journal, memory, sermons) {
+function packExtras(progress, extras) {
   const { [EXTRAS_KEY]: _drop, ...clean } = progress || {};
-  return { ...clean, [EXTRAS_KEY]: { journal, memory, sermons } };
+  return { ...clean, [EXTRAS_KEY]: extras };
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -83,6 +88,8 @@ export function DataProvider({ children }) {
   const [journal, setJournal] = useState(() => loadObject(KEYS.journal, []));
   const [memory, setMemory] = useState(() => loadObject(KEYS.memory, EMPTY_MEMORY));
   const [sermons, setSermons] = useState(() => loadObject(KEYS.sermons, []));
+  const [examens, setExamens] = useState(() => loadObject(KEYS.examens, []));
+  const [rule, setRule] = useState(() => loadObject(KEYS.rule, EMPTY_RULE));
 
   const [syncState, setSyncState] = useState('idle'); // idle | syncing | synced | error
 
@@ -94,6 +101,8 @@ export function DataProvider({ children }) {
   useEffect(() => localStorage.setItem(KEYS.journal, JSON.stringify(journal)), [journal]);
   useEffect(() => localStorage.setItem(KEYS.memory, JSON.stringify(memory)), [memory]);
   useEffect(() => localStorage.setItem(KEYS.sermons, JSON.stringify(sermons)), [sermons]);
+  useEffect(() => localStorage.setItem(KEYS.examens, JSON.stringify(examens)), [examens]);
+  useEffect(() => localStorage.setItem(KEYS.rule, JSON.stringify(rule)), [rule]);
 
   // hydratedFor holds the user id we've already pulled+merged for, so changes
   // only start pushing after the initial merge (and never before login).
@@ -163,6 +172,20 @@ export function DataProvider({ children }) {
         dailyCount: Math.max(memory.dailyCount || 0, remote.memory.dailyCount || 0),
       };
 
+      // Examens: one per date, union by id.
+      const examById = new Map();
+      [...remote.examens, ...examens].forEach((e) => e && e.id && examById.set(e.id, e));
+      const mergedExamens = [...examById.values()].sort((a, b) => (a.date < b.date ? 1 : -1));
+
+      // Rule of life: union habits by id, unioning their checked days.
+      const habitById = new Map();
+      [...(remote.rule.habits || []), ...(rule.habits || [])].forEach((h) => {
+        if (!h || !h.id) return;
+        const prev = habitById.get(h.id);
+        habitById.set(h.id, prev ? { ...h, days: { ...prev.days, ...h.days } } : h);
+      });
+      const mergedRule = { habits: [...habitById.values()] };
+
       setProgress(mergedProgress);
       setHighlights(mergedHighlights);
       setNotes(mergedNotes);
@@ -170,13 +193,21 @@ export function DataProvider({ children }) {
       setJournal(mergedJournal);
       setMemory(mergedMemory);
       setSermons(mergedSermons);
+      setExamens(mergedExamens);
+      setRule(mergedRule);
 
       hydratedFor.current = user.id;
 
       // Push the merged result up so the remote row is created/reconciled.
       const { error: upErr } = await supabase.from('user_data').upsert({
         user_id: user.id,
-        progress: packExtras(mergedProgress, mergedJournal, mergedMemory, mergedSermons),
+        progress: packExtras(mergedProgress, {
+          journal: mergedJournal,
+          memory: mergedMemory,
+          sermons: mergedSermons,
+          examens: mergedExamens,
+          rule: mergedRule,
+        }),
         highlights: mergedHighlights,
         notes: mergedNotes,
         start_date: mergedStart,
@@ -202,7 +233,7 @@ export function DataProvider({ children }) {
     pushTimer.current = setTimeout(async () => {
       const { error } = await supabase.from('user_data').upsert({
         user_id: user.id,
-        progress: packExtras(progress, journal, memory, sermons),
+        progress: packExtras(progress, { journal, memory, sermons, examens, rule }),
         highlights,
         notes,
         start_date: startDate,
@@ -212,7 +243,7 @@ export function DataProvider({ children }) {
     }, 800);
 
     return () => clearTimeout(pushTimer.current);
-  }, [progress, highlights, notes, startDate, journal, memory, sermons, available, user]);
+  }, [progress, highlights, notes, startDate, journal, memory, sermons, examens, rule, available, user]);
 
   // --- mutators (same shapes the old hooks exposed) --------------------------
   const toggleProgress = useCallback((id) => {
@@ -251,10 +282,14 @@ export function DataProvider({ children }) {
     journal,
     memory,
     sermons,
+    examens,
+    rule,
     setStartDate: setStartDateState,
     setJournal,
     setMemory,
     setSermons,
+    setExamens,
+    setRule,
     toggleProgress,
     setHighlight,
     setNote,

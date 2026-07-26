@@ -13,6 +13,8 @@ import JournalView from './components/JournalView';
 import MemorizeView from './components/MemorizeView';
 import SermonView from './components/SermonView';
 import ReadView from './components/ReadView';
+import ExamenView from './components/ExamenView';
+import RuleView from './components/RuleView';
 import ProgressView from './components/ProgressView';
 import GroupView from './components/GroupView';
 import VerseActionSheet from './components/VerseActionSheet';
@@ -24,12 +26,19 @@ const TITLES = {
   today: 'Today',
   plan: 'Plan',
   read: 'Read',
-  prayer: 'Prayer Journal',
+  prayer: 'Prayer & Practice',
   memorize: 'Memorize',
   notes: 'Notes',
   family: 'Family',
   progress: 'Progress',
 };
+
+/* The Prayer tab holds the daily spiritual practices. */
+const PRAYER_SECTIONS = [
+  { id: 'journal', label: 'Journal' },
+  { id: 'examen', label: 'Examen' },
+  { id: 'rule', label: 'Rule of Life' },
+];
 
 /* The Notes tab holds two related workspaces. */
 const NOTE_SECTIONS = [
@@ -47,6 +56,7 @@ function App() {
   const { highlights, notes, setHighlight, setNote } = useAnnotations();
   const [tab, setTab] = useState('today');
   const [noteSection, setNoteSection] = useState('sermons');
+  const [prayerSection, setPrayerSection] = useState('journal');
   const [selectedVerse, setSelectedVerse] = useState(null);
 
   const annotations = useMemo(
@@ -107,7 +117,26 @@ function App() {
 
             {tab === 'read' && <ReadView />}
 
-            {tab === 'prayer' && <JournalView currentDay={currentDay} />}
+            {tab === 'prayer' && (
+              <>
+                <div className="filter-row section-switch">
+                  {PRAYER_SECTIONS.map((sec) => (
+                    <button
+                      key={sec.id}
+                      type="button"
+                      className={`chip${prayerSection === sec.id ? ' active' : ''}`}
+                      onClick={() => setPrayerSection(sec.id)}
+                    >
+                      {sec.label}
+                    </button>
+                  ))}
+                </div>
+
+                {prayerSection === 'journal' && <JournalView currentDay={currentDay} />}
+                {prayerSection === 'examen' && <ExamenView />}
+                {prayerSection === 'rule' && <RuleView />}
+              </>
+            )}
 
             {tab === 'memorize' && <MemorizeView />}
 

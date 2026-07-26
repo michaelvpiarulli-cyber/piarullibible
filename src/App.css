@@ -2790,3 +2790,233 @@
   padding-left: 0;
   padding-right: 0;
 }
+
+/* ---------- examen ---------- */
+
+.examen-card,
+.examen-done {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px 20px;
+  margin-bottom: 22px;
+}
+
+.examen-dots {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.examen-dots .dot {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+}
+
+.examen-dots .dot.on {
+  background: var(--accent);
+}
+
+.examen-title {
+  margin: 6px 0 6px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.examen-prompt {
+  margin: 0 0 14px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.examen-card textarea {
+  width: 100%;
+  font-family: Georgia, 'Iowan Old Style', Palatino, serif;
+  font-size: 1rem;
+  line-height: 1.7;
+  padding: 13px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  resize: vertical;
+}
+
+.examen-card textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.examen-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.examen-done h3 {
+  margin: 4px 0 14px;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.examen-answer + .examen-answer {
+  margin-top: 14px;
+}
+
+.examen-q {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.examen-answer p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.examen-past-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  width: 100%;
+  background: none;
+  text-align: left;
+}
+
+.examen-peek {
+  font-size: 0.9rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.examen-past-body {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- rule of life ---------- */
+
+.habit-list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.habit-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.habit-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.habit-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.habit-name {
+  font-size: 0.98rem;
+  font-weight: 600;
+}
+
+.habit-meta {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.habit-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  margin-top: 12px;
+}
+
+.habit-day {
+  padding: 7px 0;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.habit-day.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.habit-day.today {
+  border-color: var(--text);
+}
+
+.rule-add {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.rule-add input {
+  flex: 1;
+  min-width: 160px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 11px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.rule-add input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.rule-intro {
+  margin: 18px 0 12px;
+  text-align: center;
+}
+
+.suggestions {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.rule-adder {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
