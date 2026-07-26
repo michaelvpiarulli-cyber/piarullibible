@@ -1,52 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useChapterDrawing } from '../hooks/useDrawings';
-
-const r3 = (n) => Math.round(n * 1000) / 1000;
-
-/** Mouse reports 0 or 0.5; a real stylus reports true pressure. */
-const pressureOf = (e) => (e.pressure > 0 && e.pressure < 1 ? e.pressure : 0.5);
-
-function paintStroke(ctx, s, w, h) {
-  const pts = s.points;
-  if (!pts || !pts.length) return;
-
-  ctx.strokeStyle = s.color;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  const base = Math.max(1, s.width * w);
-
-  if (s.type === 'ellipse') {
-    const [[x0, y0], [x1, y1]] = pts;
-    const cx = ((x0 + x1) / 2) * w;
-    const cy = ((y0 + y1) / 2) * h;
-    const rx = (Math.abs(x1 - x0) / 2) * w;
-    const ry = (Math.abs(y1 - y0) / 2) * h;
-    if (rx < 1 || ry < 1) return;
-    ctx.lineWidth = base;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    return;
-  }
-
-  if (pts.length === 1) {
-    ctx.fillStyle = s.color;
-    ctx.beginPath();
-    ctx.arc(pts[0][0] * w, pts[0][1] * h, base / 2, 0, Math.PI * 2);
-    ctx.fill();
-    return;
-  }
-
-  for (let i = 1; i < pts.length; i++) {
-    const [x0, y0, p0 = 0.5] = pts[i - 1];
-    const [x1, y1, p1 = 0.5] = pts[i];
-    ctx.lineWidth = base * (0.45 + (p0 + p1) / 2); // pressure-sensitive
-    ctx.beginPath();
-    ctx.moveTo(x0 * w, y0 * h);
-    ctx.lineTo(x1 * w, y1 * h);
-    ctx.stroke();
-  }
-}
+import { paintStroke, pressureOf, r3, strokeNear } from './ink/strokes';
 
 export default function DrawCanvas({ chapterKey, active, tool, fingerDraws, registerApi }) {
   const canvasRef = useRef(null);
@@ -114,18 +68,7 @@ export default function DrawCanvas({ chapterKey, active, tool, fingerDraws, regi
   };
 
   const eraseAt = (x, y) => {
-    const near = strokesRef.current.filter((s) => {
-      if (s.type === 'ellipse') {
-        const [[x0, y0], [x1, y1]] = s.points;
-        return (
-          x >= Math.min(x0, x1) - 0.01 &&
-          x <= Math.max(x0, x1) + 0.01 &&
-          y >= Math.min(y0, y1) - 0.01 &&
-          y <= Math.max(y0, y1) + 0.01
-        );
-      }
-      return s.points.some((p) => Math.hypot(p[0] - x, p[1] - y) < 0.02);
-    });
+    const near = strokesRef.current.filter((s) => strokeNear(s, x, y));
     if (near.length) saveStrokes(strokesRef.current.filter((s) => !near.includes(s)));
   };
 

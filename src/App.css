@@ -2588,3 +2588,83 @@
   font-size: 0.9rem;
   color: var(--text-dim);
 }
+
+/* ---------- sketch pad (handwritten notes) ---------- */
+
+.mode-switch {
+  display: flex;
+  gap: 8px;
+}
+
+.sketch {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Ruled paper. padding-bottom sets the height as a ratio of the width, so the
+   page keeps its proportions as the pad grows. */
+.sketch-page {
+  position: relative;
+  width: 100%;
+  height: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: var(--surface);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 33px,
+    var(--border) 33px,
+    var(--border) 34px
+  );
+}
+
+.sketch-page.preview {
+  margin-bottom: 12px;
+}
+
+.sketch-canvas {
+  position: absolute;
+  inset: 0;
+  touch-action: pan-y; /* finger scrolls; stylus writes */
+  cursor: crosshair;
+}
+
+.sketch-canvas.finger-writes {
+  touch-action: none;
+}
+
+.sketch-page.preview .sketch-canvas {
+  cursor: default;
+  pointer-events: none;
+}
+
+.ink-tool:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.add-page {
+  align-self: center;
+}
+
+.ink-badge {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+/*
+ * Ink is written for a light page. On a dark page near-black strokes would
+ * vanish, so lighten them via filter rather than rewriting stored strokes —
+ * the same treatment the scripture margin canvas uses.
+ */
+:root[data-theme='dark'] .sketch-canvas {
+  filter: invert(1) hue-rotate(180deg);
+}

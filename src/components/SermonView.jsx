@@ -1,7 +1,17 @@
 import { useState } from 'react';
 import { useSermons } from '../hooks/useSermons';
+import SketchPad from './ink/SketchPad';
+import InkPreview from './ink/InkPreview';
 
-const BLANK = { title: '', speaker: '', date: '', passage: '', notes: '', takeaway: '' };
+const BLANK = {
+  title: '',
+  speaker: '',
+  date: '',
+  passage: '',
+  notes: '',
+  takeaway: '',
+  ink: [],
+};
 
 function pretty(dateStr) {
   if (!dateStr) return '';
@@ -19,6 +29,7 @@ export default function SermonView() {
   const [editingId, setEditingId] = useState(null);
   const [openId, setOpenId] = useState(null);
   const [query, setQuery] = useState('');
+  const [mode, setMode] = useState('write'); // write (Pencil) | type
 
   const field = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
@@ -36,14 +47,18 @@ export default function SermonView() {
       passage: s.passage || '',
       notes: s.notes || '',
       takeaway: s.takeaway || '',
+      ink: s.ink || [],
     });
+    setMode((s.ink || []).length && !s.notes ? 'write' : s.notes ? 'type' : 'write');
     setEditingId(s.id);
     setComposing(true);
   };
 
   const save = (e) => {
     e.preventDefault();
-    if (!form.notes.trim() && !form.title.trim()) return;
+    const hasSomething =
+      form.notes.trim() || form.title.trim() || (form.ink && form.ink.length > 0);
+    if (!hasSomething) return;
     if (editingId) updateSermon(editingId, form);
     else addSermon(form);
     setComposing(false);
@@ -88,12 +103,36 @@ export default function SermonView() {
             />
           </div>
 
-          <textarea
-            value={form.notes}
-            onChange={field('notes')}
-            placeholder="Notes…"
-            rows={10}
-          />
+          <div className="mode-switch">
+            <button
+              type="button"
+              className={`chip${mode === 'write' ? ' active' : ''}`}
+              onClick={() => setMode('write')}
+            >
+              Handwrite
+            </button>
+            <button
+              type="button"
+              className={`chip${mode === 'type' ? ' active' : ''}`}
+              onClick={() => setMode('type')}
+            >
+              Type
+            </button>
+          </div>
+
+          {mode === 'write' ? (
+            <SketchPad
+              strokes={form.ink || []}
+              onChange={(ink) => setForm((f) => ({ ...f, ink }))}
+            />
+          ) : (
+            <textarea
+              value={form.notes}
+              onChange={field('notes')}
+              placeholder="Notes…"
+              rows={10}
+            />
+          )}
 
           <input
             type="text"
@@ -150,6 +189,7 @@ export default function SermonView() {
                     <span className="sermon-title">{s.title || 'Untitled'}</span>
                     <span className="sermon-meta">
                       {[pretty(s.date), s.speaker, s.passage].filter(Boolean).join(' · ')}
+                      {s.ink?.length > 0 && <span className="ink-badge">handwritten</span>}
                     </span>
                   </div>
                   <svg
@@ -167,6 +207,7 @@ export default function SermonView() {
 
                 {open && (
                   <div className="sermon-body">
+                    {s.ink?.length > 0 && <InkPreview strokes={s.ink} />}
                     {s.notes && <p className="sermon-notes">{s.notes}</p>}
                     {s.takeaway && (
                       <div className="sermon-takeaway">
