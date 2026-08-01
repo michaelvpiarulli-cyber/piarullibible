@@ -130,9 +130,7 @@ function App() {
               </div>
             )}
 
-            {tab === 'read' && (
-              <ReadView jumpTo={readJump} onJumpConsumed={() => setReadJump(null)} />
-            )}
+            {tab === 'read' && <ReadView jumpTo={readJump} />}
 
             {tab === 'prayer' && (
               <>

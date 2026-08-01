@@ -11,7 +11,7 @@ const NAME_BY_ID = new Map(BOOKS.map((b) => [bollsBookId(b.name), b.name]));
 
 const clean = (s) => (s || '').replace(/<[^>]+>/g, '').replace(/[⌃⌄]/g, '').trim();
 
-export default function ReadView({ jumpTo, onJumpConsumed }) {
+export default function ReadView({ jumpTo }) {
   const [book, setBook] = useState(null);
   const [chapter, setChapter] = useState(null);
   const [focusVerse, setFocusVerse] = useState(null);
@@ -21,7 +21,9 @@ export default function ReadView({ jumpTo, onJumpConsumed }) {
   const [error, setError] = useState(null);
 
   // Remember where you were so the tab doesn't reset every visit.
+  // Skip restore when a cross-ref jump is already waiting — jump wins.
   useEffect(() => {
+    if (jumpTo?.book) return;
     try {
       const last = JSON.parse(localStorage.getItem('bible-plan-last-read') || 'null');
       if (last?.book) {
@@ -31,9 +33,10 @@ export default function ReadView({ jumpTo, onJumpConsumed }) {
     } catch {
       /* ignore */
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount-only restore
 
   // Cross-ref (or other) jumps land here — open the chapter and scroll to the verse.
+  // Keep jumpTo around (don't clear it) so Strict Mode remounts can't lose the target.
   useEffect(() => {
     if (!jumpTo?.book || !jumpTo?.chapter) return;
     setBook(jumpTo.book);
@@ -41,8 +44,7 @@ export default function ReadView({ jumpTo, onJumpConsumed }) {
     setFocusVerse(jumpTo);
     setResults(null);
     setQuery('');
-    onJumpConsumed?.();
-  }, [jumpTo, onJumpConsumed]);
+  }, [jumpTo]);
 
   useEffect(() => {
     if (book && chapter) {
