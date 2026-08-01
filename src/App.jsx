@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import './App.css';
 import { buildPlan, groupIntoWeeks } from './data/generatePlan';
 import { useProgress } from './hooks/useProgress';
@@ -66,10 +66,17 @@ function App() {
   const [prayerSection, setPrayerSection] = useState('journal');
   const [progressSection, setProgressSection] = useState('stats');
   const [selectedVerse, setSelectedVerse] = useState(null);
+  // Jump target for the Read tab — set by cross-ref links (and later deep links).
+  const [readJump, setReadJump] = useState(null);
+
+  const openPassage = useCallback((target) => {
+    setReadJump(target);
+    setTab('read');
+  }, []);
 
   const annotations = useMemo(
-    () => ({ highlights, notes, onSelectVerse: setSelectedVerse }),
-    [highlights, notes]
+    () => ({ highlights, notes, onSelectVerse: setSelectedVerse, onOpenPassage: openPassage }),
+    [highlights, notes, openPassage]
   );
 
   // Shared summary for family groups — progress only, no notes/highlights.
@@ -123,7 +130,9 @@ function App() {
               </div>
             )}
 
-            {tab === 'read' && <ReadView />}
+            {tab === 'read' && (
+              <ReadView jumpTo={readJump} onJumpConsumed={() => setReadJump(null)} />
+            )}
 
             {tab === 'prayer' && (
               <>
@@ -220,6 +229,7 @@ function App() {
             note={notes[selectedVerse.id]}
             onHighlight={setHighlight}
             onSaveNote={setNote}
+            onOpenPassage={openPassage}
             onClose={() => setSelectedVerse(null)}
           />
         )}

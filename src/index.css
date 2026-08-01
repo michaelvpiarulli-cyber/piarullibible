@@ -17,6 +17,7 @@
   --accent: #3e5782;
   --accent-press: #32476b;
   --success: #4a7c59;
+  --words-of-jesus: #b42318; /* classic red-letter for the words of Christ */
 
   --surface-blur: rgba(251, 251, 251, 0.86); /* frosted bars */
   --check-border: #c9c9c4;
@@ -47,6 +48,7 @@
   --accent: #8fa8d4;
   --accent-press: #a8bde0;
   --success: #7fb08c;
+  --words-of-jesus: #f07167;
 
   --surface-blur: rgba(21, 24, 29, 0.82);
   --check-border: #464c57;

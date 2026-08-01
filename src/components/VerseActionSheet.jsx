@@ -1,12 +1,32 @@
 import { useEffect, useState } from 'react';
 import { HIGHLIGHT_COLORS } from '../hooks/useAnnotations';
 
+function VersePreview({ text, segments }) {
+  if (segments?.length) {
+    return (
+      <p className="sheet-verse-text">
+        {segments.map((seg, i) =>
+          seg.wordsOfJesus ? (
+            <span key={i} className="words-of-jesus">
+              {seg.text}
+            </span>
+          ) : (
+            <span key={i}>{seg.text}</span>
+          )
+        )}
+      </p>
+    );
+  }
+  return <p className="sheet-verse-text">{text}</p>;
+}
+
 export default function VerseActionSheet({
   verse,
   highlight,
   note,
   onHighlight,
   onSaveNote,
+  onOpenPassage,
   onClose,
 }) {
   const [noteOpen, setNoteOpen] = useState(Boolean(note));
@@ -31,6 +51,8 @@ export default function VerseActionSheet({
     onClose();
   };
 
+  const refs = verse.crossRefs || [];
+
   return (
     <>
       <div className="sheet-scrim" onClick={onClose} />
@@ -46,7 +68,7 @@ export default function VerseActionSheet({
           </button>
         </div>
 
-        <p className="sheet-verse-text">{verse.text}</p>
+        <VersePreview text={verse.text} segments={verse.segments} />
 
         <div className="swatches">
           {HIGHLIGHT_COLORS.map((c) => (
@@ -110,6 +132,27 @@ export default function VerseActionSheet({
             </svg>
             Add note
           </button>
+        )}
+
+        {refs.length > 0 && (
+          <div className="xref-section">
+            <h5 className="xref-heading">Cross references</h5>
+            <div className="xref-list">
+              {refs.map((r) => (
+                <button
+                  key={r.label}
+                  type="button"
+                  className="xref-link"
+                  onClick={() => {
+                    onOpenPassage?.({ book: r.book, chapter: r.chapter, verse: r.verse });
+                    onClose();
+                  }}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </>

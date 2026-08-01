@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { colorValue, verseId } from '../hooks/useAnnotations';
 import { useVerseAnnotations } from '../context/annotations';
+import { BOOK_BY_CODE, HELLOAO_CODES, formatRef } from '../data/bookRefs';
 import Commentary from './Commentary';
 import DrawCanvas from './DrawCanvas';
 
@@ -16,44 +17,129 @@ const INK_COLORS = [
 export const TRANSLATION = 'web';
 export const TRANSLATION_LABEL = 'WEB';
 
+/** helloao.org id for WEB — includes wordsOfJesus markup for red-letter text. */
+const HELLOAO_TRANSLATION = 'ENGWEBP';
+
+/** Cap how many cross-refs we surface per verse (dataset can have 30+). */
+const MAX_CROSS_REFS = 10;
+
 const textCache = new Map();
+const xrefCache = new Map();
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function fetchChapter(book, chapter) {
-  const reference = `${book} ${chapter}`;
-  const cacheKey = `${TRANSLATION}|${reference}`;
-  if (textCache.has(cacheKey)) return textCache.get(cacheKey);
+/** Turn helloao verse content into plain text + red-letter segments. */
+function parseVerseContent(content) {
+  const segments = [];
+  for (const part of content || []) {
+    let text = null;
+    let wordsOfJesus = false;
+    if (typeof part === 'string') {
+      text = part.replace(/\s*\n\s*/g, ' ');
+    } else if (part?.text) {
+      text = String(part.text).replace(/\s*\n\s*/g, ' ');
+      wordsOfJesus = Boolean(part.wordsOfJesus);
+    }
+    // noteId / other markers are skipped — footnotes aren't shown yet.
+    if (!text) continue;
 
-  const url = `https://bible-api.com/${encodeURIComponent(reference)}?translation=${TRANSLATION}`;
+    // helloao splits speech tags from dialogue without a joining space
+    // ("Jesus answered him," + "“Most…"), so insert one when needed.
+    if (segments.length) {
+      const prev = segments[segments.length - 1].text;
+      if (!/\s$/.test(prev) && !/^\s|^[,.;:!?…”']/.test(text)) {
+        text = ` ${text}`;
+      }
+    }
+    segments.push({ text, wordsOfJesus });
+  }
+  const text = segments
+    .map((s) => s.text)
+    .join('')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return { segments, text };
+}
 
-  // bible-api.com throttles bursts, so back off and retry rather than failing
-  // the whole passage on one dropped chapter.
+async function fetchJson(url) {
   let lastErr;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const res = await fetch(url);
       if (!res.ok) throw new Error(`${res.status}`);
-      const data = await res.json();
-      const result = {
-        book,
-        chapter,
-        heading: reference,
-        verses: data.verses.map((v) => ({
-          number: v.verse,
-          // The API preserves poetry line breaks; flow them as prose the way a
-          // chapter view reads.
-          text: v.text.replace(/\s*\n\s*/g, ' ').trim(),
-        })),
-      };
-      textCache.set(cacheKey, result);
-      return result;
+      if (!(res.headers.get('content-type') || '').includes('json')) {
+        throw new Error('bad response');
+      }
+      return await res.json();
     } catch (err) {
       lastErr = err;
       await sleep(400 * (attempt + 1));
     }
   }
-  throw new Error(`Couldn't load ${reference} (${lastErr.message})`);
+  throw lastErr;
+}
+
+async function fetchChapter(book, chapter) {
+  const reference = `${book} ${chapter}`;
+  const cacheKey = `${HELLOAO_TRANSLATION}|${reference}`;
+  if (textCache.has(cacheKey)) return textCache.get(cacheKey);
+
+  const code = HELLOAO_CODES[book];
+  if (!code) throw new Error(`Unknown book: ${book}`);
+
+  const data = await fetchJson(
+    `https://bible.helloao.org/api/${HELLOAO_TRANSLATION}/${code}/${chapter}.json`
+  );
+
+  const verses = (data.chapter?.content || [])
+    .filter((item) => item.type === 'verse')
+    .map((v) => {
+      const { segments, text } = parseVerseContent(v.content);
+      return { number: v.number, segments, text };
+    });
+
+  const result = { book, chapter, heading: reference, verses };
+  textCache.set(cacheKey, result);
+  return result;
+}
+
+/**
+ * OpenBible.info cross-refs via helloao's open-cross-ref dataset.
+ * Returns a map of verse number → top scored references.
+ */
+async function fetchCrossRefs(book, chapter) {
+  const cacheKey = `${book}|${chapter}`;
+  if (xrefCache.has(cacheKey)) return xrefCache.get(cacheKey);
+
+  const code = HELLOAO_CODES[book];
+  if (!code) return {};
+
+  try {
+    const data = await fetchJson(
+      `https://bible.helloao.org/api/d/open-cross-ref/${code}/${chapter}.json`
+    );
+    const byVerse = {};
+    for (const entry of data.chapter?.content || []) {
+      const refs = (entry.references || [])
+        .filter((r) => BOOK_BY_CODE[r.book]) // 66-book canon only
+        .sort((a, b) => (b.score || 0) - (a.score || 0))
+        .slice(0, MAX_CROSS_REFS)
+        .map((r) => ({
+          book: BOOK_BY_CODE[r.book],
+          chapter: r.chapter,
+          verse: r.verse,
+          endVerse: r.endVerse,
+          label: formatRef(r),
+        }));
+      if (refs.length) byVerse[entry.verse] = refs;
+    }
+    xrefCache.set(cacheKey, byVerse);
+    return byVerse;
+  } catch {
+    // Cross-refs are additive — don't fail the whole chapter if they're down.
+    xrefCache.set(cacheKey, {});
+    return {};
+  }
 }
 
 /**
@@ -103,7 +189,23 @@ function NoteFlag({ note }) {
   );
 }
 
-function ReaderChapter({ part, highlights, notes, onSelectVerse }) {
+function VerseText({ segments }) {
+  return (
+    <span className="verse-content">
+      {segments.map((seg, i) =>
+        seg.wordsOfJesus ? (
+          <span key={i} className="words-of-jesus">
+            {seg.text}
+          </span>
+        ) : (
+          <span key={i}>{seg.text}</span>
+        )
+      )}
+    </span>
+  );
+}
+
+function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
   const [showCommentary, setShowCommentary] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [drawing, setDrawing] = useState(false);
@@ -122,7 +224,15 @@ function ReaderChapter({ part, highlights, notes, onSelectVerse }) {
     .map((v) => {
       const id = verseId(part.book, part.chapter, v.number);
       return notes[id]
-        ? { id, number: v.number, text: v.text, note: notes[id], color: colorValue(highlights[id]) }
+        ? {
+            id,
+            number: v.number,
+            text: v.text,
+            segments: v.segments,
+            note: notes[id],
+            color: colorValue(highlights[id]),
+            crossRefs: crossRefs[v.number] || [],
+          }
         : null;
     })
     .filter(Boolean);
@@ -140,23 +250,42 @@ function ReaderChapter({ part, highlights, notes, onSelectVerse }) {
           const id = verseId(part.book, part.chapter, v.number);
           const color = colorValue(highlights[id]);
           const hasNote = Boolean(notes[id]);
+          const refs = crossRefs[v.number] || [];
           return (
             <span
               key={v.number}
-              className={`verse${hasNote ? ' has-note' : ''}`}
+              id={`v-${part.book.replace(/\s+/g, '-')}-${part.chapter}-${v.number}`}
+              className={`verse${hasNote ? ' has-note' : ''}${refs.length ? ' has-xrefs' : ''}`}
               style={color ? { background: color } : undefined}
-              onClick={() => onSelectVerse({ id, text: v.text })}
+              onClick={() =>
+                onSelectVerse({
+                  id,
+                  text: v.text,
+                  segments: v.segments,
+                  crossRefs: refs,
+                })
+              }
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  onSelectVerse({ id, text: v.text });
+                  onSelectVerse({
+                    id,
+                    text: v.text,
+                    segments: v.segments,
+                    crossRefs: refs,
+                  });
                 }
               }}
             >
               <span className="verse-number">{v.number}</span>
-              <span className="verse-content">{v.text}</span>
+              <VerseText segments={v.segments} />
+              {refs.length > 0 && (
+                <span className="xref-marker" title={`${refs.length} cross references`} aria-hidden="true">
+                  †
+                </span>
+              )}
               {hasNote && <NoteFlag note={notes[id]} />}{' '}
             </span>
           );
@@ -281,7 +410,14 @@ function ReaderChapter({ part, highlights, notes, onSelectVerse }) {
               key={n.id}
               type="button"
               className="chapter-note"
-              onClick={() => onSelectVerse({ id: n.id, text: n.text })}
+              onClick={() =>
+                onSelectVerse({
+                  id: n.id,
+                  text: n.text,
+                  segments: n.segments,
+                  crossRefs: n.crossRefs,
+                })
+              }
             >
               <span className="chapter-note-num">{n.number}</span>
               <span className="chapter-note-text">{n.note}</span>
@@ -302,29 +438,37 @@ function ReaderChapter({ part, highlights, notes, onSelectVerse }) {
   );
 }
 
-export default function PassageText({ chapters }) {
+export default function PassageText({ chapters, focusVerse }) {
   const { highlights, notes, onSelectVerse } = useVerseAnnotations();
   const [parts, setParts] = useState([]);
+  const [xrefs, setXrefs] = useState({});
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     setParts([]);
+    setXrefs({});
     setError(null);
     setLoading(true);
 
     (async () => {
       const loaded = [];
+      const xrefMap = {};
       for (const c of chapters) {
         try {
-          const part = await fetchChapter(c.book, c.chapter);
+          const [part, refs] = await Promise.all([
+            fetchChapter(c.book, c.chapter),
+            fetchCrossRefs(c.book, c.chapter),
+          ]);
           if (cancelled) return;
           loaded.push(part);
+          xrefMap[part.heading] = refs;
           setParts([...loaded]);
+          setXrefs({ ...xrefMap });
         } catch (err) {
           if (cancelled) return;
-          setError(err.message);
+          setError(err.message?.startsWith("Couldn't") ? err.message : `Couldn't load ${c.book} ${c.chapter}`);
           break;
         }
       }
@@ -336,12 +480,27 @@ export default function PassageText({ chapters }) {
     };
   }, [chapters]);
 
+  // Scroll a jumped-to verse into view once its chapter has loaded.
+  useEffect(() => {
+    if (!focusVerse?.book || !focusVerse?.chapter || !focusVerse?.verse) return;
+    if (loading) return;
+    const id = `v-${focusVerse.book.replace(/\s+/g, '-')}-${focusVerse.chapter}-${focusVerse.verse}`;
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('verse-flash');
+      const t = setTimeout(() => el.classList.remove('verse-flash'), 1600);
+      return () => clearTimeout(t);
+    }
+  }, [focusVerse, parts, loading]);
+
   return (
     <div className="reader">
       {parts.map((part) => (
         <ReaderChapter
           key={part.heading}
           part={part}
+          crossRefs={xrefs[part.heading] || {}}
           highlights={highlights}
           notes={notes}
           onSelectVerse={onSelectVerse}

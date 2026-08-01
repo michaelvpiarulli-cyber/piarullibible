@@ -11,9 +11,10 @@ const NAME_BY_ID = new Map(BOOKS.map((b) => [bollsBookId(b.name), b.name]));
 
 const clean = (s) => (s || '').replace(/<[^>]+>/g, '').replace(/[⌃⌄]/g, '').trim();
 
-export default function ReadView() {
+export default function ReadView({ jumpTo, onJumpConsumed }) {
   const [book, setBook] = useState(null);
   const [chapter, setChapter] = useState(null);
+  const [focusVerse, setFocusVerse] = useState(null);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState(null);
   const [searching, setSearching] = useState(false);
@@ -31,6 +32,17 @@ export default function ReadView() {
       /* ignore */
     }
   }, []);
+
+  // Cross-ref (or other) jumps land here — open the chapter and scroll to the verse.
+  useEffect(() => {
+    if (!jumpTo?.book || !jumpTo?.chapter) return;
+    setBook(jumpTo.book);
+    setChapter(jumpTo.chapter);
+    setFocusVerse(jumpTo);
+    setResults(null);
+    setQuery('');
+    onJumpConsumed?.();
+  }, [jumpTo, onJumpConsumed]);
 
   useEffect(() => {
     if (book && chapter) {
@@ -104,7 +116,12 @@ export default function ReadView() {
         </div>
 
         <div className="read-flow">
-          <PassageText chapters={chapters} />
+          <PassageText
+            chapters={chapters}
+            focusVerse={
+              focusVerse?.book === book && focusVerse?.chapter === chapter ? focusVerse : null
+            }
+          />
         </div>
 
         <div className="day-pager">

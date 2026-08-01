@@ -805,6 +805,34 @@
   margin-right: 3px;
 }
 
+.words-of-jesus {
+  color: var(--words-of-jesus);
+}
+
+.xref-marker {
+  font-size: 12px;
+  color: var(--accent);
+  vertical-align: super;
+  line-height: 0;
+  margin-left: 2px;
+  opacity: 0.75;
+}
+
+.verse-flash {
+  animation: verse-flash 1.6s ease;
+}
+
+@keyframes verse-flash {
+  0%,
+  100% {
+    background-color: transparent;
+  }
+  20%,
+  55% {
+    background-color: var(--today-tint);
+  }
+}
+
 .note-flag-wrap {
   cursor: pointer;
 }
@@ -1582,6 +1610,8 @@
   left: 0;
   right: 0;
   bottom: 0;
+  max-height: min(85vh, 640px);
+  overflow-y: auto;
   background: var(--surface);
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
@@ -1644,6 +1674,52 @@
   color: var(--text-dim);
   max-height: 4.8em;
   overflow: hidden;
+}
+
+.sheet-verse-text .words-of-jesus {
+  color: var(--words-of-jesus);
+}
+
+.xref-section {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.xref-heading {
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.xref-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 9.5rem;
+  overflow-y: auto;
+  padding-bottom: 2px;
+}
+
+.xref-link {
+  background: var(--surface-alt);
+  color: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 11px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.2;
+  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.xref-link:hover {
+  background: var(--today-tint);
+  border-color: var(--accent);
+  color: var(--accent-press);
 }
 
 .swatches {

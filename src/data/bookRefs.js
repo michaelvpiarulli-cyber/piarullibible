@@ -11,7 +11,7 @@ export const bollsBookId = (name) => bookNumbers.get(name);
 /** Books 1–39 are the Hebrew scriptures; 40–66 are the Greek New Testament. */
 export const isOldTestament = (name) => bollsBookId(name) <= 39;
 
-/** USFM codes, as used by bible.helloao.org for commentaries. */
+/** USFM codes, as used by bible.helloao.org for commentaries and chapter text. */
 export const HELLOAO_CODES = {
   Genesis: 'GEN', Exodus: 'EXO', Leviticus: 'LEV', Numbers: 'NUM', Deuteronomy: 'DEU',
   Joshua: 'JOS', Judges: 'JDG', Ruth: 'RUT', '1 Samuel': '1SA', '2 Samuel': '2SA',
@@ -28,3 +28,15 @@ export const HELLOAO_CODES = {
   James: 'JAS', '1 Peter': '1PE', '2 Peter': '2PE', '1 John': '1JN', '2 John': '2JN',
   '3 John': '3JN', Jude: 'JUD', Revelation: 'REV',
 };
+
+/** Reverse lookup: USFM code → book name (e.g. JHN → John). */
+export const BOOK_BY_CODE = Object.fromEntries(
+  Object.entries(HELLOAO_CODES).map(([name, code]) => [code, name])
+);
+
+/** Format a cross-ref for display: "Romans 5:8" or "1 John 4:9–10". */
+export function formatRef(ref) {
+  const name = BOOK_BY_CODE[ref.book] || ref.book;
+  const end = ref.endVerse && ref.endVerse !== ref.verse ? `–${ref.endVerse}` : '';
+  return `${name} ${ref.chapter}:${ref.verse}${end}`;
+}
