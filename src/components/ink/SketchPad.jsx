@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { PAGE_RATIO, pagesNeededForInk } from './padMetrics';
 import { paintStroke, pressureOf, r3, strokeNear } from './strokes';
+
+export { PAGE_RATIO, pagesNeededForInk } from './padMetrics';
 
 const INKS = [
   { id: 'ink', value: '#2e2e2e', label: 'Black' },
@@ -14,27 +17,41 @@ const NIBS = [
   { id: 'bold', label: 'Bold', width: 0.011 },
 ];
 
-/** Aspect ratio of one page of the pad (height ÷ width). */
-const PAGE_RATIO = 1.15;
-
 /** True stylus / Apple Pencil. Fingers are `touch`; desktop testing keeps `mouse`. */
 function isInkPointer(e) {
   return e.pointerType === 'pen' || e.pointerType === 'mouse';
+}
+
+function scaleStrokeY(stroke, scale) {
+  return {
+    ...stroke,
+    points: stroke.points.map(([x, y, press]) => [x, r3(y * scale), press ?? 0.5]),
+  };
 }
 
 /**
  * A ruled handwriting surface for Apple Pencil (and mouse on desktop).
  * Fingers only scroll — they never ink, so a resting palm won't freak out the page.
  *
- * Controlled: `strokes` in, `onChange` out, so the ink saves with whatever
- * record owns it (a sermon) rather than to its own storage.
+ * Controlled: `strokes` / `pages` in, `onChange` / `onPagesChange` out, so the
+ * ink and extra ruled space save with the sermon.
  */
-export default function SketchPad({ strokes, onChange, expanded = false }) {
+export default function SketchPad({
+  strokes,
+  onChange,
+  pages: pagesProp,
+  onPagesChange,
+  expanded = false,
+}) {
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
+  const sheetRef = useRef(null);
 
   const [tool, setTool] = useState({ mode: 'pen', color: INKS[0].value, width: NIBS[0].width });
-  const [pages, setPages] = useState(1);
+  const [pagesLocal, setPagesLocal] = useState(() => pagesNeededForInk(strokes, 1));
+
+  const controlled = typeof pagesProp === 'number' && pagesProp >= 1;
+  const pages = controlled ? pagesProp : pagesLocal;
 
   const strokesRef = useRef(strokes);
   strokesRef.current = strokes;
@@ -42,16 +59,45 @@ export default function SketchPad({ strokes, onChange, expanded = false }) {
   const activePointerRef = useRef(null); // only this pointer may extend/end the stroke
   const toolRef = useRef(tool);
   toolRef.current = tool;
+  const pagesRef = useRef(pages);
+  pagesRef.current = pages;
+
+  /**
+   * Grow the ruled pad. Because stroke y is normalized to the full canvas,
+   * existing ink must be rescaled so it stays put when height increases.
+   */
+  const growPages = useCallback(
+    (target) => {
+      const current = pagesRef.current;
+      const next = Math.max(1, target);
+      if (next === current) return;
+
+      if (next > current) {
+        const scale = current / next;
+        if (draftRef.current) draftRef.current = scaleStrokeY(draftRef.current, scale);
+        if (strokesRef.current.length) {
+          onChange(strokesRef.current.map((s) => scaleStrokeY(s, scale)));
+        }
+      }
+
+      pagesRef.current = next;
+      if (onPagesChange) onPagesChange(next);
+      if (!controlled) setPagesLocal(next);
+    },
+    [controlled, onChange, onPagesChange]
+  );
+
+  // Keep local pages in sync when the parent loads a different note.
+  useEffect(() => {
+    if (controlled) return;
+    setPagesLocal((prev) => pagesNeededForInk(strokes, prev));
+  }, [strokes, controlled]);
 
   // Grow the pad automatically if ink approaches the bottom.
   useEffect(() => {
-    const lowest = strokes.reduce(
-      (max, s) => Math.max(max, ...s.points.map((p) => p[1])),
-      0
-    );
-    const needed = Math.ceil((lowest + 0.06) / (1 / Math.max(pages, 1)));
-    if (Number.isFinite(needed) && needed > pages) setPages(needed);
-  }, [strokes, pages]);
+    const needed = pagesNeededForInk(strokes, pages);
+    if (needed > pages) growPages(needed);
+  }, [strokes, pages, growPages]);
 
   const redraw = useCallback(() => {
     const c = canvasRef.current;
@@ -161,6 +207,8 @@ export default function SketchPad({ strokes, onChange, expanded = false }) {
   const onPointerMove = (e) => {
     if (activePointerRef.current !== e.pointerId) return;
     if (!e.buttons) return;
+    // Keep Pencil strokes from scrolling the page underneath.
+    e.preventDefault();
     const { x, y } = toNorm(e);
     if (toolRef.current.mode === 'erase') return eraseAt(x, y);
     const d = draftRef.current;
@@ -171,10 +219,30 @@ export default function SketchPad({ strokes, onChange, expanded = false }) {
     redraw();
   };
 
+  const addSpace = () => {
+    growPages(pagesRef.current + 1);
+    // After layout, scroll so the new ruled area is visible.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const sheet = sheetRef.current;
+        if (!sheet) return;
+        const scroller =
+          sheet.closest('.notes-overlay-body') ||
+          sheet.closest('.app-main') ||
+          sheet.parentElement;
+        if (scroller && typeof scroller.scrollTo === 'function') {
+          scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' });
+        } else {
+          sheet.scrollIntoView({ block: 'end', behavior: 'smooth' });
+        }
+      });
+    });
+  };
+
   return (
     <div className={`sketch${expanded ? ' expanded' : ''}`}>
       <div className="ink-bar">
-        <div className="ink-group">
+        <div className="ink-group" role="group" aria-label="Ink color">
           {INKS.map((c) => (
             <button
               key={c.id}
@@ -189,7 +257,7 @@ export default function SketchPad({ strokes, onChange, expanded = false }) {
           ))}
         </div>
 
-        <div className="ink-group">
+        <div className="ink-group" role="group" aria-label="Pen size">
           {NIBS.map((n) => (
             <button
               key={n.id}
@@ -225,28 +293,26 @@ export default function SketchPad({ strokes, onChange, expanded = false }) {
         <p className="sketch-hint">Apple Pencil only — rest your hand; fingers just scroll.</p>
       )}
 
-      <div
-        ref={wrapRef}
-        className="sketch-page"
-        style={
-          expanded
-            ? undefined
-            : { paddingBottom: `${PAGE_RATIO * 100 * pages}%` }
-        }
-      >
-        <canvas
-          ref={canvasRef}
-          className="sketch-canvas"
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={endStroke}
-          onPointerCancel={endStroke}
-        />
-      </div>
+      <div className="sketch-sheet" ref={sheetRef}>
+        <div
+          ref={wrapRef}
+          className="sketch-page"
+          style={{ paddingBottom: `${PAGE_RATIO * 100 * pages}%` }}
+        >
+          <canvas
+            ref={canvasRef}
+            className="sketch-canvas"
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={endStroke}
+            onPointerCancel={endStroke}
+          />
+        </div>
 
-      <button type="button" className="ink-tool add-page" onClick={() => setPages(pages + 1)}>
-        Add space
-      </button>
+        <button type="button" className="btn-secondary add-page" onClick={addSpace}>
+          Add space below
+        </button>
+      </div>
     </div>
   );
 }

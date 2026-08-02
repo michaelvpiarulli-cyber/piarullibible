@@ -1016,12 +1016,13 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  gap: 8px 14px;
-  margin-top: 14px;
+  justify-content: flex-start;
+  gap: 8px 12px;
+  margin-top: 0;
   padding: 10px 12px;
-  background: var(--surface-alt);
-  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 92%, var(--accent-soft));
+  border: 1px solid var(--border);
+  border-radius: 14px;
 }
 
 .ink-group {
@@ -1031,20 +1032,21 @@
 }
 
 .ink-swatch {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   border: 2px solid transparent;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
   padding: 0;
-  transition: transform 0.12s, border-color 0.12s;
+  transition: transform 0.12s, box-shadow 0.12s;
 }
 
 .ink-swatch:hover {
-  transform: scale(1.1);
+  transform: scale(1.08);
 }
 
 .ink-swatch.active {
-  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
 }
 
 .ink-tool {
@@ -1055,6 +1057,7 @@
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--text);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .ink-tool:hover {
@@ -3306,11 +3309,22 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-.notes-overlay-body .sketch {
-  flex: 1;
-  min-height: 0;
+/* Handwrite mode: body scrolls so fingers can pan a tall pad. */
+.notes-overlay-body.is-ink {
+  display: block;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  padding-bottom: 8px;
+}
+
+.notes-overlay-body.is-ink .sketch {
+  min-height: min-content;
 }
 
 .notes-overlay .notes-expand-textarea {
@@ -3337,17 +3351,18 @@
 
 .notes-overlay-foot {
   flex-shrink: 0;
-  padding-top: 2px;
+  padding-top: 4px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
 }
 
 .notes-overlay .ink-bar {
-  flex-shrink: 0;
-  justify-content: flex-start;
   position: sticky;
   top: 0;
-  z-index: 2;
-  background: var(--bg);
-  padding: 4px 0;
+  z-index: 3;
+  margin-bottom: 10px;
+  background: color-mix(in srgb, var(--surface-blur) 88%, var(--accent-soft));
+  backdrop-filter: saturate(160%) blur(10px);
+  -webkit-backdrop-filter: saturate(160%) blur(10px);
 }
 
 .sketch {
@@ -3357,18 +3372,23 @@
 }
 
 .sketch.expanded {
-  flex: 1;
-  min-height: 0;
+  gap: 0;
+}
+
+.sketch-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* Ruled paper. padding-bottom sets the height as a ratio of the width, so the
-   page keeps its proportions as the pad grows. */
+   page keeps its proportions as the pad grows — including in fullscreen. */
 .sketch-page {
   position: relative;
   width: 100%;
   height: 0;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   background-color: var(--surface);
   background-image: repeating-linear-gradient(
@@ -3378,20 +3398,18 @@
     var(--border) 33px,
     var(--border) 34px
   );
-  /* Prevent iOS from hijacking Pencil/touch into page bounce. */
+  box-shadow: var(--shadow-lift);
+  /* Fingers pan the scroll parent; Pencil is handled in JS. */
   touch-action: pan-y;
 }
 
 .sketch.expanded .sketch-page {
-  flex: 1;
-  height: auto;
-  min-height: 0;
-  padding-bottom: 0 !important;
-  border-radius: 12px;
+  border-radius: 14px;
 }
 
 .sketch-page.preview {
   margin-bottom: 12px;
+  box-shadow: none;
 }
 
 .sketch-canvas {
@@ -3403,8 +3421,9 @@
 
 .sketch-hint {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: var(--text-dim);
+  letter-spacing: 0.01em;
 }
 
 .sketch-page.preview .sketch-canvas {
@@ -3418,7 +3437,10 @@
 }
 
 .add-page {
-  align-self: center;
+  align-self: stretch;
+  width: 100%;
+  border-radius: 12px;
+  padding: 11px 16px;
 }
 
 .ink-badge {

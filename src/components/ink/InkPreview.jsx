@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { PAGE_RATIO, pagesNeededForInk } from './padMetrics';
 import { paintStroke } from './strokes';
 
 /** Read-only rendering of saved handwriting, sized to fit its container. */
-export default function InkPreview({ strokes, ratio = 1.15 }) {
+export default function InkPreview({ strokes, pages: pagesProp, ratio = PAGE_RATIO }) {
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
 
@@ -43,9 +44,7 @@ export default function InkPreview({ strokes, ratio = 1.15 }) {
 
   if (!strokes || !strokes.length) return null;
 
-  // Only show as much page as the ink actually uses.
-  const lowest = strokes.reduce((max, s) => Math.max(max, ...s.points.map((p) => p[1])), 0);
-  const pages = Math.max(1, Math.ceil((lowest + 0.04) / 1));
+  const pages = Math.max(1, pagesProp || pagesNeededForInk(strokes, 1));
 
   return (
     <div

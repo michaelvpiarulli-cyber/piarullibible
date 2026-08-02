@@ -11,6 +11,7 @@ import {
 } from '../lib/subsplash';
 import SketchPad from './ink/SketchPad';
 import InkPreview from './ink/InkPreview';
+import { pagesNeededForInk } from './ink/padMetrics';
 
 const BLANK = {
   title: '',
@@ -24,6 +25,7 @@ const BLANK = {
   notes: '',
   takeaway: '',
   ink: [],
+  inkPages: 1,
   starred: false,
   sourceUrl: '',
 };
@@ -139,7 +141,13 @@ export default function SermonView() {
   const field = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   const applyImport = (fields) => {
-    setForm({ ...BLANK, ...fields, ink: fields.ink || [] });
+    const ink = fields.ink || [];
+    setForm({
+      ...BLANK,
+      ...fields,
+      ink,
+      inkPages: fields.inkPages || pagesNeededForInk(ink, 1),
+    });
     setEditingId(null);
     setMode('type');
     setComposing(true);
@@ -169,6 +177,7 @@ export default function SermonView() {
   };
 
   const startEdit = (s) => {
+    const ink = s.ink || [];
     setForm({
       title: s.title || '',
       speaker: s.speaker || '',
@@ -180,7 +189,8 @@ export default function SermonView() {
       tagsText: tagsToText(s.tags),
       notes: s.notes || '',
       takeaway: s.takeaway || '',
-      ink: s.ink || [],
+      ink,
+      inkPages: s.inkPages || pagesNeededForInk(ink, 1),
       starred: Boolean(s.starred),
       sourceUrl: s.sourceUrl || '',
     });
@@ -250,6 +260,7 @@ export default function SermonView() {
       notes: form.notes,
       takeaway: form.takeaway,
       ink: form.ink || [],
+      inkPages: Math.max(1, form.inkPages || pagesNeededForInk(form.ink || [], 1)),
       starred: Boolean(form.starred),
       sourceUrl: form.sourceUrl || '',
     };
@@ -508,6 +519,8 @@ export default function SermonView() {
                 <SketchPad
                   strokes={form.ink || []}
                   onChange={(ink) => setForm((f) => ({ ...f, ink }))}
+                  pages={form.inkPages || 1}
+                  onPagesChange={(inkPages) => setForm((f) => ({ ...f, inkPages }))}
                 />
               )}
             </div>
@@ -546,7 +559,7 @@ export default function SermonView() {
                   </div>
                 </header>
 
-                <div className="notes-overlay-body">
+                <div className={`notes-overlay-body${mode === 'write' ? ' is-ink' : ''}`}>
                   {mode === 'type' ? (
                     <textarea
                       value={form.notes}
@@ -559,6 +572,8 @@ export default function SermonView() {
                     <SketchPad
                       strokes={form.ink || []}
                       onChange={(ink) => setForm((f) => ({ ...f, ink }))}
+                      pages={form.inkPages || 1}
+                      onPagesChange={(inkPages) => setForm((f) => ({ ...f, inkPages }))}
                       expanded
                     />
                   )}
@@ -567,7 +582,7 @@ export default function SermonView() {
                 <footer className="notes-overlay-foot">
                   <p className="sketch-hint">
                     {mode === 'write'
-                      ? 'Apple Pencil only — rest your hand; fingers just scroll.'
+                      ? 'Apple Pencil writes · fingers scroll the page'
                       : 'Done or Escape to leave full screen.'}
                   </p>
                 </footer>
@@ -882,7 +897,9 @@ export default function SermonView() {
                       </div>
                     )}
 
-                    {s.ink?.length > 0 && <InkPreview strokes={s.ink} />}
+                    {s.ink?.length > 0 && (
+                      <InkPreview strokes={s.ink} pages={s.inkPages || pagesNeededForInk(s.ink, 1)} />
+                    )}
                     {s.notes && <p className="sermon-notes">{s.notes}</p>}
                     {s.takeaway && (
                       <div className="sermon-takeaway">

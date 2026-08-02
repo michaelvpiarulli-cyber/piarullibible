@@ -6,7 +6,7 @@ import { useData } from '../context/DataProvider';
  *
  * A sermon is {
  *   id, title, speaker, date, passage, series, church, tags[], folderId,
- *   notes, takeaway, ink[], starred, sourceUrl, createdAt
+ *   notes, takeaway, ink[], inkPages, starred, sourceUrl, createdAt
  * }.
  * A folder is { id, name, createdAt }.
  */
@@ -29,6 +29,7 @@ export function useSermons() {
           notes: '',
           takeaway: '',
           ink: [],
+          inkPages: 1,
           starred: false,
           sourceUrl: '',
           date: new Date().toISOString().slice(0, 10),
