@@ -204,14 +204,6 @@ export default function SketchPad({ strokes, onChange }) {
           >
             Undo
           </button>
-          <button
-            type="button"
-            className="ink-tool"
-            onClick={() => onChange([])}
-            disabled={!strokes.length}
-          >
-            Clear
-          </button>
         </div>
       </div>
 
