@@ -4,9 +4,11 @@ import { useData } from '../context/DataProvider';
 /**
  * Sermon notes. Stored in the shared data store so they sync to the account.
  *
- * A sermon is { id, title, speaker, date, passage, notes, takeaway, createdAt }.
- * Only `notes` is really required — everything else is optional so jotting
- * something down mid-service is never blocked by empty fields.
+ * A sermon is {
+ *   id, title, speaker, date, passage, series, church, tags[],
+ *   notes, takeaway, ink[], starred, createdAt
+ * }.
+ * Only some text or ink is required — empty fields never block a quick jot.
  */
 export function useSermons() {
   const { sermons, setSermons } = useData();
@@ -20,8 +22,13 @@ export function useSermons() {
           title: '',
           speaker: '',
           passage: '',
+          series: '',
+          church: '',
+          tags: [],
           notes: '',
           takeaway: '',
+          ink: [],
+          starred: false,
           date: new Date().toISOString().slice(0, 10),
           createdAt: new Date().toISOString(),
           ...fields,
@@ -40,10 +47,19 @@ export function useSermons() {
     [setSermons]
   );
 
+  const toggleStar = useCallback(
+    (id) => {
+      setSermons((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, starred: !s.starred } : s))
+      );
+    },
+    [setSermons]
+  );
+
   const removeSermon = useCallback(
     (id) => setSermons((prev) => prev.filter((s) => s.id !== id)),
     [setSermons]
   );
 
-  return { sermons, addSermon, updateSermon, removeSermon };
+  return { sermons, addSermon, updateSermon, toggleStar, removeSermon };
 }

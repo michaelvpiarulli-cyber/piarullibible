@@ -40,3 +40,27 @@ export function formatRef(ref) {
   const end = ref.endVerse && ref.endVerse !== ref.verse ? `–${ref.endVerse}` : '';
   return `${name} ${ref.chapter}:${ref.verse}${end}`;
 }
+
+/**
+ * Parse a free-form passage string like "Romans 8:1–11" or "1 John 4".
+ * Returns { book, chapter, verse } or null if it can't match a canon book.
+ */
+export function parsePassage(input) {
+  const raw = (input || '').trim();
+  if (!raw) return null;
+
+  // Longest names first so "1 John" wins over "John", "Song of Solomon" over "Song".
+  const names = [...BOOKS.map((b) => b.name)].sort((a, b) => b.length - a.length);
+  const lower = raw.toLowerCase();
+  const book = names.find((n) => lower.startsWith(n.toLowerCase()));
+  if (!book) return null;
+
+  const rest = raw.slice(book.length).trim().replace(/^[\s.:]+/, '');
+  const m = rest.match(/^(\d+)(?:\s*[:.]\s*(\d+))?/);
+  if (!m) return { book, chapter: 1, verse: 1 };
+  return {
+    book,
+    chapter: Number(m[1]),
+    verse: m[2] ? Number(m[2]) : 1,
+  };
+}

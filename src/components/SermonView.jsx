@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSermons } from '../hooks/useSermons';
+import { useVerseAnnotations } from '../context/annotations';
+import { parsePassage } from '../data/bookRefs';
 import SketchPad from './ink/SketchPad';
 import InkPreview from './ink/InkPreview';
 
@@ -8,10 +10,20 @@ const BLANK = {
   speaker: '',
   date: '',
   passage: '',
+  series: '',
+  church: '',
+  tagsText: '',
   notes: '',
   takeaway: '',
   ink: [],
+  starred: false,
 };
+
+const NOTE_SNIPPETS = [
+  { id: 'quote', label: 'Quote', text: 'Quote:\n“”\n\n' },
+  { id: 'apply', label: 'Apply', text: 'Application:\n\n' },
+  { id: 'pray', label: 'Pray', text: 'Prayer:\n\n' },
+];
 
 function pretty(dateStr) {
   if (!dateStr) return '';
@@ -21,21 +33,59 @@ function pretty(dateStr) {
     : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+function parseTags(text) {
+  return (text || '')
+    .split(/[,;]+/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+}
+
+function tagsToText(tags) {
+  return Array.isArray(tags) ? tags.join(', ') : '';
+}
+
+function sermonToClipboard(s) {
+  const lines = [
+    s.title || 'Untitled sermon',
+    [pretty(s.date), s.speaker, s.church].filter(Boolean).join(' · '),
+    s.series ? `Series: ${s.series}` : '',
+    s.passage ? `Passage: ${s.passage}` : '',
+    s.tags?.length ? `Tags: ${s.tags.join(', ')}` : '',
+    '',
+    s.notes || '',
+    s.takeaway ? `\nTakeaway: ${s.takeaway}` : '',
+    s.ink?.length ? '\n(Also has handwritten notes in the app.)' : '',
+  ];
+  return lines.filter((line, i) => line || i === 0).join('\n').trim();
+}
+
 export default function SermonView() {
-  const { sermons, addSermon, updateSermon, removeSermon } = useSermons();
+  const { sermons, addSermon, updateSermon, toggleStar, removeSermon } = useSermons();
+  const { onOpenPassage } = useVerseAnnotations();
 
   const [composing, setComposing] = useState(false);
   const [form, setForm] = useState({ ...BLANK, date: new Date().toISOString().slice(0, 10) });
   const [editingId, setEditingId] = useState(null);
   const [openId, setOpenId] = useState(null);
   const [query, setQuery] = useState('');
-  const [mode, setMode] = useState('write'); // write (Pencil) | type
+  const [filter, setFilter] = useState('all'); // all | starred | series:<name>
+  const [mode, setMode] = useState('type'); // which pane is focused: write | type
+  const [copiedId, setCopiedId] = useState(null);
 
   const field = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  const seriesList = useMemo(() => {
+    const set = new Set();
+    sermons.forEach((s) => {
+      if (s.series?.trim()) set.add(s.series.trim());
+    });
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [sermons]);
 
   const startNew = () => {
     setForm({ ...BLANK, date: new Date().toISOString().slice(0, 10) });
     setEditingId(null);
+    setMode('type');
     setComposing(true);
   };
 
@@ -45,11 +95,15 @@ export default function SermonView() {
       speaker: s.speaker || '',
       date: s.date || '',
       passage: s.passage || '',
+      series: s.series || '',
+      church: s.church || '',
+      tagsText: tagsToText(s.tags),
       notes: s.notes || '',
       takeaway: s.takeaway || '',
       ink: s.ink || [],
+      starred: Boolean(s.starred),
     });
-    setMode((s.ink || []).length && !s.notes ? 'write' : s.notes ? 'type' : 'write');
+    setMode((s.ink || []).length && !s.notes ? 'write' : 'type');
     setEditingId(s.id);
     setComposing(true);
   };
@@ -57,28 +111,86 @@ export default function SermonView() {
   const save = (e) => {
     e.preventDefault();
     const hasSomething =
-      form.notes.trim() || form.title.trim() || (form.ink && form.ink.length > 0);
+      form.notes.trim() || form.title.trim() || form.takeaway.trim() || (form.ink && form.ink.length > 0);
     if (!hasSomething) return;
-    if (editingId) updateSermon(editingId, form);
-    else addSermon(form);
+
+    const payload = {
+      title: form.title,
+      speaker: form.speaker,
+      date: form.date,
+      passage: form.passage,
+      series: form.series.trim(),
+      church: form.church.trim(),
+      tags: parseTags(form.tagsText),
+      notes: form.notes,
+      takeaway: form.takeaway,
+      ink: form.ink || [],
+      starred: Boolean(form.starred),
+    };
+
+    if (editingId) updateSermon(editingId, payload);
+    else addSermon(payload);
     setComposing(false);
     setEditingId(null);
   };
 
+  const insertSnippet = (snippet) => {
+    setMode('type');
+    setForm((f) => ({
+      ...f,
+      notes: f.notes ? `${f.notes.replace(/\s*$/, '')}\n\n${snippet.text}` : snippet.text,
+    }));
+  };
+
+  const openPassage = (passage) => {
+    const parsed = parsePassage(passage);
+    if (parsed) onOpenPassage?.(parsed);
+  };
+
+  const copySermon = async (s) => {
+    try {
+      await navigator.clipboard.writeText(sermonToClipboard(s));
+      setCopiedId(s.id);
+      setTimeout(() => setCopiedId((id) => (id === s.id ? null : id)), 1600);
+    } catch {
+      /* clipboard may be denied */
+    }
+  };
+
   const q = query.trim().toLowerCase();
-  const visible = q
-    ? sermons.filter((s) =>
-        [s.title, s.speaker, s.passage, s.notes, s.takeaway]
-          .filter(Boolean)
-          .some((v) => v.toLowerCase().includes(q))
-      )
-    : sermons;
+  const visible = sermons.filter((s) => {
+    if (filter === 'starred' && !s.starred) return false;
+    if (filter.startsWith('series:')) {
+      const name = filter.slice(7);
+      if ((s.series || '').trim() !== name) return false;
+    }
+    if (!q) return true;
+    return [s.title, s.speaker, s.passage, s.notes, s.takeaway, s.series, s.church, ...(s.tags || [])]
+      .filter(Boolean)
+      .some((v) => String(v).toLowerCase().includes(q));
+  });
+
+  const starredCount = sermons.filter((s) => s.starred).length;
 
   return (
     <div className="sermon-view">
       {composing ? (
         <form className="sermon-form" onSubmit={save}>
-          <p className="account-form-title">{editingId ? 'Edit notes' : 'New sermon notes'}</p>
+          <div className="sermon-form-head">
+            <p className="account-form-title">{editingId ? 'Edit notes' : 'New sermon notes'}</p>
+            <button
+              type="button"
+              className={`sermon-star-btn${form.starred ? ' on' : ''}`}
+              onClick={() => setForm((f) => ({ ...f, starred: !f.starred }))}
+              aria-pressed={form.starred}
+              aria-label={form.starred ? 'Unstar sermon' : 'Star sermon'}
+              title={form.starred ? 'Starred' : 'Star'}
+            >
+              <svg viewBox="0 0 24 24" fill={form.starred ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8">
+                <path d="m12 3.5 2.7 5.5 6 .9-4.4 4.3 1 6L12 17.3 6.7 20.2l1-6L3.3 9.9l6-.9Z" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
 
           <div className="sermon-fields">
             <input
@@ -101,16 +213,34 @@ export default function SermonView() {
               onChange={field('passage')}
               placeholder="Passage — e.g. Romans 8:1–11"
             />
+            <input
+              type="text"
+              value={form.series}
+              onChange={field('series')}
+              placeholder="Series (optional)"
+              list="sermon-series-list"
+            />
+            <input
+              type="text"
+              value={form.church}
+              onChange={field('church')}
+              placeholder="Church / gathering"
+            />
           </div>
+          <datalist id="sermon-series-list">
+            {seriesList.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
+
+          <input
+            type="text"
+            value={form.tagsText}
+            onChange={field('tagsText')}
+            placeholder="Tags — e.g. grace, Advent, prayer"
+          />
 
           <div className="mode-switch">
-            <button
-              type="button"
-              className={`chip${mode === 'write' ? ' active' : ''}`}
-              onClick={() => setMode('write')}
-            >
-              Handwrite
-            </button>
             <button
               type="button"
               className={`chip${mode === 'type' ? ' active' : ''}`}
@@ -118,20 +248,50 @@ export default function SermonView() {
             >
               Type
             </button>
+            <button
+              type="button"
+              className={`chip${mode === 'write' ? ' active' : ''}`}
+              onClick={() => setMode('write')}
+            >
+              Handwrite
+            </button>
           </div>
 
-          {mode === 'write' ? (
+          {mode === 'type' && (
+            <>
+              <div className="note-snippets">
+                {NOTE_SNIPPETS.map((snip) => (
+                  <button
+                    key={snip.id}
+                    type="button"
+                    className="snippet-chip"
+                    onClick={() => insertSnippet(snip)}
+                  >
+                    + {snip.label}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={form.notes}
+                onChange={field('notes')}
+                placeholder="Notes — quotes, outline, what the Spirit pressed on you…"
+                rows={10}
+              />
+            </>
+          )}
+
+          {mode === 'write' && (
             <SketchPad
               strokes={form.ink || []}
               onChange={(ink) => setForm((f) => ({ ...f, ink }))}
             />
-          ) : (
-            <textarea
-              value={form.notes}
-              onChange={field('notes')}
-              placeholder="Notes…"
-              rows={10}
-            />
+          )}
+
+          {(form.ink?.length > 0 || form.notes.trim()) && mode === 'type' && form.ink?.length > 0 && (
+            <p className="sermon-dual-hint">Handwritten page saved with these notes.</p>
+          )}
+          {mode === 'write' && form.notes.trim() && (
+            <p className="sermon-dual-hint">Typed notes are kept when you switch to handwriting.</p>
           )}
 
           <input
@@ -158,55 +318,141 @@ export default function SermonView() {
           </div>
         </form>
       ) : (
-        <div className="sermon-top">
-          <button type="button" className="btn-primary" onClick={startNew}>
-            New sermon notes
-          </button>
-          {sermons.length > 1 && (
-            <input
-              type="search"
-              className="sermon-search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search notes…"
-            />
+        <>
+          <div className="sermon-top">
+            <button type="button" className="btn-primary" onClick={startNew}>
+              New sermon notes
+            </button>
+            {sermons.length > 0 && (
+              <input
+                type="search"
+                className="sermon-search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search notes…"
+              />
+            )}
+          </div>
+
+          {sermons.length > 0 && (
+            <div className="filter-row sermon-filters">
+              <button
+                type="button"
+                className={`chip${filter === 'all' ? ' active' : ''}`}
+                onClick={() => setFilter('all')}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                className={`chip${filter === 'starred' ? ' active' : ''}`}
+                onClick={() => setFilter('starred')}
+                disabled={starredCount === 0}
+              >
+                Starred{starredCount ? ` (${starredCount})` : ''}
+              </button>
+              {seriesList.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  className={`chip${filter === `series:${name}` ? ' active' : ''}`}
+                  onClick={() => setFilter(`series:${name}`)}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
           )}
-        </div>
+        </>
       )}
 
       {!composing && sermons.length > 0 && (
         <ul className="sermon-list">
           {visible.map((s) => {
             const open = openId === s.id;
+            const passageTarget = parsePassage(s.passage);
             return (
-              <li key={s.id} className={`sermon-card${open ? ' open' : ''}`}>
-                <button
-                  type="button"
-                  className="sermon-head"
-                  onClick={() => setOpenId(open ? null : s.id)}
-                >
-                  <div className="sermon-head-main">
-                    <span className="sermon-title">{s.title || 'Untitled'}</span>
-                    <span className="sermon-meta">
-                      {[pretty(s.date), s.speaker, s.passage].filter(Boolean).join(' · ')}
-                      {s.ink?.length > 0 && <span className="ink-badge">handwritten</span>}
-                    </span>
-                  </div>
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
+              <li key={s.id} className={`sermon-card${open ? ' open' : ''}${s.starred ? ' starred' : ''}`}>
+                <div className="sermon-head-row">
+                  <button
+                    type="button"
+                    className={`sermon-star-btn${s.starred ? ' on' : ''}`}
+                    onClick={() => toggleStar(s.id)}
+                    aria-pressed={Boolean(s.starred)}
+                    aria-label={s.starred ? 'Unstar' : 'Star'}
                   >
-                    <path d={open ? 'm6 15 6-6 6 6' : 'm6 9 6 6 6-6'} />
-                  </svg>
-                </button>
+                    <svg viewBox="0 0 24 24" fill={s.starred ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8">
+                      <path d="m12 3.5 2.7 5.5 6 .9-4.4 4.3 1 6L12 17.3 6.7 20.2l1-6L3.3 9.9l6-.9Z" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="sermon-head"
+                    onClick={() => setOpenId(open ? null : s.id)}
+                  >
+                    <div className="sermon-head-main">
+                      <span className="sermon-title">{s.title || 'Untitled'}</span>
+                      <span className="sermon-meta">
+                        {[pretty(s.date), s.speaker, s.church, s.series].filter(Boolean).join(' · ')}
+                        {s.ink?.length > 0 && <span className="ink-badge">handwritten</span>}
+                      </span>
+                      {!open && s.takeaway && (
+                        <span className="sermon-takeaway-preview">{s.takeaway}</span>
+                      )}
+                      {!open && s.tags?.length > 0 && (
+                        <span className="sermon-tag-row">
+                          {s.tags.map((t) => (
+                            <span key={t} className="sermon-tag">
+                              {t}
+                            </span>
+                          ))}
+                        </span>
+                      )}
+                    </div>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d={open ? 'm6 15 6-6 6 6' : 'm6 9 6 6 6-6'} />
+                    </svg>
+                  </button>
+                </div>
 
                 {open && (
                   <div className="sermon-body">
+                    {s.passage && (
+                      <div className="sermon-passage-row">
+                        {passageTarget ? (
+                          <button
+                            type="button"
+                            className="sermon-passage-link"
+                            onClick={() => openPassage(s.passage)}
+                          >
+                            {s.passage}
+                            <span>Open in Read</span>
+                          </button>
+                        ) : (
+                          <span className="sermon-passage-plain">{s.passage}</span>
+                        )}
+                      </div>
+                    )}
+
+                    {s.tags?.length > 0 && (
+                      <div className="sermon-tag-row open">
+                        {s.tags.map((t) => (
+                          <span key={t} className="sermon-tag">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
                     {s.ink?.length > 0 && <InkPreview strokes={s.ink} />}
                     {s.notes && <p className="sermon-notes">{s.notes}</p>}
                     {s.takeaway && (
@@ -216,6 +462,9 @@ export default function SermonView() {
                       </div>
                     )}
                     <div className="sermon-card-actions">
+                      <button type="button" className="btn-text" onClick={() => copySermon(s)}>
+                        {copiedId === s.id ? 'Copied' : 'Copy'}
+                      </button>
                       <button type="button" className="btn-text" onClick={() => startEdit(s)}>
                         Edit
                       </button>
@@ -234,7 +483,13 @@ export default function SermonView() {
           })}
 
           {visible.length === 0 && (
-            <li className="sermon-none">No notes match “{query}”.</li>
+            <li className="sermon-none">
+              {q
+                ? `No notes match “${query}”.`
+                : filter === 'starred'
+                  ? 'No starred sermons yet — tap the star on a note.'
+                  : 'No sermons in this series.'}
+            </li>
           )}
         </ul>
       )}
