@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/subsplash/:path*",
+      "destination": "https://notes.subsplash.com/fill-in/api/:path*"
+    }
+  ]
+}

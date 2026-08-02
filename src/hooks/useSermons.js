@@ -6,7 +6,7 @@ import { useData } from '../context/DataProvider';
  *
  * A sermon is {
  *   id, title, speaker, date, passage, series, church, tags[],
- *   notes, takeaway, ink[], starred, createdAt
+ *   notes, takeaway, ink[], starred, sourceUrl, createdAt
  * }.
  * Only some text or ink is required — empty fields never block a quick jot.
  */
@@ -29,6 +29,7 @@ export function useSermons() {
           takeaway: '',
           ink: [],
           starred: false,
+          sourceUrl: '',
           date: new Date().toISOString().slice(0, 10),
           createdAt: new Date().toISOString(),
           ...fields,

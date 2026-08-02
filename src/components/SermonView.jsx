@@ -1,7 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useSermons } from '../hooks/useSermons';
 import { useVerseAnnotations } from '../context/annotations';
 import { parsePassage } from '../data/bookRefs';
+import {
+  extractSubsplashHid,
+  fetchSubsplashPage,
+  pageToSermonFields,
+  textToSermonFields,
+} from '../lib/subsplash';
 import SketchPad from './ink/SketchPad';
 import InkPreview from './ink/InkPreview';
 
@@ -17,6 +23,7 @@ const BLANK = {
   takeaway: '',
   ink: [],
   starred: false,
+  sourceUrl: '',
 };
 
 const NOTE_SNIPPETS = [
@@ -71,8 +78,23 @@ export default function SermonView() {
   const [filter, setFilter] = useState('all'); // all | starred | series:<name>
   const [mode, setMode] = useState('type'); // which pane is focused: write | type
   const [copiedId, setCopiedId] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importUrl, setImportUrl] = useState('');
+  const [importBusy, setImportBusy] = useState(false);
+  const [importError, setImportError] = useState(null);
+  const fileRef = useRef(null);
 
   const field = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  const applyImport = (fields) => {
+    setForm({ ...BLANK, ...fields, ink: fields.ink || [] });
+    setEditingId(null);
+    setMode('type');
+    setComposing(true);
+    setImporting(false);
+    setImportUrl('');
+    setImportError(null);
+  };
 
   const seriesList = useMemo(() => {
     const set = new Set();
@@ -102,10 +124,43 @@ export default function SermonView() {
       takeaway: s.takeaway || '',
       ink: s.ink || [],
       starred: Boolean(s.starred),
+      sourceUrl: s.sourceUrl || '',
     });
     setMode((s.ink || []).length && !s.notes ? 'write' : 'type');
     setEditingId(s.id);
     setComposing(true);
+  };
+
+  const importFromSubsplash = async (e) => {
+    e?.preventDefault?.();
+    const hid = extractSubsplashHid(importUrl);
+    if (!hid) {
+      setImportError('Paste a Subsplash notes link (notes.subsplash.com/…?doc=…).');
+      return;
+    }
+    setImportBusy(true);
+    setImportError(null);
+    try {
+      const page = await fetchSubsplashPage(hid);
+      applyImport(pageToSermonFields(page));
+    } catch (err) {
+      setImportError(err.message || 'Import failed.');
+    }
+    setImportBusy(false);
+  };
+
+  const importFromFile = async (file) => {
+    if (!file) return;
+    setImportBusy(true);
+    setImportError(null);
+    try {
+      const text = await file.text();
+      if (!text.trim()) throw new Error('That file looks empty.');
+      applyImport(textToSermonFields(text, { filename: file.name }));
+    } catch (err) {
+      setImportError(err.message || 'Couldn’t read that file.');
+    }
+    setImportBusy(false);
   };
 
   const save = (e) => {
@@ -126,6 +181,7 @@ export default function SermonView() {
       takeaway: form.takeaway,
       ink: form.ink || [],
       starred: Boolean(form.starred),
+      sourceUrl: form.sourceUrl || '',
     };
 
     if (editingId) updateSermon(editingId, payload);
@@ -177,7 +233,9 @@ export default function SermonView() {
       {composing ? (
         <form className="sermon-form" onSubmit={save}>
           <div className="sermon-form-head">
-            <p className="account-form-title">{editingId ? 'Edit notes' : 'New sermon notes'}</p>
+            <p className="account-form-title">
+              {editingId ? 'Edit notes' : form.sourceUrl ? 'Imported sermon notes' : 'New sermon notes'}
+            </p>
             <button
               type="button"
               className={`sermon-star-btn${form.starred ? ' on' : ''}`}
@@ -191,6 +249,16 @@ export default function SermonView() {
               </svg>
             </button>
           </div>
+
+          {form.sourceUrl && (
+            <p className="sermon-import-credit">
+              Built from{' '}
+              <a href={form.sourceUrl} target="_blank" rel="noreferrer">
+                Subsplash notes
+              </a>
+              . Edit anything before saving.
+            </p>
+          )}
 
           <div className="sermon-fields">
             <input
@@ -323,6 +391,16 @@ export default function SermonView() {
             <button type="button" className="btn-primary" onClick={startNew}>
               New sermon notes
             </button>
+            <button
+              type="button"
+              className={`btn-secondary${importing ? ' active' : ''}`}
+              onClick={() => {
+                setImporting(!importing);
+                setImportError(null);
+              }}
+            >
+              Import Subsplash
+            </button>
             {sermons.length > 0 && (
               <input
                 type="search"
@@ -333,6 +411,55 @@ export default function SermonView() {
               />
             )}
           </div>
+
+          {importing && (
+            <div className="sermon-import">
+              <p className="sermon-import-title">Import your pastor’s Subsplash notes</p>
+              <p className="sermon-import-sub">
+                Paste the Fill-In Notes link from your church app, or upload a .txt / .md export.
+                We’ll fill title, speaker, passage, and the outline (blanks included).
+              </p>
+
+              <form className="sermon-import-row" onSubmit={importFromSubsplash}>
+                <input
+                  type="url"
+                  value={importUrl}
+                  onChange={(e) => setImportUrl(e.target.value)}
+                  placeholder="https://notes.subsplash.com/fill-in/view?doc=…"
+                  autoFocus
+                />
+                <button type="submit" className="btn-primary" disabled={importBusy || !importUrl.trim()}>
+                  {importBusy ? 'Building…' : 'Build notes'}
+                </button>
+              </form>
+
+              <div className="sermon-import-or">
+                <span>or</span>
+              </div>
+
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".txt,.md,.markdown,.html,.htm,text/plain,text/markdown,text/html"
+                hidden
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  importFromFile(file);
+                }}
+              />
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={importBusy}
+                onClick={() => fileRef.current?.click()}
+              >
+                Upload a notes file
+              </button>
+
+              {importError && <p className="account-error">{importError}</p>}
+            </div>
+          )}
 
           {sermons.length > 0 && (
             <div className="filter-row sermon-filters">
@@ -441,6 +568,15 @@ export default function SermonView() {
                           <span className="sermon-passage-plain">{s.passage}</span>
                         )}
                       </div>
+                    )}
+
+                    {s.sourceUrl && (
+                      <p className="sermon-import-credit">
+                        From{' '}
+                        <a href={s.sourceUrl} target="_blank" rel="noreferrer">
+                          Subsplash
+                        </a>
+                      </p>
                     )}
 
                     {s.tags?.length > 0 && (

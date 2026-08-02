@@ -2490,6 +2490,93 @@
   flex-wrap: wrap;
 }
 
+.sermon-top .btn-secondary.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--today-tint);
+}
+
+.sermon-import {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px 18px 18px;
+  margin: -8px 0 20px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sermon-import-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.sermon-import-sub {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.sermon-import-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sermon-import-row input {
+  flex: 1;
+  min-width: 200px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  padding: 11px 13px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.sermon-import-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.sermon-import-or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.sermon-import-or::before,
+.sermon-import-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.sermon-import-credit {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.sermon-import-credit a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sermon-import-credit a:hover {
+  text-decoration: underline;
+}
+
 .sermon-search {
   flex: 1;
   min-width: 160px;
