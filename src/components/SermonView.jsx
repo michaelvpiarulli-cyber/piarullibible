@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSermons } from '../hooks/useSermons';
 import { useVerseAnnotations } from '../context/annotations';
 import { parsePassage } from '../data/bookRefs';
@@ -116,17 +117,17 @@ export default function SermonView() {
     return counts;
   }, [sermons, folders]);
 
-  // Full-screen notes: Escape exits, and the page underneath shouldn't scroll.
+  // Full-screen notes render in a body portal (avoids iPad fixed-position bugs
+  // inside sticky / backdrop-filter ancestors). Lock the page underneath.
   useEffect(() => {
     if (!expanded) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    document.documentElement.classList.add('notes-expanded');
     const onKey = (e) => {
       if (e.key === 'Escape') setExpanded(false);
     };
     window.addEventListener('keydown', onKey);
     return () => {
-      document.body.style.overflow = prev;
+      document.documentElement.classList.remove('notes-expanded');
       window.removeEventListener('keydown', onKey);
     };
   }, [expanded]);
@@ -444,56 +445,44 @@ export default function SermonView() {
             placeholder="Tags — e.g. grace, Advent, prayer"
           />
 
-          <div className={`notes-stage${expanded ? ' expanded' : ''}`}>
-            <div className="notes-stage-bar">
-              <div className="mode-switch">
+          {/*
+            Inline editor when compact; fullscreen uses a body portal so iPad
+            Safari doesn’t glitch on position:fixed inside sticky/blur chrome.
+          */}
+          {!expanded && (
+            <div className="notes-stage">
+              <div className="notes-stage-bar">
+                <div className="mode-switch">
+                  <button
+                    type="button"
+                    className={`chip${mode === 'type' ? ' active' : ''}`}
+                    onClick={() => setMode('type')}
+                  >
+                    Type
+                  </button>
+                  <button
+                    type="button"
+                    className={`chip${mode === 'write' ? ' active' : ''}`}
+                    onClick={() => setMode('write')}
+                  >
+                    Handwrite
+                  </button>
+                </div>
+
                 <button
                   type="button"
-                  className={`chip${mode === 'type' ? ' active' : ''}`}
-                  onClick={() => setMode('type')}
+                  className="btn-secondary notes-expand-btn"
+                  onClick={() => setExpanded(true)}
                 >
-                  Type
-                </button>
-                <button
-                  type="button"
-                  className={`chip${mode === 'write' ? ' active' : ''}`}
-                  onClick={() => setMode('write')}
-                >
-                  Handwrite
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                    <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                  </svg>
+                  Expand
                 </button>
               </div>
 
-              <button
-                type="button"
-                className="btn-secondary notes-expand-btn"
-                onClick={() => setExpanded(!expanded)}
-                aria-pressed={expanded}
-              >
-                {expanded ? (
-                  <>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-                      <path d="M9 3H5a2 2 0 0 0-2 2v4M15 3h4a2 2 0 0 1 2 2v4M9 21H5a2 2 0 0 1-2-2v-4M15 21h4a2 2 0 0 0 2-2v-4" />
-                    </svg>
-                    Done
-                  </>
-                ) : (
-                  <>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-                      <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                    </svg>
-                    Expand
-                  </>
-                )}
-              </button>
-            </div>
-
-            {expanded && (
-              <p className="notes-expand-title">{form.title?.trim() || 'Sermon notes'}</p>
-            )}
-
-            {mode === 'type' && (
-              <>
-                {!expanded && (
+              {mode === 'type' && (
+                <>
                   <div className="note-snippets">
                     {NOTE_SNIPPETS.map((snip) => (
                       <button
@@ -506,43 +495,85 @@ export default function SermonView() {
                       </button>
                     ))}
                   </div>
-                )}
-                <textarea
-                  value={form.notes}
-                  onChange={field('notes')}
-                  placeholder="Notes — quotes, outline, what the Spirit pressed on you…"
-                  rows={expanded ? 24 : 10}
-                  className={expanded ? 'notes-expand-textarea' : undefined}
+                  <textarea
+                    value={form.notes}
+                    onChange={field('notes')}
+                    placeholder="Notes — quotes, outline, what the Spirit pressed on you…"
+                    rows={10}
+                  />
+                </>
+              )}
+
+              {mode === 'write' && (
+                <SketchPad
+                  strokes={form.ink || []}
+                  onChange={(ink) => setForm((f) => ({ ...f, ink }))}
                 />
-              </>
-            )}
+              )}
+            </div>
+          )}
 
-            {mode === 'write' && (
-              <SketchPad
-                strokes={form.ink || []}
-                onChange={(ink) => setForm((f) => ({ ...f, ink }))}
-                expanded={expanded}
-              />
-            )}
+          {expanded &&
+            createPortal(
+              <div className="notes-overlay" role="dialog" aria-modal="true" aria-label="Fullscreen notes">
+                <header className="notes-overlay-bar">
+                  <div className="notes-overlay-heading">
+                    <p className="notes-expand-title">{form.title?.trim() || 'Sermon notes'}</p>
+                    <div className="mode-switch">
+                      <button
+                        type="button"
+                        className={`chip${mode === 'type' ? ' active' : ''}`}
+                        onClick={() => setMode('type')}
+                      >
+                        Type
+                      </button>
+                      <button
+                        type="button"
+                        className={`chip${mode === 'write' ? ' active' : ''}`}
+                        onClick={() => setMode('write')}
+                      >
+                        Handwrite
+                      </button>
+                    </div>
+                  </div>
+                  <div className="notes-expand-actions-btns">
+                    <button type="button" className="btn-secondary" onClick={() => setExpanded(false)}>
+                      Done
+                    </button>
+                    <button type="button" className="btn-primary" onClick={save}>
+                      Save notes
+                    </button>
+                  </div>
+                </header>
 
-            {expanded && (
-              <div className="notes-expand-actions">
-                <p className="sketch-hint">
-                  {mode === 'write'
-                    ? 'Apple Pencil only — rest your hand; fingers just scroll.'
-                    : 'Escape or Done to leave full screen.'}
-                </p>
-                <div className="notes-expand-actions-btns">
-                  <button type="button" className="btn-secondary" onClick={() => setExpanded(false)}>
-                    Done
-                  </button>
-                  <button type="submit" className="btn-primary">
-                    Save notes
-                  </button>
+                <div className="notes-overlay-body">
+                  {mode === 'type' ? (
+                    <textarea
+                      value={form.notes}
+                      onChange={field('notes')}
+                      placeholder="Notes — quotes, outline, what the Spirit pressed on you…"
+                      className="notes-expand-textarea"
+                      autoFocus
+                    />
+                  ) : (
+                    <SketchPad
+                      strokes={form.ink || []}
+                      onChange={(ink) => setForm((f) => ({ ...f, ink }))}
+                      expanded
+                    />
+                  )}
                 </div>
-              </div>
+
+                <footer className="notes-overlay-foot">
+                  <p className="sketch-hint">
+                    {mode === 'write'
+                      ? 'Apple Pencil only — rest your hand; fingers just scroll.'
+                      : 'Done or Escape to leave full screen.'}
+                  </p>
+                </footer>
+              </div>,
+              document.body
             )}
-          </div>
 
           {!expanded && mode === 'type' && form.ink?.length > 0 && (
             <p className="sermon-dual-hint">Handwritten page saved with these notes.</p>

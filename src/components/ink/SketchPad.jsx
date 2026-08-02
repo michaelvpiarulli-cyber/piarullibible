@@ -75,9 +75,14 @@ export default function SketchPad({ strokes, onChange, expanded = false }) {
       const w = wrap.clientWidth;
       const h = wrap.clientHeight;
       if (!w || !h) return;
-      const dpr = window.devicePixelRatio || 1;
-      c.width = Math.round(w * dpr);
-      c.height = Math.round(h * dpr);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const nextW = Math.round(w * dpr);
+      const nextH = Math.round(h * dpr);
+      // Avoid wiping the bitmap when iOS fires spurious resize with same size.
+      if (c.width !== nextW || c.height !== nextH) {
+        c.width = nextW;
+        c.height = nextH;
+      }
       c.style.width = `${w}px`;
       c.style.height = `${h}px`;
       redraw();
@@ -86,8 +91,15 @@ export default function SketchPad({ strokes, onChange, expanded = false }) {
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(wrap);
-    return () => ro.disconnect();
-  }, [redraw, pages]);
+    // iPad Safari address-bar / split-view changes often skip ResizeObserver.
+    window.visualViewport?.addEventListener('resize', fit);
+    window.addEventListener('orientationchange', fit);
+    return () => {
+      ro.disconnect();
+      window.visualViewport?.removeEventListener('resize', fit);
+      window.removeEventListener('orientationchange', fit);
+    };
+  }, [redraw, pages, expanded]);
 
   useEffect(redraw, [strokes, redraw]);
 
@@ -123,6 +135,8 @@ export default function SketchPad({ strokes, onChange, expanded = false }) {
     if (!isInkPointer(e)) return;
     // One stroke at a time — ignore a second pen/mouse while drawing.
     if (activePointerRef.current != null) return;
+    // Stop iPad from treating the Pencil stroke as a scroll/zoom gesture.
+    e.preventDefault();
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {

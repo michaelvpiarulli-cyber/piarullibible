@@ -105,6 +105,8 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
   const onPointerDown = (e) => {
     if (!active || !isInkPointer(e)) return;
     if (activePointerRef.current != null) return;
+    // Stop iPad from treating the Pencil stroke as a scroll/zoom gesture.
+    e.preventDefault();
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {

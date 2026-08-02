@@ -1,5 +1,6 @@
 .app {
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* ---------- nav: bottom bar on phones, sidebar on desktop ---------- */
@@ -1840,9 +1841,9 @@
   color: var(--accent);
 }
 
-/* ---------- desktop ---------- */
+/* ---------- tablet + desktop (iPad portrait is ~768–834) ---------- */
 
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .app {
     display: flex;
   }
@@ -1852,14 +1853,17 @@
     top: 0;
     align-self: flex-start;
     height: 100vh;
-    width: 244px;
+    height: 100dvh;
+    width: 220px;
     flex-shrink: 0;
     flex-direction: column;
     border-top: none;
     border-right: 1px solid var(--border);
-    padding: 24px 12px;
+    padding: 20px 10px;
     background: var(--surface);
     backdrop-filter: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .nav-brand {
@@ -1906,17 +1910,36 @@
   }
 
   .app-bar {
-    padding: 18px 32px;
+    padding: 16px 24px;
   }
 
   .app-bar h1 {
-    font-size: 1.6rem;
+    font-size: 1.45rem;
   }
 
   .app-main {
-    padding: 28px 32px;
+    padding: 22px 24px;
     max-width: 1080px;
     margin: 0;
+  }
+
+  @media (min-width: 1024px) {
+    .app-nav {
+      width: 244px;
+      padding: 24px 12px;
+    }
+
+    .app-bar {
+      padding: 18px 32px;
+    }
+
+    .app-bar h1 {
+      font-size: 1.6rem;
+    }
+
+    .app-main {
+      padding: 28px 32px;
+    }
   }
 
   .today-hero h2 {
@@ -2467,7 +2490,7 @@
 }
 
 /* Seven tabs is a lot for a phone bar — tighten labels so nothing clips. */
-@media (max-width: 899px) {
+@media (max-width: 767px) {
   .nav-tab {
     font-size: 0.6rem;
     gap: 2px;
@@ -2477,6 +2500,30 @@
   .nav-tab svg {
     width: 21px;
     height: 21px;
+  }
+}
+
+/* iPad / tablet sermon workspace */
+@media (min-width: 768px) {
+  .sermon-form {
+    padding: 22px;
+    gap: 14px;
+  }
+
+  .sermon-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sermon-top {
+    gap: 10px;
+  }
+
+  .sermon-search {
+    min-width: 220px;
+  }
+
+  .notes-stage {
+    gap: 12px;
   }
 }
 
@@ -3007,19 +3054,9 @@
   height: 15px;
 }
 
-/* Full-screen note taking — covers nav/chrome so the pad owns the device. */
-.notes-stage.expanded {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
-  background: var(--bg);
-  padding: calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom));
-  gap: 10px;
-}
-
 .notes-expand-title {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -3027,33 +3064,101 @@
   text-overflow: ellipsis;
 }
 
-.notes-stage.expanded .notes-expand-textarea,
-.notes-stage.expanded textarea.notes-expand-textarea {
-  flex: 1;
-  min-height: 0;
-  height: auto;
-  resize: none;
-  font-size: 1.05rem;
-  line-height: 1.7;
-}
-
-.notes-expand-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.notes-expand-actions .sketch-hint {
-  flex: 1;
-  min-width: 160px;
-}
-
 .notes-expand-actions-btns {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+}
+
+/*
+  Fullscreen notes overlay — portaled to <body>, not nested in .app.
+  Uses dvh + safe-area so iPad Safari doesn’t jump or clip the pad.
+*/
+.notes-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg);
+  padding:
+    calc(12px + env(safe-area-inset-top, 0px))
+    calc(16px + env(safe-area-inset-right, 0px))
+    calc(12px + env(safe-area-inset-bottom, 0px))
+    calc(16px + env(safe-area-inset-left, 0px));
+  height: 100vh;
+  height: 100dvh;
+  width: 100%;
+  box-sizing: border-box;
+  overscroll-behavior: none;
+}
+
+.notes-overlay-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.notes-overlay-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.notes-overlay-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.notes-overlay-body .sketch {
+  flex: 1;
+  min-height: 0;
+}
+
+.notes-overlay .notes-expand-textarea {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  resize: none;
+  font-family: inherit;
+  font-size: 1.1rem;
+  line-height: 1.7;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.notes-overlay .notes-expand-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.notes-overlay-foot {
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.notes-overlay .ink-bar {
+  flex-shrink: 0;
+  justify-content: flex-start;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg);
+  padding: 4px 0;
 }
 
 .sketch {
@@ -3084,6 +3189,8 @@
     var(--border) 33px,
     var(--border) 34px
   );
+  /* Prevent iOS from hijacking Pencil/touch into page bounce. */
+  touch-action: pan-y;
 }
 
 .sketch.expanded .sketch-page {
@@ -3091,6 +3198,7 @@
   height: auto;
   min-height: 0;
   padding-bottom: 0 !important;
+  border-radius: 12px;
 }
 
 .sketch-page.preview {

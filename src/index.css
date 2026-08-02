@@ -26,11 +26,13 @@
   --shadow: rgba(46, 46, 46, 0.16);
 
   --nav-height: 60px;
+  --app-height: 100dvh;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
 }
 
 :root[data-theme='dark'] {
@@ -61,12 +63,31 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--bg);
   color: var(--text);
+  overscroll-behavior-y: none;
+}
+
+/* Fullscreen notes: lock the page under the portal overlay (iPad Safari). */
+html.notes-expanded,
+html.notes-expanded body {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+html.notes-expanded .app {
+  visibility: hidden;
 }
 
 button {
@@ -74,6 +95,29 @@ button {
   font-family: inherit;
   cursor: pointer;
   color: inherit;
+  touch-action: manipulation;
+}
+
+/* Bigger hit targets when a finger / Pencil is the primary pointer (iPad). */
+@media (pointer: coarse) {
+  .nav-tab {
+    min-height: 48px;
+  }
+
+  .chip,
+  .btn-primary,
+  .btn-secondary,
+  .ink-tool,
+  .snippet-chip {
+    min-height: 40px;
+  }
+
+  .sermon-star-btn,
+  .theme-toggle,
+  .account-avatar {
+    width: 40px;
+    height: 40px;
+  }
 }
 
 button:focus-visible {
