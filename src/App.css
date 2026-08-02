@@ -3438,9 +3438,12 @@
 }
 
 /* ---------- Subsplash / outline paper under the ink ---------- */
-
+/*
+ * Ruled lines stay in the write bands only. Outline text sits on a solid
+ * paper slip so lines never cut through the letters.
+ */
 .sketch-page.has-underlay {
-  /* Soft left margin rule, like a notebook gutter. */
+  --paper-rule: 34px;
   background-image:
     linear-gradient(
       to right,
@@ -3453,9 +3456,9 @@
     repeating-linear-gradient(
       to bottom,
       transparent,
-      transparent 33px,
-      var(--border) 33px,
-      var(--border) 34px
+      transparent calc(var(--paper-rule) - 1px),
+      color-mix(in srgb, var(--border) 90%, transparent) calc(var(--paper-rule) - 1px),
+      color-mix(in srgb, var(--border) 90%, transparent) var(--paper-rule)
     );
 }
 
@@ -3465,7 +3468,7 @@
   z-index: 1;
   pointer-events: none;
   display: flex;
-  padding: 10px 22px 28px 56px;
+  padding: 16px 20px 32px 56px;
   box-sizing: border-box;
 }
 
@@ -3489,9 +3492,16 @@
 
 .paper-block-text {
   margin: 0;
+  padding: 10px 12px 12px;
+  border-radius: 8px;
+  /* Cover ruled lines behind the printed outline. */
+  background: var(--surface);
+  box-shadow:
+    0 0 0 4px var(--surface),
+    0 1px 0 color-mix(in srgb, var(--border) 65%, transparent);
   font-family: Georgia, 'Iowan Old Style', Palatino, 'Times New Roman', serif;
-  font-size: 0.98rem;
-  line-height: 33px; /* sit on the ruled lines */
+  font-size: 1rem;
+  line-height: 1.45;
   color: var(--text);
   white-space: pre-wrap;
   word-break: break-word;
@@ -3500,48 +3510,42 @@
 .paper-block.is-answers .paper-block-text {
   font-size: 0.86rem;
   color: var(--text-dim);
-  line-height: 33px;
+  line-height: 1.45;
+  opacity: 0.92;
 }
 
 .paper-write-gap {
-  flex: 1 1 150px;
-  min-height: 150px;
+  flex: 1 1 calc(var(--paper-rule, 34px) * 5);
+  min-height: calc(var(--paper-rule, 34px) * 5);
 }
 
 .paper-write-gap.is-tight {
-  flex-basis: 66px;
-  min-height: 66px;
+  flex-basis: calc(var(--paper-rule, 34px) * 2);
+  min-height: calc(var(--paper-rule, 34px) * 2);
 }
 
 .paper-write-gap.is-end {
   flex-grow: 2;
-  min-height: 180px;
+  min-height: calc(var(--paper-rule, 34px) * 6);
 }
 
+/* Type mode: margin gutter + clean paper — no rules through the letters. */
 .sermon-form textarea.sermon-paper-textarea,
 .notes-expand-textarea.sermon-paper-textarea {
   font-family: Georgia, 'Iowan Old Style', Palatino, 'Times New Roman', serif;
   font-size: 1rem;
-  line-height: 1.85;
+  line-height: 1.65;
   padding: 22px 24px 28px 40px;
   border-radius: 14px;
   background-color: var(--surface);
-  background-image:
-    linear-gradient(
-      to right,
-      transparent 0,
-      transparent 28px,
-      color-mix(in srgb, #b42318 22%, transparent) 28px,
-      color-mix(in srgb, #b42318 22%, transparent) 29px,
-      transparent 29px
-    ),
-    repeating-linear-gradient(
-      to bottom,
-      transparent,
-      transparent 31px,
-      color-mix(in srgb, var(--border) 85%, transparent) 31px,
-      color-mix(in srgb, var(--border) 85%, transparent) 32px
-    );
+  background-image: linear-gradient(
+    to right,
+    transparent 0,
+    transparent 28px,
+    color-mix(in srgb, #b42318 22%, transparent) 28px,
+    color-mix(in srgb, #b42318 22%, transparent) 29px,
+    transparent 29px
+  );
   background-attachment: local;
   box-shadow: var(--shadow-lift);
 }
@@ -3559,10 +3563,17 @@
     repeating-linear-gradient(
       to bottom,
       transparent,
-      transparent 33px,
-      var(--border) 33px,
-      var(--border) 34px
+      transparent calc(var(--paper-rule) - 1px),
+      color-mix(in srgb, var(--border) 90%, transparent) calc(var(--paper-rule) - 1px),
+      color-mix(in srgb, var(--border) 90%, transparent) var(--paper-rule)
     );
+}
+
+:root[data-theme='dark'] .paper-block-text {
+  background: var(--surface);
+  box-shadow:
+    0 0 0 4px var(--surface),
+    0 1px 0 color-mix(in srgb, var(--border) 65%, transparent);
 }
 
 .sketch-hint {
