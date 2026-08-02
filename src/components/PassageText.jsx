@@ -210,9 +210,6 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
   const [showNotes, setShowNotes] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [tool, setTool] = useState({ mode: 'pen', color: '#121212', width: 0.006 });
-  // Off by default so a finger scrolls and only a stylus/mouse inks — the
-  // iPad + Apple Pencil case. Turn on to draw with a fingertip.
-  const [fingerDraws, setFingerDraws] = useState(false);
   const drawApi = useRef(null);
   const registerApi = useCallback((api) => {
     drawApi.current = api;
@@ -296,70 +293,61 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
           chapterKey={part.heading}
           active={drawing}
           tool={tool}
-          fingerDraws={fingerDraws}
           registerApi={registerApi}
         />
       </div>
 
       {drawing && (
-        <div className="ink-bar">
-          <div className="ink-group">
-            {INK_COLORS.map((c) => (
+        <>
+          <p className="sketch-hint">Apple Pencil only — rest your hand; fingers just scroll.</p>
+          <div className="ink-bar">
+            <div className="ink-group">
+              {INK_COLORS.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={`ink-swatch${tool.color === c.value && tool.mode !== 'erase' ? ' active' : ''}`}
+                  style={{ background: c.value }}
+                  aria-label={c.label}
+                  onClick={() => setTool((t) => ({ ...t, color: c.value, mode: t.mode === 'erase' ? 'pen' : t.mode }))}
+                />
+              ))}
+            </div>
+
+            <div className="ink-group">
               <button
-                key={c.id}
                 type="button"
-                className={`ink-swatch${tool.color === c.value && tool.mode !== 'erase' ? ' active' : ''}`}
-                style={{ background: c.value }}
-                aria-label={c.label}
-                onClick={() => setTool((t) => ({ ...t, color: c.value, mode: t.mode === 'erase' ? 'pen' : t.mode }))}
-              />
-            ))}
-          </div>
+                className={`ink-tool${tool.mode === 'pen' ? ' active' : ''}`}
+                onClick={() => setTool((t) => ({ ...t, mode: 'pen' }))}
+              >
+                Pen
+              </button>
+              <button
+                type="button"
+                className={`ink-tool${tool.mode === 'circle' ? ' active' : ''}`}
+                onClick={() => setTool((t) => ({ ...t, mode: 'circle' }))}
+              >
+                Circle
+              </button>
+              <button
+                type="button"
+                className={`ink-tool${tool.mode === 'erase' ? ' active' : ''}`}
+                onClick={() => setTool((t) => ({ ...t, mode: 'erase' }))}
+              >
+                Erase
+              </button>
+            </div>
 
-          <div className="ink-group">
-            <button
-              type="button"
-              className={`ink-tool${tool.mode === 'pen' ? ' active' : ''}`}
-              onClick={() => setTool((t) => ({ ...t, mode: 'pen' }))}
-            >
-              Pen
-            </button>
-            <button
-              type="button"
-              className={`ink-tool${tool.mode === 'circle' ? ' active' : ''}`}
-              onClick={() => setTool((t) => ({ ...t, mode: 'circle' }))}
-            >
-              Circle
-            </button>
-            <button
-              type="button"
-              className={`ink-tool${tool.mode === 'erase' ? ' active' : ''}`}
-              onClick={() => setTool((t) => ({ ...t, mode: 'erase' }))}
-            >
-              Erase
-            </button>
+            <div className="ink-group">
+              <button type="button" className="ink-tool" onClick={() => drawApi.current?.undo()}>
+                Undo
+              </button>
+              <button type="button" className="ink-tool" onClick={() => drawApi.current?.clear()}>
+                Clear
+              </button>
+            </div>
           </div>
-
-          <div className="ink-group">
-            <button type="button" className="ink-tool" onClick={() => drawApi.current?.undo()}>
-              Undo
-            </button>
-            <button type="button" className="ink-tool" onClick={() => drawApi.current?.clear()}>
-              Clear
-            </button>
-          </div>
-
-          <div className="ink-group">
-            <button
-              type="button"
-              className={`ink-tool${fingerDraws ? ' active' : ''}`}
-              onClick={() => setFingerDraws(!fingerDraws)}
-              title="Off: finger scrolls, stylus draws. On: draw with your finger."
-            >
-              {fingerDraws ? 'Finger draws' : 'Finger scrolls'}
-            </button>
-          </div>
-        </div>
+        </>
       )}
 
       <div className="commentary-toggle-row">

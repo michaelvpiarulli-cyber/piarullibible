@@ -936,13 +936,8 @@
 .draw-canvas.active {
   pointer-events: auto;
   cursor: crosshair;
-  /* Default: a finger still scrolls the page; stylus/mouse draw. */
+  /* Fingers scroll; only Apple Pencil / mouse inks. */
   touch-action: pan-y;
-}
-
-/* Finger-draw mode: capture every gesture so a fingertip can draw. */
-.draw-canvas.active.finger-draws {
-  touch-action: none;
 }
 
 /* Tint the page while drawing so the mode is obvious. */
@@ -2857,12 +2852,14 @@
 .sketch-canvas {
   position: absolute;
   inset: 0;
-  touch-action: pan-y; /* finger scrolls; stylus writes */
+  touch-action: pan-y; /* fingers scroll; only Apple Pencil / mouse inks */
   cursor: crosshair;
 }
 
-.sketch-canvas.finger-writes {
-  touch-action: none;
+.sketch-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-dim);
 }
 
 .sketch-page.preview .sketch-canvas {

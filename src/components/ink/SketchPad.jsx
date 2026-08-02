@@ -17,24 +17,29 @@ const NIBS = [
 /** Aspect ratio of one page of the pad (height ÷ width). */
 const PAGE_RATIO = 1.15;
 
+/** True stylus / Apple Pencil. Fingers are `touch`; desktop testing keeps `mouse`. */
+function isInkPointer(e) {
+  return e.pointerType === 'pen' || e.pointerType === 'mouse';
+}
+
 /**
- * A ruled handwriting surface for Apple Pencil, stylus, or mouse.
+ * A ruled handwriting surface for Apple Pencil (and mouse on desktop).
+ * Fingers only scroll — they never ink, so a resting palm won't freak out the page.
  *
  * Controlled: `strokes` in, `onChange` out, so the ink saves with whatever
  * record owns it (a sermon) rather than to its own storage.
  */
-export default function SketchPad({ strokes, onChange, dark }) {
+export default function SketchPad({ strokes, onChange }) {
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
 
   const [tool, setTool] = useState({ mode: 'pen', color: INKS[0].value, width: NIBS[0].width });
-  // Off by default so a finger scrolls the page and only the stylus writes.
-  const [fingerWrites, setFingerWrites] = useState(false);
   const [pages, setPages] = useState(1);
 
   const strokesRef = useRef(strokes);
   strokesRef.current = strokes;
   const draftRef = useRef(null);
+  const activePointerRef = useRef(null); // only this pointer may extend/end the stroke
   const toolRef = useRef(tool);
   toolRef.current = tool;
 
@@ -94,23 +99,42 @@ export default function SketchPad({ strokes, onChange, dark }) {
     };
   };
 
-  const ignores = (e) => !fingerWrites && e.pointerType === 'touch';
-
   const eraseAt = (x, y) => {
     const hit = strokesRef.current.filter((s) => strokeNear(s, x, y));
     if (hit.length) onChange(strokesRef.current.filter((s) => !hit.includes(s)));
   };
 
+  const endStroke = (e) => {
+    // Palm / finger up must not finish (or wipe) an Apple Pencil stroke.
+    if (activePointerRef.current !== e.pointerId) return;
+    activePointerRef.current = null;
+    try {
+      e.currentTarget.releasePointerCapture?.(e.pointerId);
+    } catch {
+      /* already released */
+    }
+    const d = draftRef.current;
+    draftRef.current = null;
+    if (d) onChange([...strokesRef.current, d]);
+    else redraw();
+  };
+
   const onPointerDown = (e) => {
-    if (ignores(e)) return;
+    if (!isInkPointer(e)) return;
+    // One stroke at a time — ignore a second pen/mouse while drawing.
+    if (activePointerRef.current != null) return;
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
       /* synthetic or already-released pointer */
     }
+    activePointerRef.current = e.pointerId;
     const { x, y } = toNorm(e);
     const t = toolRef.current;
-    if (t.mode === 'erase') return eraseAt(x, y);
+    if (t.mode === 'erase') {
+      eraseAt(x, y);
+      return;
+    }
     draftRef.current = {
       type: 'draw',
       color: t.color,
@@ -121,7 +145,8 @@ export default function SketchPad({ strokes, onChange, dark }) {
   };
 
   const onPointerMove = (e) => {
-    if (!e.buttons || ignores(e)) return;
+    if (activePointerRef.current !== e.pointerId) return;
+    if (!e.buttons) return;
     const { x, y } = toNorm(e);
     if (toolRef.current.mode === 'erase') return eraseAt(x, y);
     const d = draftRef.current;
@@ -130,13 +155,6 @@ export default function SketchPad({ strokes, onChange, dark }) {
     if (Math.hypot(x - last[0], y - last[1]) < 0.0015) return; // downsample
     d.points.push([r3(x), r3(y), pressureOf(e)]);
     redraw();
-  };
-
-  const onPointerUp = () => {
-    const d = draftRef.current;
-    draftRef.current = null;
-    if (d) onChange([...strokesRef.current, d]);
-    else redraw();
   };
 
   return (
@@ -194,16 +212,10 @@ export default function SketchPad({ strokes, onChange, dark }) {
           >
             Clear
           </button>
-          <button
-            type="button"
-            className={`ink-tool${fingerWrites ? ' active' : ''}`}
-            onClick={() => setFingerWrites(!fingerWrites)}
-            title="Off: finger scrolls, stylus writes. On: write with your finger."
-          >
-            {fingerWrites ? 'Finger writes' : 'Finger scrolls'}
-          </button>
         </div>
       </div>
+
+      <p className="sketch-hint">Apple Pencil only — rest your hand; fingers just scroll.</p>
 
       <div
         ref={wrapRef}
@@ -212,12 +224,11 @@ export default function SketchPad({ strokes, onChange, dark }) {
       >
         <canvas
           ref={canvasRef}
-          className={`sketch-canvas${fingerWrites ? ' finger-writes' : ''}`}
+          className="sketch-canvas"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          onPointerLeave={onPointerUp}
+          onPointerUp={endStroke}
+          onPointerCancel={endStroke}
         />
       </div>
 

@@ -2,13 +2,19 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useChapterDrawing } from '../hooks/useDrawings';
 import { paintStroke, pressureOf, r3, strokeNear } from './ink/strokes';
 
-export default function DrawCanvas({ chapterKey, active, tool, fingerDraws, registerApi }) {
+/** True stylus / Apple Pencil. Fingers are `touch`; desktop testing keeps `mouse`. */
+function isInkPointer(e) {
+  return e.pointerType === 'pen' || e.pointerType === 'mouse';
+}
+
+export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
   const canvasRef = useRef(null);
   const [strokes, saveStrokes] = useChapterDrawing(chapterKey);
 
   const strokesRef = useRef(strokes);
   strokesRef.current = strokes;
   const draftRef = useRef(null); // stroke in progress
+  const activePointerRef = useRef(null);
   const toolRef = useRef(tool);
   toolRef.current = tool;
 
@@ -72,17 +78,39 @@ export default function DrawCanvas({ chapterKey, active, tool, fingerDraws, regi
     if (near.length) saveStrokes(strokesRef.current.filter((s) => !near.includes(s)));
   };
 
-  // When finger-draw is off, touch is left alone so it scrolls the page and
-  // only a stylus or mouse puts ink down.
-  const ignores = (e) => !fingerDraws && e.pointerType === 'touch';
+  const endStroke = (e) => {
+    // Palm / finger up must not finish (or wipe) an Apple Pencil stroke.
+    if (activePointerRef.current !== e.pointerId) return;
+    activePointerRef.current = null;
+    try {
+      e.currentTarget.releasePointerCapture?.(e.pointerId);
+    } catch {
+      /* already released */
+    }
+
+    const d = draftRef.current;
+    draftRef.current = null;
+    if (!d) return redraw();
+
+    // Drop accidental taps / zero-size circles.
+    const meaningful =
+      d.type === 'ellipse'
+        ? Math.abs(d.points[1][0] - d.points[0][0]) > 0.01 &&
+          Math.abs(d.points[1][1] - d.points[0][1]) > 0.005
+        : true;
+    if (meaningful) saveStrokes([...strokesRef.current, d]);
+    else redraw();
+  };
 
   const onPointerDown = (e) => {
-    if (!active || ignores(e)) return;
+    if (!active || !isInkPointer(e)) return;
+    if (activePointerRef.current != null) return;
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
       /* pointer already released, or a synthetic event — drawing still works */
     }
+    activePointerRef.current = e.pointerId;
     const { x, y } = toNorm(e);
     const t = toolRef.current;
 
@@ -98,7 +126,7 @@ export default function DrawCanvas({ chapterKey, active, tool, fingerDraws, regi
   };
 
   const onPointerMove = (e) => {
-    if (!active || !e.buttons || ignores(e)) return;
+    if (!active || activePointerRef.current !== e.pointerId || !e.buttons) return;
     const { x, y } = toNorm(e);
 
     if (toolRef.current.mode === 'erase') {
@@ -118,30 +146,14 @@ export default function DrawCanvas({ chapterKey, active, tool, fingerDraws, regi
     redraw();
   };
 
-  const onPointerUp = () => {
-    const d = draftRef.current;
-    draftRef.current = null;
-    if (!d) return redraw();
-
-    // Drop accidental taps / zero-size circles.
-    const meaningful =
-      d.type === 'ellipse'
-        ? Math.abs(d.points[1][0] - d.points[0][0]) > 0.01 &&
-          Math.abs(d.points[1][1] - d.points[0][1]) > 0.005
-        : true;
-    if (meaningful) saveStrokes([...strokesRef.current, d]);
-    else redraw();
-  };
-
   return (
     <canvas
       ref={canvasRef}
-      className={`draw-canvas${active ? ' active' : ''}${fingerDraws ? ' finger-draws' : ''}`}
+      className={`draw-canvas${active ? ' active' : ''}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
-      onPointerLeave={onPointerUp}
+      onPointerUp={endStroke}
+      onPointerCancel={endStroke}
     />
   );
 }
