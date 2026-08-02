@@ -18,6 +18,7 @@ const BLANK = {
   passage: '',
   series: '',
   church: '',
+  folderId: '',
   tagsText: '',
   notes: '',
   takeaway: '',
@@ -67,7 +68,17 @@ function sermonToClipboard(s) {
 }
 
 export default function SermonView() {
-  const { sermons, addSermon, updateSermon, toggleStar, removeSermon } = useSermons();
+  const {
+    sermons,
+    folders,
+    addSermon,
+    updateSermon,
+    toggleStar,
+    removeSermon,
+    addFolder,
+    removeFolder,
+    moveToFolder,
+  } = useSermons();
   const { onOpenPassage } = useVerseAnnotations();
 
   const [composing, setComposing] = useState(false);
@@ -75,7 +86,7 @@ export default function SermonView() {
   const [editingId, setEditingId] = useState(null);
   const [openId, setOpenId] = useState(null);
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState('all'); // all | starred | series:<name>
+  const [filter, setFilter] = useState('all'); // all | starred | unfiled | folder:<id>
   const [mode, setMode] = useState('type'); // which pane is focused: write | type
   const [expanded, setExpanded] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
@@ -83,7 +94,27 @@ export default function SermonView() {
   const [importUrl, setImportUrl] = useState('');
   const [importBusy, setImportBusy] = useState(false);
   const [importError, setImportError] = useState(null);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [makingFolder, setMakingFolder] = useState(false);
   const fileRef = useRef(null);
+
+  const folderById = useMemo(() => {
+    const map = new Map();
+    folders.forEach((f) => map.set(f.id, f));
+    return map;
+  }, [folders]);
+
+  const countsByFolder = useMemo(() => {
+    const counts = { unfiled: 0 };
+    folders.forEach((f) => {
+      counts[f.id] = 0;
+    });
+    sermons.forEach((s) => {
+      if (s.folderId && counts[s.folderId] != null) counts[s.folderId] += 1;
+      else counts.unfiled += 1;
+    });
+    return counts;
+  }, [sermons, folders]);
 
   // Full-screen notes: Escape exits, and the page underneath shouldn't scroll.
   useEffect(() => {
@@ -125,7 +156,12 @@ export default function SermonView() {
   }, [sermons]);
 
   const startNew = () => {
-    setForm({ ...BLANK, date: new Date().toISOString().slice(0, 10) });
+    const folderId = filter.startsWith('folder:') ? filter.slice(7) : '';
+    setForm({
+      ...BLANK,
+      date: new Date().toISOString().slice(0, 10),
+      folderId: folderById.has(folderId) ? folderId : '',
+    });
     setEditingId(null);
     setMode('type');
     setComposing(true);
@@ -139,6 +175,7 @@ export default function SermonView() {
       passage: s.passage || '',
       series: s.series || '',
       church: s.church || '',
+      folderId: s.folderId || '',
       tagsText: tagsToText(s.tags),
       notes: s.notes || '',
       takeaway: s.takeaway || '',
@@ -149,6 +186,17 @@ export default function SermonView() {
     setMode((s.ink || []).length && !s.notes ? 'write' : 'type');
     setEditingId(s.id);
     setComposing(true);
+  };
+
+  const createFolder = (name) => {
+    const id = addFolder(name);
+    if (id) {
+      setForm((f) => ({ ...f, folderId: id, series: f.series || name.trim() }));
+      setNewFolderName('');
+      setMakingFolder(false);
+      setFilter(`folder:${id}`);
+    }
+    return id;
   };
 
   const importFromSubsplash = async (e) => {
@@ -196,6 +244,7 @@ export default function SermonView() {
       passage: form.passage,
       series: form.series.trim(),
       church: form.church.trim(),
+      folderId: form.folderId || '',
       tags: parseTags(form.tagsText),
       notes: form.notes,
       takeaway: form.takeaway,
@@ -236,12 +285,14 @@ export default function SermonView() {
   const q = query.trim().toLowerCase();
   const visible = sermons.filter((s) => {
     if (filter === 'starred' && !s.starred) return false;
-    if (filter.startsWith('series:')) {
-      const name = filter.slice(7);
-      if ((s.series || '').trim() !== name) return false;
+    if (filter === 'unfiled' && s.folderId && folderById.has(s.folderId)) return false;
+    if (filter.startsWith('folder:')) {
+      const id = filter.slice(7);
+      if ((s.folderId || '') !== id) return false;
     }
     if (!q) return true;
-    return [s.title, s.speaker, s.passage, s.notes, s.takeaway, s.series, s.church, ...(s.tags || [])]
+    const folderName = folderById.get(s.folderId)?.name || '';
+    return [s.title, s.speaker, s.passage, s.notes, s.takeaway, s.series, s.church, folderName, ...(s.tags || [])]
       .filter(Boolean)
       .some((v) => String(v).toLowerCase().includes(q));
   });
@@ -305,7 +356,7 @@ export default function SermonView() {
               type="text"
               value={form.series}
               onChange={field('series')}
-              placeholder="Series (optional)"
+              placeholder="Series title (optional)"
               list="sermon-series-list"
             />
             <input
@@ -320,6 +371,71 @@ export default function SermonView() {
               <option key={name} value={name} />
             ))}
           </datalist>
+
+          <div className="sermon-folder-row">
+            <label className="sermon-folder-label" htmlFor="sermon-folder">
+              Folder
+            </label>
+            <select
+              id="sermon-folder"
+              value={form.folderId}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '__new__') {
+                  setMakingFolder(true);
+                  return;
+                }
+                setForm((f) => ({ ...f, folderId: value }));
+              }}
+            >
+              <option value="">No folder</option>
+              {folders.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+              <option value="__new__">New folder…</option>
+            </select>
+            {form.series.trim() && !form.folderId && (
+              <button
+                type="button"
+                className="btn-text"
+                onClick={() => createFolder(form.series)}
+              >
+                Save series as folder
+              </button>
+            )}
+          </div>
+
+          {makingFolder && (
+            <div className="sermon-import-row">
+              <input
+                type="text"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                placeholder="Folder name — e.g. Advent 2025"
+                autoFocus
+              />
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={!newFolderName.trim()}
+                onClick={() => createFolder(newFolderName)}
+              >
+                Create
+              </button>
+              <button
+                type="button"
+                className="btn-text"
+                onClick={() => {
+                  setMakingFolder(false);
+                  setNewFolderName('');
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
 
           <input
             type="text"
@@ -469,10 +585,21 @@ export default function SermonView() {
               className={`btn-secondary${importing ? ' active' : ''}`}
               onClick={() => {
                 setImporting(!importing);
+                setMakingFolder(false);
                 setImportError(null);
               }}
             >
               Import Subsplash
+            </button>
+            <button
+              type="button"
+              className={`btn-secondary${makingFolder && !composing ? ' active' : ''}`}
+              onClick={() => {
+                setMakingFolder(!makingFolder);
+                setImporting(false);
+              }}
+            >
+              New folder
             </button>
             {sermons.length > 0 && (
               <input
@@ -484,6 +611,27 @@ export default function SermonView() {
               />
             )}
           </div>
+
+          {makingFolder && !composing && (
+            <form
+              className="sermon-import-row sermon-folder-create"
+              onSubmit={(e) => {
+                e.preventDefault();
+                createFolder(newFolderName);
+              }}
+            >
+              <input
+                type="text"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                placeholder="Folder for a series — e.g. Romans, Advent 2025"
+                autoFocus
+              />
+              <button type="submit" className="btn-primary" disabled={!newFolderName.trim()}>
+                Create folder
+              </button>
+            </form>
+          )}
 
           {importing && (
             <div className="sermon-import">
@@ -534,7 +682,7 @@ export default function SermonView() {
             </div>
           )}
 
-          {sermons.length > 0 && (
+          {(sermons.length > 0 || folders.length > 0) && (
             <div className="filter-row sermon-filters">
               <button
                 type="button"
@@ -551,16 +699,49 @@ export default function SermonView() {
               >
                 Starred{starredCount ? ` (${starredCount})` : ''}
               </button>
-              {seriesList.map((name) => (
+              <button
+                type="button"
+                className={`chip${filter === 'unfiled' ? ' active' : ''}`}
+                onClick={() => setFilter('unfiled')}
+                disabled={countsByFolder.unfiled === 0}
+              >
+                Unfiled{countsByFolder.unfiled ? ` (${countsByFolder.unfiled})` : ''}
+              </button>
+              {folders.map((f) => (
                 <button
-                  key={name}
+                  key={f.id}
                   type="button"
-                  className={`chip${filter === `series:${name}` ? ' active' : ''}`}
-                  onClick={() => setFilter(`series:${name}`)}
+                  className={`chip folder-chip${filter === `folder:${f.id}` ? ' active' : ''}`}
+                  onClick={() => setFilter(`folder:${f.id}`)}
                 >
-                  {name}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+                  </svg>
+                  {f.name}
+                  {countsByFolder[f.id] ? ` (${countsByFolder[f.id]})` : ''}
                 </button>
               ))}
+            </div>
+          )}
+
+          {filter.startsWith('folder:') && folderById.has(filter.slice(7)) && (
+            <div className="sermon-folder-manage">
+              <span>
+                Folder: <strong>{folderById.get(filter.slice(7)).name}</strong>
+              </span>
+              <button
+                type="button"
+                className="btn-text danger"
+                onClick={() => {
+                  const id = filter.slice(7);
+                  if (window.confirm(`Delete folder “${folderById.get(id).name}”? Notes stay — they just become unfiled.`)) {
+                    removeFolder(id);
+                    setFilter('all');
+                  }
+                }}
+              >
+                Delete folder
+              </button>
             </div>
           )}
         </>
@@ -594,7 +775,15 @@ export default function SermonView() {
                     <div className="sermon-head-main">
                       <span className="sermon-title">{s.title || 'Untitled'}</span>
                       <span className="sermon-meta">
-                        {[pretty(s.date), s.speaker, s.church, s.series].filter(Boolean).join(' · ')}
+                        {[
+                          pretty(s.date),
+                          s.speaker,
+                          s.church,
+                          folderById.get(s.folderId)?.name,
+                          s.series,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
                         {s.ink?.length > 0 && <span className="ink-badge">handwritten</span>}
                       </span>
                       {!open && s.takeaway && (
@@ -670,6 +859,22 @@ export default function SermonView() {
                         <p>{s.takeaway}</p>
                       </div>
                     )}
+                    <div className="sermon-move-row">
+                      <label htmlFor={`move-${s.id}`}>Folder</label>
+                      <select
+                        id={`move-${s.id}`}
+                        value={s.folderId || ''}
+                        onChange={(e) => moveToFolder(s.id, e.target.value)}
+                      >
+                        <option value="">Unfiled</option>
+                        {folders.map((f) => (
+                          <option key={f.id} value={f.id}>
+                            {f.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
                     <div className="sermon-card-actions">
                       <button type="button" className="btn-text" onClick={() => copySermon(s)}>
                         {copiedId === s.id ? 'Copied' : 'Copy'}
@@ -697,7 +902,9 @@ export default function SermonView() {
                 ? `No notes match “${query}”.`
                 : filter === 'starred'
                   ? 'No starred sermons yet — tap the star on a note.'
-                  : 'No sermons in this series.'}
+                  : filter === 'unfiled'
+                    ? 'Every note is in a folder.'
+                    : 'No sermons in this folder yet — move one here or save new notes into it.'}
             </li>
           )}
         </ul>

@@ -2,16 +2,16 @@ import { useCallback } from 'react';
 import { useData } from '../context/DataProvider';
 
 /**
- * Sermon notes. Stored in the shared data store so they sync to the account.
+ * Sermon notes + folders. Stored in the shared data store so they sync.
  *
  * A sermon is {
- *   id, title, speaker, date, passage, series, church, tags[],
+ *   id, title, speaker, date, passage, series, church, tags[], folderId,
  *   notes, takeaway, ink[], starred, sourceUrl, createdAt
  * }.
- * Only some text or ink is required — empty fields never block a quick jot.
+ * A folder is { id, name, createdAt }.
  */
 export function useSermons() {
-  const { sermons, setSermons } = useData();
+  const { sermons, setSermons, sermonFolders, setSermonFolders } = useData();
 
   const addSermon = useCallback(
     (fields) => {
@@ -25,6 +25,7 @@ export function useSermons() {
           series: '',
           church: '',
           tags: [],
+          folderId: '',
           notes: '',
           takeaway: '',
           ink: [],
@@ -62,5 +63,69 @@ export function useSermons() {
     [setSermons]
   );
 
-  return { sermons, addSermon, updateSermon, toggleStar, removeSermon };
+  const addFolder = useCallback(
+    (name) => {
+      const trimmed = (name || '').trim();
+      if (!trimmed) return null;
+      const existing = sermonFolders.find(
+        (f) => f.name.trim().toLowerCase() === trimmed.toLowerCase()
+      );
+      if (existing) return existing.id;
+
+      const id = `folder-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      setSermonFolders((prev) =>
+        [...prev, { id, name: trimmed, createdAt: new Date().toISOString() }].sort((a, b) =>
+          a.name.localeCompare(b.name)
+        )
+      );
+      return id;
+    },
+    [sermonFolders, setSermonFolders]
+  );
+
+  const renameFolder = useCallback(
+    (id, name) => {
+      const trimmed = (name || '').trim();
+      if (!trimmed) return;
+      setSermonFolders((prev) =>
+        prev
+          .map((f) => (f.id === id ? { ...f, name: trimmed } : f))
+          .sort((a, b) => a.name.localeCompare(b.name))
+      );
+    },
+    [setSermonFolders]
+  );
+
+  const removeFolder = useCallback(
+    (id) => {
+      setSermonFolders((prev) => prev.filter((f) => f.id !== id));
+      // Sermons stay; they just become unfiled.
+      setSermons((prev) =>
+        prev.map((s) => (s.folderId === id ? { ...s, folderId: '' } : s))
+      );
+    },
+    [setSermonFolders, setSermons]
+  );
+
+  const moveToFolder = useCallback(
+    (sermonId, folderId) => {
+      setSermons((prev) =>
+        prev.map((s) => (s.id === sermonId ? { ...s, folderId: folderId || '' } : s))
+      );
+    },
+    [setSermons]
+  );
+
+  return {
+    sermons,
+    folders: sermonFolders,
+    addSermon,
+    updateSermon,
+    toggleStar,
+    removeSermon,
+    addFolder,
+    renameFolder,
+    removeFolder,
+    moveToFolder,
+  };
 }

@@ -2619,6 +2619,79 @@
   margin: -8px 0 16px;
 }
 
+.folder-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.folder-chip svg {
+  width: 13px;
+  height: 13px;
+}
+
+.sermon-folder-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.sermon-folder-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.sermon-folder-row select,
+.sermon-move-row select {
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  min-width: 160px;
+}
+
+.sermon-folder-row select:focus,
+.sermon-move-row select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.sermon-folder-create {
+  margin: -8px 0 16px;
+}
+
+.sermon-folder-manage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: -4px 0 16px;
+  font-size: 0.88rem;
+  color: var(--text-dim);
+}
+
+.sermon-move-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 4px;
+}
+
+.sermon-move-row label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
 .sermon-star-btn {
   width: 36px;
   height: 36px;

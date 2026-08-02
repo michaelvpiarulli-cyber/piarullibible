@@ -19,6 +19,7 @@ const KEYS = {
   journal: 'bible-plan-journal',
   memory: 'bible-plan-memory',
   sermons: 'bible-plan-sermons',
+  sermonFolders: 'bible-plan-sermon-folders',
   examens: 'bible-plan-examens',
   rule: 'bible-plan-rule',
 };
@@ -46,6 +47,7 @@ function unpackExtras(stored) {
     journal: Array.isArray(extras?.journal) ? extras.journal : [],
     memory: extras?.memory && typeof extras.memory === 'object' ? extras.memory : EMPTY_MEMORY,
     sermons: Array.isArray(extras?.sermons) ? extras.sermons : [],
+    sermonFolders: Array.isArray(extras?.sermonFolders) ? extras.sermonFolders : [],
     examens: Array.isArray(extras?.examens) ? extras.examens : [],
     rule: extras?.rule && typeof extras.rule === 'object' ? extras.rule : EMPTY_RULE,
   };
@@ -88,6 +90,7 @@ export function DataProvider({ children }) {
   const [journal, setJournal] = useState(() => loadObject(KEYS.journal, []));
   const [memory, setMemory] = useState(() => loadObject(KEYS.memory, EMPTY_MEMORY));
   const [sermons, setSermons] = useState(() => loadObject(KEYS.sermons, []));
+  const [sermonFolders, setSermonFolders] = useState(() => loadObject(KEYS.sermonFolders, []));
   const [examens, setExamens] = useState(() => loadObject(KEYS.examens, []));
   const [rule, setRule] = useState(() => loadObject(KEYS.rule, EMPTY_RULE));
 
@@ -101,6 +104,7 @@ export function DataProvider({ children }) {
   useEffect(() => localStorage.setItem(KEYS.journal, JSON.stringify(journal)), [journal]);
   useEffect(() => localStorage.setItem(KEYS.memory, JSON.stringify(memory)), [memory]);
   useEffect(() => localStorage.setItem(KEYS.sermons, JSON.stringify(sermons)), [sermons]);
+  useEffect(() => localStorage.setItem(KEYS.sermonFolders, JSON.stringify(sermonFolders)), [sermonFolders]);
   useEffect(() => localStorage.setItem(KEYS.examens, JSON.stringify(examens)), [examens]);
   useEffect(() => localStorage.setItem(KEYS.rule, JSON.stringify(rule)), [rule]);
 
@@ -159,6 +163,17 @@ export function DataProvider({ children }) {
         (a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt)
       );
 
+      // Sermon folders: union by id; local name wins when both exist.
+      const folderById = new Map();
+      [...remote.sermonFolders, ...sermonFolders].forEach((f) => {
+        if (!f || !f.id) return;
+        const prev = folderById.get(f.id);
+        folderById.set(f.id, prev ? { ...f, ...prev } : f);
+      });
+      const mergedFolders = [...folderById.values()].sort((a, b) =>
+        (a.name || '').localeCompare(b.name || '')
+      );
+
       // Memory verses: union by ref, keeping whichever copy is further along.
       const byRef = new Map();
       [...(remote.memory.verses || []), ...(memory.verses || [])].forEach((v) => {
@@ -193,6 +208,7 @@ export function DataProvider({ children }) {
       setJournal(mergedJournal);
       setMemory(mergedMemory);
       setSermons(mergedSermons);
+      setSermonFolders(mergedFolders);
       setExamens(mergedExamens);
       setRule(mergedRule);
 
@@ -205,6 +221,7 @@ export function DataProvider({ children }) {
           journal: mergedJournal,
           memory: mergedMemory,
           sermons: mergedSermons,
+          sermonFolders: mergedFolders,
           examens: mergedExamens,
           rule: mergedRule,
         }),
@@ -233,7 +250,7 @@ export function DataProvider({ children }) {
     pushTimer.current = setTimeout(async () => {
       const { error } = await supabase.from('user_data').upsert({
         user_id: user.id,
-        progress: packExtras(progress, { journal, memory, sermons, examens, rule }),
+        progress: packExtras(progress, { journal, memory, sermons, sermonFolders, examens, rule }),
         highlights,
         notes,
         start_date: startDate,
@@ -243,7 +260,20 @@ export function DataProvider({ children }) {
     }, 800);
 
     return () => clearTimeout(pushTimer.current);
-  }, [progress, highlights, notes, startDate, journal, memory, sermons, examens, rule, available, user]);
+  }, [
+    progress,
+    highlights,
+    notes,
+    startDate,
+    journal,
+    memory,
+    sermons,
+    sermonFolders,
+    examens,
+    rule,
+    available,
+    user,
+  ]);
 
   // --- mutators (same shapes the old hooks exposed) --------------------------
   const toggleProgress = useCallback((id) => {
@@ -282,12 +312,14 @@ export function DataProvider({ children }) {
     journal,
     memory,
     sermons,
+    sermonFolders,
     examens,
     rule,
     setStartDate: setStartDateState,
     setJournal,
     setMemory,
     setSermons,
+    setSermonFolders,
     setExamens,
     setRule,
     toggleProgress,
