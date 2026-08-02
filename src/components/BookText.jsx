@@ -14,7 +14,7 @@ export default function BookText({ paragraphs, placeholder = false, author, empt
     <div className="book-text">
       {placeholder && (
         <p className="book-placeholder-banner">
-          Sample content — replace with your pastor’s book when the pages are ready.
+          Sample content — replace with Days with Jesus when the pages are ready.
         </p>
       )}
       {author && <p className="book-byline">{author}</p>}

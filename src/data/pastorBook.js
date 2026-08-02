@@ -12,8 +12,8 @@
  */
 
 export const PASTOR_BOOK = {
-  id: 'pastor-book',
-  title: 'Pastor’s Book',
+  id: 'days-with-jesus',
+  title: 'Days with Jesus',
   author: 'Your Pastor',
   subtitle: 'Companion reading alongside Scripture',
   // true until real chapter text is pasted in from photos / transcription
@@ -96,7 +96,7 @@ export const PASTOR_BOOK = {
       paragraphs: [
         'That is the whole scaffold — eight short chapters so the plan has something to slice, the reader has something to show, and you can feel the daily rhythm before any camera work.',
         'When you are ready, send page photos (or a typed manuscript). We will drop the true text into this structure and keep the plan you already practiced.',
-        'Until then: open Today, expand Pastor’s Book, and treat this as a rehearsal for the habit you want to keep.',
+        'Until then: open Today, expand Days with Jesus, and treat this as a rehearsal for the habit you want to keep.',
       ],
     },
   ],

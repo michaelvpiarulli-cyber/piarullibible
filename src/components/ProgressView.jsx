@@ -159,7 +159,7 @@ export default function ProgressView({
             <select
               value={bookPlanDays}
               onChange={(e) => setBookPlanDays(Number(e.target.value))}
-              aria-label="How many days to spread the pastor’s book across"
+              aria-label="How many days to spread Days with Jesus across"
             >
               {(bookDayOptions || []).map((n) => (
                 <option key={n} value={n}>
