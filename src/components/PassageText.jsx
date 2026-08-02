@@ -342,9 +342,6 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
               <button type="button" className="ink-tool" onClick={() => drawApi.current?.undo()}>
                 Undo
               </button>
-              <button type="button" className="ink-tool" onClick={() => drawApi.current?.clear()}>
-                Clear
-              </button>
             </div>
           </div>
         </>
