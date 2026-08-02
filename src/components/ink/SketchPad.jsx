@@ -105,6 +105,13 @@ export default function SketchPad({
     setPagesLocal((prev) => pagesNeededForInk(strokes, prev));
   }, [strokes, controlled]);
 
+  // Compact form remount after Done — start at the top of the paper, not the end.
+  useEffect(() => {
+    if (expanded) return;
+    const sheet = sheetRef.current;
+    if (sheet) sheet.scrollTop = 0;
+  }, [expanded, pages]);
+
   // Grow the pad automatically if ink approaches the bottom.
   useEffect(() => {
     const needed = pagesNeededForInk(strokes, pages);
