@@ -3468,30 +3468,43 @@
   z-index: 1;
   pointer-events: none;
   display: flex;
+  align-items: flex-start;
   padding: 16px 20px 32px 56px;
   box-sizing: border-box;
-}
-
-.paper-margin-rule {
-  display: none;
+  overflow: hidden;
 }
 
 .paper-underlay-body {
-  flex: 1;
-  min-height: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
   gap: 0;
+  /* Hug content in the form so outline stays at the top of the page. */
+  height: auto;
+  min-height: 0;
 }
 
-.paper-block {
+/* Fullscreen: stretch so write bands absorb the extra ruled paper. */
+.sketch.expanded .paper-underlay-body {
+  height: 100%;
+}
+
+.paper-block-chunk {
   display: flex;
   flex-direction: column;
   flex: 0 0 auto;
+  min-height: 0;
+}
+
+.sketch.expanded .paper-block-chunk {
+  flex: 1 1 auto;
 }
 
 .paper-block-text {
   margin: 0;
+  flex: 0 0 auto;
   padding: 10px 12px 12px;
   border-radius: 8px;
   /* Cover ruled lines behind the printed outline. */
@@ -3507,26 +3520,52 @@
   word-break: break-word;
 }
 
-.paper-block.is-answers .paper-block-text {
+.paper-block-text.is-answers {
   font-size: 0.86rem;
   color: var(--text-dim);
   line-height: 1.45;
   opacity: 0.92;
 }
 
+/* Compact form: fixed write bands — don’t shove outline down the tall page. */
 .paper-write-gap {
-  flex: 1 1 calc(var(--paper-rule, 34px) * 5);
-  min-height: calc(var(--paper-rule, 34px) * 5);
+  flex: 0 0 auto;
+  height: calc(var(--paper-rule, 34px) * 4);
+  min-height: calc(var(--paper-rule, 34px) * 4);
 }
 
 .paper-write-gap.is-tight {
-  flex-basis: calc(var(--paper-rule, 34px) * 2);
+  height: calc(var(--paper-rule, 34px) * 2);
   min-height: calc(var(--paper-rule, 34px) * 2);
 }
 
 .paper-write-gap.is-end {
+  height: calc(var(--paper-rule, 34px) * 5);
+  min-height: calc(var(--paper-rule, 34px) * 5);
+}
+
+/* Fullscreen: bands grow so each section has room to write. */
+.sketch.expanded .paper-write-gap {
+  flex: 1 1 calc(var(--paper-rule, 34px) * 4);
+  height: auto;
+}
+
+.sketch.expanded .paper-write-gap.is-tight {
+  flex-basis: calc(var(--paper-rule, 34px) * 2);
+}
+
+.sketch.expanded .paper-write-gap.is-end {
   flex-grow: 2;
-  min-height: calc(var(--paper-rule, 34px) * 6);
+  flex-basis: calc(var(--paper-rule, 34px) * 5);
+}
+
+/* Keep the inline form pad from becoming a multi-page cliff when you hit Done. */
+.sketch:not(.expanded) .sketch-sheet {
+  max-height: min(58vh, 440px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  border-radius: 12px;
 }
 
 /* Type mode: margin gutter + clean paper — no rules through the letters. */

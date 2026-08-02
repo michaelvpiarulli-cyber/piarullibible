@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSermons } from '../hooks/useSermons';
 import { useVerseAnnotations } from '../context/annotations';
@@ -102,6 +102,7 @@ export default function SermonView() {
   const [newFolderName, setNewFolderName] = useState('');
   const [makingFolder, setMakingFolder] = useState(false);
   const fileRef = useRef(null);
+  const notesStageRef = useRef(null);
 
   const folderById = useMemo(() => {
     const map = new Map();
@@ -121,20 +122,31 @@ export default function SermonView() {
     return counts;
   }, [sermons, folders]);
 
+  const collapseExpand = useCallback(() => {
+    setExpanded(false);
+    // Remounting the tall pad can leave the page scrolled to its bottom —
+    // bring the notes stage back to the top of the viewport.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        notesStageRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      });
+    });
+  }, []);
+
   // Full-screen notes render in a body portal (avoids iPad fixed-position bugs
   // inside sticky / backdrop-filter ancestors). Lock the page underneath.
   useEffect(() => {
     if (!expanded) return;
     document.documentElement.classList.add('notes-expanded');
     const onKey = (e) => {
-      if (e.key === 'Escape') setExpanded(false);
+      if (e.key === 'Escape') collapseExpand();
     };
     window.addEventListener('keydown', onKey);
     return () => {
       document.documentElement.classList.remove('notes-expanded');
       window.removeEventListener('keydown', onKey);
     };
-  }, [expanded]);
+  }, [expanded, collapseExpand]);
 
   useEffect(() => {
     if (!composing) setExpanded(false);
@@ -474,7 +486,7 @@ export default function SermonView() {
             Safari doesn’t glitch on position:fixed inside sticky/blur chrome.
           */}
           {!expanded && (
-            <div className="notes-stage">
+            <div className="notes-stage" ref={notesStageRef}>
               <div className="notes-stage-bar">
                 <div className="mode-switch">
                   <button
@@ -565,7 +577,7 @@ export default function SermonView() {
                     </div>
                   </div>
                   <div className="notes-expand-actions-btns">
-                    <button type="button" className="btn-secondary" onClick={() => setExpanded(false)}>
+                    <button type="button" className="btn-secondary" onClick={collapseExpand}>
                       Done
                     </button>
                     <button type="button" className="btn-primary" onClick={save}>
