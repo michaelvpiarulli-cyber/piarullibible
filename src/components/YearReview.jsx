@@ -24,7 +24,10 @@ export default function YearReview({ plan, currentDay }) {
   const stats = useMemo(() => {
     const readings = plan.flatMap((d) => d.readings);
     const doneReadings = readings.filter((r) => isDone(r.id));
-    const chapters = doneReadings.reduce((n, r) => n + r.chapters.length, 0);
+    const chapters = doneReadings.reduce(
+      (n, r) => n + (r.kind === 'book' ? 0 : r.chapters?.length || 0),
+      0
+    );
     const daysDone = plan.filter((d) => dayComplete(d, isDone)).length;
     const { best } = computeStreak(plan, isDone, currentDay);
 

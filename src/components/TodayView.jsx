@@ -110,10 +110,16 @@ export default function TodayView({ plan, currentDay, dayDate, isDone, toggle })
           <span className="hero-progress-label">
             {complete
               ? `All ${total} readings done — nice work`
-              : `${doneCount} of ${total} readings · ${dayData.readings.reduce(
-                  (n, r) => n + r.chapters.length,
-                  0
-                )} chapters`}
+              : (() => {
+                  const bibleChapters = dayData.readings.reduce(
+                    (n, r) => n + (r.kind === 'book' ? 0 : r.chapters?.length || 0),
+                    0
+                  );
+                  const hasBook = dayData.readings.some((r) => r.kind === 'book');
+                  return `${doneCount} of ${total} readings · ${bibleChapters} chapter${
+                    bibleChapters === 1 ? '' : 's'
+                  }${hasBook ? ' + book' : ''}`;
+                })()}
           </span>
         </div>
       </div>

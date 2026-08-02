@@ -1,8 +1,13 @@
 import { TRACKS } from '../data/books';
 import { DAYS, TOTAL_CHAPTERS } from '../data/generatePlan';
+import { PASTOR_BOOK, bookStats } from '../data/pastorBook';
 import { computeStreak } from '../data/streaks';
 
 const TRACK_LIST = [TRACKS.LAW_HISTORY, TRACKS.WISDOM, TRACKS.PROPHETS, TRACKS.NEW_TESTAMENT];
+
+function bibleChaptersIn(reading) {
+  return reading.kind === 'book' ? 0 : reading.chapters?.length || 0;
+}
 
 export default function ProgressView({
   plan,
@@ -13,13 +18,19 @@ export default function ProgressView({
   setStartDate,
   currentDay,
   currentWeek,
+  bookPlanDays,
+  setBookPlanDays,
+  bookDayOptions,
 }) {
   const pct = Math.round((doneCount / totalReadings) * 100);
   const allReadings = plan.flatMap((d) => d.readings);
+  const bookReadings = allReadings.filter((r) => r.kind === 'book');
+  const bookDone = bookReadings.filter((r) => isDone(r.id)).length;
+  const bookMeta = bookStats(PASTOR_BOOK);
 
   const chaptersRead = allReadings
     .filter((r) => isDone(r.id))
-    .reduce((sum, r) => sum + r.chapters.length, 0);
+    .reduce((sum, r) => sum + bibleChaptersIn(r), 0);
 
   const daysComplete = plan.filter(
     (d) => d.readings.length > 0 && d.readings.every((r) => isDone(r.id))
@@ -30,10 +41,10 @@ export default function ProgressView({
   const perTrack = TRACK_LIST.map((name) => {
     const readings = allReadings.filter((r) => r.trackName === name);
     const done = readings.filter((r) => isDone(r.id)).length;
-    const chapters = readings.reduce((n, r) => n + r.chapters.length, 0);
+    const chapters = readings.reduce((n, r) => n + bibleChaptersIn(r), 0);
     const chaptersDone = readings
       .filter((r) => isDone(r.id))
-      .reduce((n, r) => n + r.chapters.length, 0);
+      .reduce((n, r) => n + bibleChaptersIn(r), 0);
     return { name, chapters, chaptersDone, pct: Math.round((done / readings.length) * 100) };
   });
 
@@ -97,6 +108,34 @@ export default function ProgressView({
         ))}
       </div>
 
+      {bookReadings.length > 0 && (
+        <>
+          <h3 className="section-title">{PASTOR_BOOK.title}</h3>
+          <div className="track-stats">
+            <div className="track-stat">
+              <div className="track-stat-head">
+                <span className="track-stat-name">Daily portions</span>
+                <span className="track-stat-count">
+                  {bookDone}/{bookReadings.length}
+                </span>
+              </div>
+              <div className="progress-bar-outer thin">
+                <div
+                  className="progress-bar-inner"
+                  style={{
+                    width: `${Math.round((bookDone / bookReadings.length) * 100)}%`,
+                  }}
+                />
+              </div>
+              <p className="track-stat-note">
+                {bookMeta.chapters} chapters · ~{bookMeta.words.toLocaleString()} words
+                {PASTOR_BOOK.placeholder ? ' · sample text' : ''}
+              </p>
+            </div>
+          </div>
+        </>
+      )}
+
       <h3 className="section-title">Plan settings</h3>
       <div className="setting-card">
         <label className="setting-row">
@@ -109,6 +148,22 @@ export default function ProgressView({
             Day {currentDay} · Week {currentWeek}
           </span>
         </div>
+        {setBookPlanDays && (
+          <label className="setting-row">
+            <span className="setting-label">Book plan length</span>
+            <select
+              value={bookPlanDays}
+              onChange={(e) => setBookPlanDays(Number(e.target.value))}
+              aria-label="How many days to spread the pastor’s book across"
+            >
+              {(bookDayOptions || []).map((n) => (
+                <option key={n} value={n}>
+                  {n} days
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
     </div>
   );
