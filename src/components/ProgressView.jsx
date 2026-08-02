@@ -129,7 +129,9 @@ export default function ProgressView({
               </div>
               <p className="track-stat-note">
                 {bookMeta.chapters} chapters · ~{bookMeta.words.toLocaleString()} words
-                {PASTOR_BOOK.placeholder ? ' · sample text' : ''}
+                {' · '}
+                {bookReadings.length} day{bookReadings.length === 1 ? '' : 's'} with this text
+                {PASTOR_BOOK.placeholder ? ' · sample' : ''}
               </p>
             </div>
           </div>
@@ -150,7 +152,10 @@ export default function ProgressView({
         </div>
         {setBookPlanDays && (
           <label className="setting-row">
-            <span className="setting-label">Book plan length</span>
+            <span className="setting-label">
+              Book plan length
+              <span className="setting-hint">Max days to spread the book (shorter text may finish sooner)</span>
+            </span>
             <select
               value={bookPlanDays}
               onChange={(e) => setBookPlanDays(Number(e.target.value))}
