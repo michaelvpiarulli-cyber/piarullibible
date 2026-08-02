@@ -11,7 +11,9 @@ import {
 } from '../lib/subsplash';
 import SketchPad from './ink/SketchPad';
 import InkPreview from './ink/InkPreview';
+import PaperUnderlay from './ink/PaperUnderlay';
 import { pagesNeededForInk } from './ink/padMetrics';
+import { parsePaperSections } from '../lib/subsplash';
 
 const BLANK = {
   title: '',
@@ -142,15 +144,18 @@ export default function SermonView() {
 
   const applyImport = (fields) => {
     const ink = fields.ink || [];
+    const inkPages = fields.inkPages || pagesNeededForInk(ink, 1);
     setForm({
       ...BLANK,
       ...fields,
       ink,
-      inkPages: fields.inkPages || pagesNeededForInk(ink, 1),
+      inkPages,
     });
     setEditingId(null);
-    setMode('type');
+    // Land on the paper pad so Subsplash outlines are ready for Pencil notes.
+    setMode('write');
     setComposing(true);
+    setExpanded(true);
     setImporting(false);
     setImportUrl('');
     setImportError(null);
@@ -311,6 +316,13 @@ export default function SermonView() {
 
   const starredCount = sermons.filter((s) => s.starred).length;
 
+  const paperSections = useMemo(() => parsePaperSections(form.notes), [form.notes]);
+  const usePaperPad =
+    paperSections.length > 1 ||
+    Boolean(form.sourceUrl) ||
+    (paperSections.length === 1 && paperSections[0].text.length > 80);
+  const paperUnderlay = usePaperPad ? <PaperUnderlay notes={form.notes} /> : null;
+
   return (
     <div className="sermon-view">
       {composing ? (
@@ -339,7 +351,8 @@ export default function SermonView() {
               <a href={form.sourceUrl} target="_blank" rel="noreferrer">
                 Subsplash notes
               </a>
-              . Edit anything before saving.
+              {' '}
+              as lined paper — write in the gaps between sections.
             </p>
           )}
 
@@ -510,7 +523,8 @@ export default function SermonView() {
                     value={form.notes}
                     onChange={field('notes')}
                     placeholder="Notes — quotes, outline, what the Spirit pressed on you…"
-                    rows={10}
+                    rows={usePaperPad ? 16 : 10}
+                    className={usePaperPad ? 'sermon-paper-textarea' : undefined}
                   />
                 </>
               )}
@@ -521,6 +535,7 @@ export default function SermonView() {
                   onChange={(ink) => setForm((f) => ({ ...f, ink }))}
                   pages={form.inkPages || 1}
                   onPagesChange={(inkPages) => setForm((f) => ({ ...f, inkPages }))}
+                  underlay={paperUnderlay}
                 />
               )}
             </div>
@@ -565,7 +580,7 @@ export default function SermonView() {
                       value={form.notes}
                       onChange={field('notes')}
                       placeholder="Notes — quotes, outline, what the Spirit pressed on you…"
-                      className="notes-expand-textarea"
+                      className={`notes-expand-textarea${usePaperPad ? ' sermon-paper-textarea' : ''}`}
                       autoFocus
                     />
                   ) : (
@@ -574,6 +589,7 @@ export default function SermonView() {
                       onChange={(ink) => setForm((f) => ({ ...f, ink }))}
                       pages={form.inkPages || 1}
                       onPagesChange={(inkPages) => setForm((f) => ({ ...f, inkPages }))}
+                      underlay={paperUnderlay}
                       expanded
                     />
                   )}
@@ -582,7 +598,9 @@ export default function SermonView() {
                 <footer className="notes-overlay-foot">
                   <p className="sketch-hint">
                     {mode === 'write'
-                      ? 'Apple Pencil writes · fingers scroll the page'
+                      ? usePaperPad
+                        ? 'Outline is on the paper — write in the open bands · Pencil inks, fingers scroll'
+                        : 'Apple Pencil writes · fingers scroll the page'
                       : 'Done or Escape to leave full screen.'}
                   </p>
                 </footer>
@@ -594,7 +612,11 @@ export default function SermonView() {
             <p className="sermon-dual-hint">Handwritten page saved with these notes.</p>
           )}
           {!expanded && mode === 'write' && form.notes.trim() && (
-            <p className="sermon-dual-hint">Typed notes are kept when you switch to handwriting.</p>
+            <p className="sermon-dual-hint">
+              {usePaperPad
+                ? 'Outline stays printed on the paper — add ink in the spaces between sections.'
+                : 'Typed notes are kept when you switch to handwriting.'}
+            </p>
           )}
 
           <input

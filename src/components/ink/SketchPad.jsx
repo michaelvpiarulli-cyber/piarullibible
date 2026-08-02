@@ -42,6 +42,7 @@ export default function SketchPad({
   pages: pagesProp,
   onPagesChange,
   expanded = false,
+  underlay = null,
 }) {
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
@@ -369,9 +370,10 @@ export default function SketchPad({
       <div className="sketch-sheet" ref={sheetRef}>
         <div
           ref={wrapRef}
-          className="sketch-page"
+          className={`sketch-page${underlay ? ' has-underlay' : ''}`}
           style={{ paddingBottom: `${PAGE_RATIO * 100 * pages}%` }}
         >
+          {underlay}
           <canvas
             ref={canvasRef}
             className="sketch-canvas"

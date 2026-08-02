@@ -3425,6 +3425,7 @@
 .sketch-canvas {
   position: absolute;
   inset: 0;
+  z-index: 2;
   touch-action: none;
   cursor: crosshair;
   /* Avoid iOS callout / selection while writing. */
@@ -3434,6 +3435,134 @@
 
 .sketch-canvas.is-inking {
   cursor: none;
+}
+
+/* ---------- Subsplash / outline paper under the ink ---------- */
+
+.sketch-page.has-underlay {
+  /* Soft left margin rule, like a notebook gutter. */
+  background-image:
+    linear-gradient(
+      to right,
+      transparent 0,
+      transparent 44px,
+      color-mix(in srgb, #b42318 28%, transparent) 44px,
+      color-mix(in srgb, #b42318 28%, transparent) 45px,
+      transparent 45px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 33px,
+      var(--border) 33px,
+      var(--border) 34px
+    );
+}
+
+.paper-underlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  display: flex;
+  padding: 10px 22px 28px 56px;
+  box-sizing: border-box;
+}
+
+.paper-margin-rule {
+  display: none;
+}
+
+.paper-underlay-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.paper-block {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+}
+
+.paper-block-text {
+  margin: 0;
+  font-family: Georgia, 'Iowan Old Style', Palatino, 'Times New Roman', serif;
+  font-size: 0.98rem;
+  line-height: 33px; /* sit on the ruled lines */
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.paper-block.is-answers .paper-block-text {
+  font-size: 0.86rem;
+  color: var(--text-dim);
+  line-height: 33px;
+}
+
+.paper-write-gap {
+  flex: 1 1 150px;
+  min-height: 150px;
+}
+
+.paper-write-gap.is-tight {
+  flex-basis: 66px;
+  min-height: 66px;
+}
+
+.paper-write-gap.is-end {
+  flex-grow: 2;
+  min-height: 180px;
+}
+
+.sermon-form textarea.sermon-paper-textarea,
+.notes-expand-textarea.sermon-paper-textarea {
+  font-family: Georgia, 'Iowan Old Style', Palatino, 'Times New Roman', serif;
+  font-size: 1rem;
+  line-height: 1.85;
+  padding: 22px 24px 28px 40px;
+  border-radius: 14px;
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(
+      to right,
+      transparent 0,
+      transparent 28px,
+      color-mix(in srgb, #b42318 22%, transparent) 28px,
+      color-mix(in srgb, #b42318 22%, transparent) 29px,
+      transparent 29px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 31px,
+      color-mix(in srgb, var(--border) 85%, transparent) 31px,
+      color-mix(in srgb, var(--border) 85%, transparent) 32px
+    );
+  background-attachment: local;
+  box-shadow: var(--shadow-lift);
+}
+
+:root[data-theme='dark'] .sketch-page.has-underlay {
+  background-image:
+    linear-gradient(
+      to right,
+      transparent 0,
+      transparent 44px,
+      color-mix(in srgb, #f07167 35%, transparent) 44px,
+      color-mix(in srgb, #f07167 35%, transparent) 45px,
+      transparent 45px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 33px,
+      var(--border) 33px,
+      var(--border) 34px
+    );
 }
 
 .sketch-hint {

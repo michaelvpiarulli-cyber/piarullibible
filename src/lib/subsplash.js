@@ -10,6 +10,9 @@ const HID_RE = /(?:[?&](?:doc|page|hid)=|\/(?:view|notes)\/)([A-Za-z0-9_-]{5,})/
 const CITE_RE = /<cite>\s*-{0,3}\s*([^<]+?)\s*<\/cite>/gi;
 const FILL_RE = /__([^_\n]+?)__/g;
 
+/** Marker line inserted between outline blocks — room to write. */
+export const WRITE_GAP = '···· ···· ····';
+
 /** Pull a Subsplash document id out of a share URL or bare id. */
 export function extractSubsplashHid(input) {
   const raw = (input || '').trim();
@@ -28,9 +31,77 @@ export function extractSubsplashHid(input) {
   return m?.[1] || null;
 }
 
+/** Split cleaned outline text into paper sections (before write-gap joining). */
+export function splitOutlineBlocks(text) {
+  const raw = String(text || '')
+    .replace(/\r\n/g, '\n')
+    .trim();
+  if (!raw) return [];
+
+  // Break before numbered / lettered points and markdown-ish headings that survived.
+  const withBreaks = raw
+    .replace(/\n(?=(?:\d+[).]\s|[A-Z][).]\s|[-•]\s))/g, '\n\n')
+    .replace(/\n{3,}/g, '\n\n');
+
+  return withBreaks
+    .split(/\n{2,}/)
+    .map((b) => b.trim())
+    .filter(Boolean);
+}
+
 /**
- * Turn Subsplash markdown-ish content into a clean sermon outline:
- * fill-ins become blanks, {note} becomes writing space, cites become refs.
+ * Turn a notes string (with WRITE_GAP markers or blank runs) into paper sections.
+ * Used to print the outline under the handwriting pad.
+ */
+export function parsePaperSections(notes) {
+  const raw = String(notes || '').replace(/\r\n/g, '\n').trim();
+  if (!raw) return [];
+
+  // Split on WRITE_GAP lines or runs of blank lines.
+  const parts = raw.split(/\n\s*···· ···· ····\s*\n|\n{3,}/);
+
+  const sections = [];
+  for (const part of parts) {
+    const text = part.trim();
+    if (!text || text === WRITE_GAP) continue;
+    sections.push({
+      text,
+      kind: /^answer key\b/i.test(text) ? 'answers' : 'outline',
+    });
+  }
+
+  if (!sections.length) {
+    return splitOutlineBlocks(raw).map((text) => ({
+      text,
+      kind: /^answer key\b/i.test(text) ? 'answers' : 'outline',
+    }));
+  }
+
+  return sections;
+}
+
+/** How many ruled pages a paper outline needs (outline + write bands). */
+export function estimatePaperPages(sections) {
+  if (!sections?.length) return 2;
+  let weight = 0;
+  let outlineCount = 0;
+  for (const s of sections) {
+    const lines = String(s.text || s)
+      .split('\n')
+      .reduce((n, line) => n + Math.max(1, Math.ceil(line.length / 52)), 0);
+    weight += lines + (s.kind === 'answers' ? 2 : 6);
+    if (s.kind !== 'answers') outlineCount += 1;
+  }
+  // Roomy paper — roughly a page per 1–2 sections, floored by line weight.
+  const bySections = Math.ceil(outlineCount * 0.75);
+  const byLines = Math.ceil(weight / 16);
+  return Math.max(2, Math.min(8, Math.max(bySections, byLines)));
+}
+
+/**
+ * Turn Subsplash markdown-ish content into a paper outline:
+ * fill-ins become blanks, {note} becomes a write gap, cites become refs,
+ * and sections are spaced so you can write between them.
  */
 export function formatSubsplashContent(content) {
   const answers = [];
@@ -44,18 +115,50 @@ export function formatSubsplashContent(content) {
 
   text = text
     .replace(CITE_RE, (_, ref) => `(${ref.trim()})`)
-    .replace(/\{note\}/gi, '\n________________________________\n')
+    // Explicit Subsplash note slots → our write-gap marker.
+    .replace(/\{note\}/gi, `\n\n${WRITE_GAP}\n\n`)
     .replace(/<\/?[^>]+>/g, '') // stray HTML
     .replace(/^>\s?/gm, '')
     .replace(/^#{1,6}\s*/gm, '')
-    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]+\n/g, '\n')
     .trim();
 
-  if (answers.length) {
-    text += `\n\nAnswer key\n${answers.map((a, i) => `${i + 1}. ${a}`).join('\n')}`;
+  const blocks = splitOutlineBlocks(text);
+  const outline = [];
+  const answerBlocks = [];
+
+  for (const block of blocks) {
+    if (block === WRITE_GAP || /^[·.\s]+$/.test(block)) {
+      // Keep intentional gaps from {note}; avoid stacking duplicates later.
+      if (outline.length && outline[outline.length - 1] !== WRITE_GAP) {
+        outline.push(WRITE_GAP);
+      }
+      continue;
+    }
+    if (/^answer key\b/i.test(block)) {
+      answerBlocks.push(block);
+      continue;
+    }
+    outline.push(block);
+    // Default breathing room after every outline block.
+    outline.push(WRITE_GAP);
   }
 
-  return text;
+  // Trim trailing gap before answer key / end.
+  while (outline.length && outline[outline.length - 1] === WRITE_GAP) outline.pop();
+
+  let paper = outline.join('\n\n');
+
+  if (answers.length) {
+    const key = `Answer key\n${answers.map((a, i) => `${i + 1}. ${a}`).join('\n')}`;
+    paper = paper ? `${paper}\n\n${WRITE_GAP}\n\n${key}` : key;
+  } else if (answerBlocks.length) {
+    paper = paper
+      ? `${paper}\n\n${WRITE_GAP}\n\n${answerBlocks.join('\n\n')}`
+      : answerBlocks.join('\n\n');
+  }
+
+  return paper.replace(/\n{4,}/g, '\n\n\n').trim();
 }
 
 /** First scripture citation in the note, if any. */
@@ -69,6 +172,8 @@ export function extractPassage(content) {
 export function pageToSermonFields(page) {
   const content = page?.content || '';
   const publish = page?.publish || page?.created || '';
+  const notes = formatSubsplashContent(content);
+  const sections = parsePaperSections(notes);
   return {
     title: page?.title || '',
     speaker: page?.author || '',
@@ -77,9 +182,10 @@ export function pageToSermonFields(page) {
     series: page?.collection?.name || page?.collection?.title || '',
     church: '',
     tagsText: 'subsplash',
-    notes: formatSubsplashContent(content),
+    notes,
     takeaway: '',
     ink: [],
+    inkPages: estimatePaperPages(sections),
     starred: false,
     sourceUrl: page?.hid
       ? `https://notes.subsplash.com/fill-in/view?doc=${page.hid}`
@@ -133,6 +239,9 @@ export function textToSermonFields(text, { filename } = {}) {
     }
   }
 
+  const notes = formatSubsplashContent(text);
+  const sections = parsePaperSections(notes);
+
   return {
     title,
     speaker: '',
@@ -141,9 +250,10 @@ export function textToSermonFields(text, { filename } = {}) {
     series: '',
     church: '',
     tagsText: 'imported',
-    notes: formatSubsplashContent(text),
+    notes,
     takeaway: '',
     ink: [],
+    inkPages: estimatePaperPages(sections),
     starred: false,
     sourceUrl: '',
   };
