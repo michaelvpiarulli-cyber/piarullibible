@@ -1,8 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
 import './App.css';
 import { buildPlan, groupIntoWeeks } from './data/generatePlan';
+import { buildBookPlan, mergeBookIntoPlan } from './data/generateBookPlan';
+import { PASTOR_BOOK } from './data/pastorBook';
 import { useProgress } from './hooks/useProgress';
 import { usePlanStart } from './hooks/usePlanStart';
+import { useBookPlanDays } from './hooks/useBookPlanDays';
 import { useAnnotations } from './hooks/useAnnotations';
 import { AnnotationsProvider } from './context/annotations';
 import BottomNav from './components/BottomNav';
@@ -54,7 +57,12 @@ const NOTE_SECTIONS = [
 ];
 
 function App() {
-  const plan = useMemo(() => buildPlan(), []);
+  const { bookPlanDays, setBookPlanDays, options: bookDayOptions } = useBookPlanDays();
+  const plan = useMemo(() => {
+    const bible = buildPlan();
+    const book = buildBookPlan(PASTOR_BOOK, bookPlanDays);
+    return mergeBookIntoPlan(bible, book);
+  }, [bookPlanDays]);
   const weeks = useMemo(() => groupIntoWeeks(plan), [plan]);
   const totalReadings = useMemo(() => plan.reduce((n, d) => n + d.readings.length, 0), [plan]);
 
@@ -213,6 +221,9 @@ function App() {
                 setStartDate={setStartDate}
                 currentDay={currentDay}
                 currentWeek={currentWeek}
+                bookPlanDays={bookPlanDays}
+                setBookPlanDays={setBookPlanDays}
+                bookDayOptions={bookDayOptions}
               />
                 )}
               </>

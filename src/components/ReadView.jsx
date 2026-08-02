@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BOOKS } from '../data/books';
 import { bollsBookId } from '../data/bookRefs';
+import { PASTOR_BOOK } from '../data/pastorBook';
 import PassageText, { TRANSLATION_LABEL } from './PassageText';
+import BookText from './BookText';
 
 const OT = BOOKS.slice(0, 39);
 const NT = BOOKS.slice(39);
@@ -12,9 +14,11 @@ const NAME_BY_ID = new Map(BOOKS.map((b) => [bollsBookId(b.name), b.name]));
 const clean = (s) => (s || '').replace(/<[^>]+>/g, '').replace(/[⌃⌄]/g, '').trim();
 
 export default function ReadView({ jumpTo }) {
+  const [source, setSource] = useState('bible'); // bible | pastor
   const [book, setBook] = useState(null);
   const [chapter, setChapter] = useState(null);
   const [focusVerse, setFocusVerse] = useState(null);
+  const [pastorChapterId, setPastorChapterId] = useState(null);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState(null);
   const [searching, setSearching] = useState(false);
@@ -26,7 +30,13 @@ export default function ReadView({ jumpTo }) {
     if (jumpTo?.book) return;
     try {
       const last = JSON.parse(localStorage.getItem('bible-plan-last-read') || 'null');
+      if (last?.source === 'pastor') {
+        setSource('pastor');
+        setPastorChapterId(last.chapterId || null);
+        return;
+      }
       if (last?.book) {
+        setSource('bible');
         setBook(last.book);
         setChapter(last.chapter);
       }
@@ -39,18 +49,30 @@ export default function ReadView({ jumpTo }) {
   // Keep jumpTo around (don't clear it) so Strict Mode remounts can't lose the target.
   useEffect(() => {
     if (!jumpTo?.book || !jumpTo?.chapter) return;
+    setSource('bible');
     setBook(jumpTo.book);
     setChapter(jumpTo.chapter);
     setFocusVerse(jumpTo);
+    setPastorChapterId(null);
     setResults(null);
     setQuery('');
   }, [jumpTo]);
 
   useEffect(() => {
-    if (book && chapter) {
-      localStorage.setItem('bible-plan-last-read', JSON.stringify({ book, chapter }));
+    if (source === 'pastor') {
+      localStorage.setItem(
+        'bible-plan-last-read',
+        JSON.stringify({ source: 'pastor', chapterId: pastorChapterId })
+      );
+      return;
     }
-  }, [book, chapter]);
+    if (book && chapter) {
+      localStorage.setItem(
+        'bible-plan-last-read',
+        JSON.stringify({ source: 'bible', book, chapter })
+      );
+    }
+  }, [source, book, chapter, pastorChapterId]);
 
   const chapters = useMemo(
     () => (book && chapter ? [{ book, chapter }] : null),
@@ -58,6 +80,8 @@ export default function ReadView({ jumpTo }) {
   );
 
   const bookMeta = BOOKS.find((b) => b.name === book);
+  const pastorChapter = PASTOR_BOOK.chapters.find((c) => c.id === pastorChapterId);
+  const pastorChapterIndex = PASTOR_BOOK.chapters.findIndex((c) => c.id === pastorChapterId);
 
   const runSearch = async (e) => {
     e.preventDefault();
@@ -88,13 +112,119 @@ export default function ReadView({ jumpTo }) {
   };
 
   const openAt = (b, c) => {
+    setSource('bible');
     setBook(b);
     setChapter(c);
     setResults(null);
     setQuery('');
   };
 
-  // --- reading a chapter ----------------------------------------------------
+  const switchSource = (next) => {
+    setSource(next);
+    setResults(null);
+    setQuery('');
+    setError(null);
+    if (next === 'bible') {
+      setPastorChapterId(null);
+    } else {
+      setBook(null);
+      setChapter(null);
+      setFocusVerse(null);
+    }
+  };
+
+  // --- pastor book: reading a chapter ---------------------------------------
+  if (source === 'pastor' && pastorChapter) {
+    return (
+      <div className="read-view">
+        <div className="read-bar">
+          <button type="button" className="pager-btn" onClick={() => setPastorChapterId(null)}>
+            ← Chapters
+          </button>
+          <span className="read-where">
+            {PASTOR_BOOK.title} · Ch. {pastorChapter.number}
+          </span>
+          <button type="button" className="pager-btn" onClick={() => switchSource('bible')}>
+            Bible
+          </button>
+        </div>
+
+        <div className="read-flow">
+          <BookText
+            paragraphs={pastorChapter.paragraphs.map((text, idx) => ({
+              text,
+              chapterNumber: pastorChapter.number,
+              chapterTitle: pastorChapter.title,
+              isChapterStart: idx === 0,
+            }))}
+            placeholder={PASTOR_BOOK.placeholder}
+            author={PASTOR_BOOK.author}
+          />
+        </div>
+
+        <div className="day-pager">
+          <button
+            type="button"
+            className="pager-btn"
+            disabled={pastorChapterIndex <= 0}
+            onClick={() => setPastorChapterId(PASTOR_BOOK.chapters[pastorChapterIndex - 1].id)}
+          >
+            ← Previous
+          </button>
+          <button
+            type="button"
+            className="pager-btn"
+            disabled={pastorChapterIndex >= PASTOR_BOOK.chapters.length - 1}
+            onClick={() => setPastorChapterId(PASTOR_BOOK.chapters[pastorChapterIndex + 1].id)}
+          >
+            Next →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // --- pastor book: chapter list --------------------------------------------
+  if (source === 'pastor') {
+    return (
+      <div className="read-view">
+        <div className="filter-row section-switch read-source-switch">
+          <button type="button" className="chip" onClick={() => switchSource('bible')}>
+            Bible
+          </button>
+          <button type="button" className="chip active" onClick={() => switchSource('pastor')}>
+            {PASTOR_BOOK.title}
+          </button>
+        </div>
+
+        <div className="pastor-book-intro">
+          <h2 className="pastor-book-title">{PASTOR_BOOK.title}</h2>
+          {PASTOR_BOOK.subtitle && <p className="pastor-book-sub">{PASTOR_BOOK.subtitle}</p>}
+          <p className="pastor-book-meta">
+            {PASTOR_BOOK.author} · {PASTOR_BOOK.chapters.length} chapters
+            {PASTOR_BOOK.placeholder ? ' · sample content' : ''}
+          </p>
+        </div>
+
+        <ul className="pastor-chapter-list">
+          {PASTOR_BOOK.chapters.map((ch) => (
+            <li key={ch.id}>
+              <button
+                type="button"
+                className="pastor-chapter-row"
+                onClick={() => setPastorChapterId(ch.id)}
+              >
+                <span className="pastor-chapter-num">{ch.number}</span>
+                <span className="pastor-chapter-name">{ch.title}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  // --- bible: reading a chapter ---------------------------------------------
   if (book && chapter) {
     return (
       <div className="read-view">
@@ -148,7 +278,7 @@ export default function ReadView({ jumpTo }) {
     );
   }
 
-  // --- choosing a chapter ---------------------------------------------------
+  // --- bible: choosing a chapter --------------------------------------------
   if (book) {
     return (
       <div className="read-view">
@@ -171,9 +301,18 @@ export default function ReadView({ jumpTo }) {
     );
   }
 
-  // --- browsing / searching -------------------------------------------------
+  // --- bible: browsing / searching ------------------------------------------
   return (
     <div className="read-view">
+      <div className="filter-row section-switch read-source-switch">
+        <button type="button" className="chip active" onClick={() => switchSource('bible')}>
+          Bible
+        </button>
+        <button type="button" className="chip" onClick={() => switchSource('pastor')}>
+          {PASTOR_BOOK.title}
+        </button>
+      </div>
+
       <form className="memorize-add" onSubmit={runSearch}>
         <input
           type="search"

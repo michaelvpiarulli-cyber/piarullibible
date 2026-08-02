@@ -1312,6 +1312,16 @@
 .setting-label {
   font-size: 0.95rem;
   font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.setting-hint {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-dim);
+  line-height: 1.3;
 }
 
 .setting-value {
@@ -1319,7 +1329,8 @@
   color: var(--text-dim);
 }
 
-.setting-row input[type='date'] {
+.setting-row input[type='date'],
+.setting-row select {
   font-family: inherit;
   font-size: 0.9rem;
   padding: 6px 10px;
@@ -1327,6 +1338,135 @@
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
+}
+
+.track-stat-note {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+/* ---------- pastor’s book reader ---------- */
+
+.reading-row.book-reading .track-name {
+  color: var(--accent);
+}
+
+.book-text {
+  padding: 4px 4px 8px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.book-placeholder-banner {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-alt);
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.book-byline {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.book-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.book-chapter-title {
+  margin: 0.35rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.book-paragraph {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.read-source-switch {
+  margin-bottom: 14px;
+}
+
+.pastor-book-intro {
+  margin: 4px 0 18px;
+}
+
+.pastor-book-title {
+  margin: 0 0 4px;
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.pastor-book-sub {
+  margin: 0 0 6px;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
+.pastor-book-meta {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
+.pastor-chapter-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pastor-chapter-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  text-align: left;
+  transition: background-color 0.15s;
+}
+
+.pastor-chapter-row:hover {
+  background: var(--surface-hover);
+}
+
+.pastor-chapter-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface-alt);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.pastor-chapter-name {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 /* ---------- notes view ---------- */

@@ -1,8 +1,11 @@
 import PassageText from './PassageText';
+import BookText from './BookText';
 
 export default function ReadingRow({ reading, done, onToggle, expanded, onExpand }) {
+  const isBook = reading.kind === 'book';
+
   return (
-    <li className={`reading-row${done ? ' done' : ''}`}>
+    <li className={`reading-row${done ? ' done' : ''}${isBook ? ' book-reading' : ''}`}>
       <div className="reading-main">
         <button
           type="button"
@@ -29,7 +32,16 @@ export default function ReadingRow({ reading, done, onToggle, expanded, onExpand
         </button>
       </div>
 
-      {expanded && <PassageText chapters={reading.chapters} />}
+      {expanded &&
+        (isBook ? (
+          <BookText
+            paragraphs={reading.paragraphs}
+            placeholder={reading.placeholder}
+            author={reading.author}
+          />
+        ) : (
+          <PassageText chapters={reading.chapters} />
+        ))}
     </li>
   );
 }
