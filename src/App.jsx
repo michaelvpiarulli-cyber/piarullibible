@@ -104,119 +104,121 @@ function App() {
           </header>
 
           <main className="app-main">
-            {tab === 'today' && (
-              <TodayView
-                plan={plan}
-                currentDay={currentDay}
-                dayDate={dayDate}
-                isDone={isDone}
-                toggle={toggle}
-              />
-            )}
+            <div className="view-pane" key={tab}>
+              {tab === 'today' && (
+                <TodayView
+                  plan={plan}
+                  currentDay={currentDay}
+                  dayDate={dayDate}
+                  isDone={isDone}
+                  toggle={toggle}
+                />
+              )}
 
-            {tab === 'plan' && (
-              <div className="week-list">
-                {weeks.map((weekData) => (
-                  <WeekCard
-                    key={weekData.week}
-                    weekData={weekData}
-                    currentDay={currentDay}
-                    dateRange={weekDateRange(weekData.week)}
-                    dayDate={dayDate}
-                    isDone={isDone}
-                    toggle={toggle}
-                  />
-                ))}
-              </div>
-            )}
-
-            {tab === 'read' && <ReadView jumpTo={readJump} />}
-
-            {tab === 'prayer' && (
-              <>
-                <div className="filter-row section-switch">
-                  {PRAYER_SECTIONS.map((sec) => (
-                    <button
-                      key={sec.id}
-                      type="button"
-                      className={`chip${prayerSection === sec.id ? ' active' : ''}`}
-                      onClick={() => setPrayerSection(sec.id)}
-                    >
-                      {sec.label}
-                    </button>
+              {tab === 'plan' && (
+                <div className="week-list">
+                  {weeks.map((weekData) => (
+                    <WeekCard
+                      key={weekData.week}
+                      weekData={weekData}
+                      currentDay={currentDay}
+                      dateRange={weekDateRange(weekData.week)}
+                      dayDate={dayDate}
+                      isDone={isDone}
+                      toggle={toggle}
+                    />
                   ))}
                 </div>
+              )}
 
-                {prayerSection === 'journal' && <JournalView currentDay={currentDay} />}
-                {prayerSection === 'examen' && <ExamenView />}
-                {prayerSection === 'rule' && <RuleView />}
-              </>
-            )}
+              {tab === 'read' && <ReadView jumpTo={readJump} />}
 
-            {tab === 'memorize' && <MemorizeView />}
+              {tab === 'prayer' && (
+                <>
+                  <div className="filter-row section-switch">
+                    {PRAYER_SECTIONS.map((sec) => (
+                      <button
+                        key={sec.id}
+                        type="button"
+                        className={`chip${prayerSection === sec.id ? ' active' : ''}`}
+                        onClick={() => setPrayerSection(sec.id)}
+                      >
+                        {sec.label}
+                      </button>
+                    ))}
+                  </div>
 
-            {tab === 'notes' && (
-              <>
-                <div className="filter-row section-switch">
-                  {NOTE_SECTIONS.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      className={`chip${noteSection === s.id ? ' active' : ''}`}
-                      onClick={() => setNoteSection(s.id)}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
+                  {prayerSection === 'journal' && <JournalView currentDay={currentDay} />}
+                  {prayerSection === 'examen' && <ExamenView />}
+                  {prayerSection === 'rule' && <RuleView />}
+                </>
+              )}
 
-                {noteSection === 'sermons' ? (
-                  <SermonView />
-                ) : (
-                  <NotesView
-                    highlights={highlights}
-                    notes={notes}
-                    onSelectVerse={setSelectedVerse}
-                    setHighlight={setHighlight}
-                    setNote={setNote}
-                  />
-                )}
-              </>
-            )}
+              {tab === 'memorize' && <MemorizeView />}
 
-            {tab === 'family' && <GroupView myStats={myStats} />}
+              {tab === 'notes' && (
+                <>
+                  <div className="filter-row section-switch">
+                    {NOTE_SECTIONS.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        className={`chip${noteSection === s.id ? ' active' : ''}`}
+                        onClick={() => setNoteSection(s.id)}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
 
-            {tab === 'progress' && (
-              <>
-                <div className="filter-row section-switch">
-                  {PROGRESS_SECTIONS.map((sec) => (
-                    <button
-                      key={sec.id}
-                      type="button"
-                      className={`chip${progressSection === sec.id ? ' active' : ''}`}
-                      onClick={() => setProgressSection(sec.id)}
-                    >
-                      {sec.label}
-                    </button>
-                  ))}
-                </div>
+                  {noteSection === 'sermons' ? (
+                    <SermonView />
+                  ) : (
+                    <NotesView
+                      highlights={highlights}
+                      notes={notes}
+                      onSelectVerse={setSelectedVerse}
+                      setHighlight={setHighlight}
+                      setNote={setNote}
+                    />
+                  )}
+                </>
+              )}
 
-                {progressSection === 'year' ? (
-                  <YearReview plan={plan} currentDay={currentDay} />
-                ) : (
-              <ProgressView
-                plan={plan}
-                isDone={isDone}
-                doneCount={doneCount}
-                totalReadings={totalReadings}
-                startDate={startDate}
-                setStartDate={setStartDate}
-                currentDay={currentDay}
-                currentWeek={currentWeek}
-              />
-                )}
-              </>
-            )}
+              {tab === 'family' && <GroupView myStats={myStats} />}
+
+              {tab === 'progress' && (
+                <>
+                  <div className="filter-row section-switch">
+                    {PROGRESS_SECTIONS.map((sec) => (
+                      <button
+                        key={sec.id}
+                        type="button"
+                        className={`chip${progressSection === sec.id ? ' active' : ''}`}
+                        onClick={() => setProgressSection(sec.id)}
+                      >
+                        {sec.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {progressSection === 'year' ? (
+                    <YearReview plan={plan} currentDay={currentDay} />
+                  ) : (
+                    <ProgressView
+                      plan={plan}
+                      isDone={isDone}
+                      doneCount={doneCount}
+                      totalReadings={totalReadings}
+                      startDate={startDate}
+                      setStartDate={setStartDate}
+                      currentDay={currentDay}
+                      currentWeek={currentWeek}
+                    />
+                  )}
+                </>
+              )}
+            </div>
           </main>
         </div>
 

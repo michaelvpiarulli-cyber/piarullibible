@@ -5,27 +5,38 @@
   font-weight: 400;
   color-scheme: light;
 
-  /* Katin-inspired: off-white paper, charcoal ink, washed-navy accent. */
-  --bg: #fbfbfb;
-  --surface: #ffffff;
-  --surface-alt: #f1f1ef;
-  --surface-hover: #e7e7e4;
-  --border: #e2e2df;
-  --text: #2e2e2e;
-  --text-dim: #7b7b78;
-  --text-inverse: #fbfbfb; /* text sitting on a --text-colored fill */
+  /* Katin-inspired: soft paper, charcoal ink, washed-navy accent. */
+  --bg: #f7f6f3;
+  --bg-deep: #efece6;
+  --surface: #fffcf8;
+  --surface-alt: #f0eee8;
+  --surface-hover: #e6e4dd;
+  --border: #ddd9d0;
+  --border-strong: #c9c4b8;
+  --text: #2a2a28;
+  --text-dim: #6f6e68;
+  --text-inverse: #f7f6f3;
   --accent: #3e5782;
   --accent-press: #32476b;
+  --accent-soft: #e8eef6;
+  --accent-wash: rgba(62, 87, 130, 0.12);
   --success: #4a7c59;
-  --words-of-jesus: #b42318; /* classic red-letter for the words of Christ */
+  --success-soft: rgba(74, 124, 89, 0.12);
+  --words-of-jesus: #b42318;
+  --gold: #b08d3e;
+  --gold-soft: rgba(176, 141, 62, 0.16);
 
-  --surface-blur: rgba(251, 251, 251, 0.86); /* frosted bars */
-  --check-border: #c9c9c4;
+  --surface-blur: rgba(247, 246, 243, 0.82);
+  --check-border: #c4c0b6;
   --today-tint: #eef1f7;
-  --scrim: rgba(46, 46, 46, 0.3);
-  --shadow: rgba(46, 46, 46, 0.16);
+  --scrim: rgba(42, 42, 40, 0.32);
+  --shadow: rgba(42, 42, 40, 0.12);
+  --shadow-lift: 0 10px 28px rgba(42, 42, 40, 0.08), 0 2px 6px rgba(42, 42, 40, 0.04);
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
 
-  --nav-height: 60px;
+  --nav-height: 64px;
   --app-height: 100dvh;
 
   font-synthesis: none;
@@ -39,24 +50,32 @@
   color-scheme: dark;
 
   /* Night version of the same palette — navy-tinted rather than neutral grey. */
-  --bg: #15181d;
-  --surface: #1c2027;
-  --surface-alt: #242932;
-  --surface-hover: #2d323d;
-  --border: #353b45;
-  --text: #e8e8e6;
-  --text-dim: #979ba2;
-  --text-inverse: #15181d;
+  --bg: #12151a;
+  --bg-deep: #0e1116;
+  --surface: #1a1f27;
+  --surface-alt: #232933;
+  --surface-hover: #2c3340;
+  --border: #343b47;
+  --border-strong: #454d5c;
+  --text: #ecece8;
+  --text-dim: #9a9ea6;
+  --text-inverse: #12151a;
   --accent: #8fa8d4;
   --accent-press: #a8bde0;
+  --accent-soft: rgba(143, 168, 212, 0.14);
+  --accent-wash: rgba(143, 168, 212, 0.16);
   --success: #7fb08c;
+  --success-soft: rgba(127, 176, 140, 0.16);
   --words-of-jesus: #f07167;
+  --gold: #d4b46a;
+  --gold-soft: rgba(212, 180, 106, 0.18);
 
-  --surface-blur: rgba(21, 24, 29, 0.82);
+  --surface-blur: rgba(18, 21, 26, 0.84);
   --check-border: #464c57;
   --today-tint: #1f2634;
   --scrim: rgba(0, 0, 0, 0.55);
-  --shadow: rgba(0, 0, 0, 0.5);
+  --shadow: rgba(0, 0, 0, 0.45);
+  --shadow-lift: 0 12px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 * {
@@ -74,8 +93,36 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   background-color: var(--bg);
+  /* Soft paper wash — atmosphere without a flat slab of color. */
+  background-image:
+    radial-gradient(120% 80% at 0% 0%, var(--accent-wash), transparent 55%),
+    radial-gradient(90% 70% at 100% 0%, rgba(176, 141, 62, 0.07), transparent 50%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+  background-attachment: fixed;
   color: var(--text);
   overscroll-behavior-y: none;
+}
+
+/* Fine grain so the paper feels tactile, not sterile. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+}
+
+:root[data-theme='dark'] body::before {
+  opacity: 0.05;
+  mix-blend-mode: soft-light;
+}
+
+::selection {
+  background: var(--accent-wash);
+  color: var(--text);
 }
 
 /* Fullscreen notes: lock the page under the portal overlay (iPad Safari). */
@@ -88,6 +135,10 @@ html.notes-expanded body {
 
 html.notes-expanded .app {
   visibility: hidden;
+}
+
+html.notes-expanded body::before {
+  z-index: 150;
 }
 
 button {
@@ -123,4 +174,14 @@ button {
 button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
