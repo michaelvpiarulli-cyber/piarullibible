@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSermons } from '../hooks/useSermons';
 import { useVerseAnnotations } from '../context/annotations';
 import { parsePassage } from '../data/bookRefs';
@@ -77,12 +77,32 @@ export default function SermonView() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all'); // all | starred | series:<name>
   const [mode, setMode] = useState('type'); // which pane is focused: write | type
+  const [expanded, setExpanded] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importUrl, setImportUrl] = useState('');
   const [importBusy, setImportBusy] = useState(false);
   const [importError, setImportError] = useState(null);
   const fileRef = useRef(null);
+
+  // Full-screen notes: Escape exits, and the page underneath shouldn't scroll.
+  useEffect(() => {
+    if (!expanded) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e) => {
+      if (e.key === 'Escape') setExpanded(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [expanded]);
+
+  useEffect(() => {
+    if (!composing) setExpanded(false);
+  }, [composing]);
 
   const field = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
@@ -308,57 +328,110 @@ export default function SermonView() {
             placeholder="Tags — e.g. grace, Advent, prayer"
           />
 
-          <div className="mode-switch">
-            <button
-              type="button"
-              className={`chip${mode === 'type' ? ' active' : ''}`}
-              onClick={() => setMode('type')}
-            >
-              Type
-            </button>
-            <button
-              type="button"
-              className={`chip${mode === 'write' ? ' active' : ''}`}
-              onClick={() => setMode('write')}
-            >
-              Handwrite
-            </button>
+          <div className={`notes-stage${expanded ? ' expanded' : ''}`}>
+            <div className="notes-stage-bar">
+              <div className="mode-switch">
+                <button
+                  type="button"
+                  className={`chip${mode === 'type' ? ' active' : ''}`}
+                  onClick={() => setMode('type')}
+                >
+                  Type
+                </button>
+                <button
+                  type="button"
+                  className={`chip${mode === 'write' ? ' active' : ''}`}
+                  onClick={() => setMode('write')}
+                >
+                  Handwrite
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className="btn-secondary notes-expand-btn"
+                onClick={() => setExpanded(!expanded)}
+                aria-pressed={expanded}
+              >
+                {expanded ? (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                      <path d="M9 3H5a2 2 0 0 0-2 2v4M15 3h4a2 2 0 0 1 2 2v4M9 21H5a2 2 0 0 1-2-2v-4M15 21h4a2 2 0 0 0 2-2v-4" />
+                    </svg>
+                    Done
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                      <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                    </svg>
+                    Expand
+                  </>
+                )}
+              </button>
+            </div>
+
+            {expanded && (
+              <p className="notes-expand-title">{form.title?.trim() || 'Sermon notes'}</p>
+            )}
+
+            {mode === 'type' && (
+              <>
+                {!expanded && (
+                  <div className="note-snippets">
+                    {NOTE_SNIPPETS.map((snip) => (
+                      <button
+                        key={snip.id}
+                        type="button"
+                        className="snippet-chip"
+                        onClick={() => insertSnippet(snip)}
+                      >
+                        + {snip.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <textarea
+                  value={form.notes}
+                  onChange={field('notes')}
+                  placeholder="Notes — quotes, outline, what the Spirit pressed on you…"
+                  rows={expanded ? 24 : 10}
+                  className={expanded ? 'notes-expand-textarea' : undefined}
+                />
+              </>
+            )}
+
+            {mode === 'write' && (
+              <SketchPad
+                strokes={form.ink || []}
+                onChange={(ink) => setForm((f) => ({ ...f, ink }))}
+                expanded={expanded}
+              />
+            )}
+
+            {expanded && (
+              <div className="notes-expand-actions">
+                <p className="sketch-hint">
+                  {mode === 'write'
+                    ? 'Apple Pencil only — rest your hand; fingers just scroll.'
+                    : 'Escape or Done to leave full screen.'}
+                </p>
+                <div className="notes-expand-actions-btns">
+                  <button type="button" className="btn-secondary" onClick={() => setExpanded(false)}>
+                    Done
+                  </button>
+                  <button type="submit" className="btn-primary">
+                    Save notes
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
-          {mode === 'type' && (
-            <>
-              <div className="note-snippets">
-                {NOTE_SNIPPETS.map((snip) => (
-                  <button
-                    key={snip.id}
-                    type="button"
-                    className="snippet-chip"
-                    onClick={() => insertSnippet(snip)}
-                  >
-                    + {snip.label}
-                  </button>
-                ))}
-              </div>
-              <textarea
-                value={form.notes}
-                onChange={field('notes')}
-                placeholder="Notes — quotes, outline, what the Spirit pressed on you…"
-                rows={10}
-              />
-            </>
-          )}
-
-          {mode === 'write' && (
-            <SketchPad
-              strokes={form.ink || []}
-              onChange={(ink) => setForm((f) => ({ ...f, ink }))}
-            />
-          )}
-
-          {(form.ink?.length > 0 || form.notes.trim()) && mode === 'type' && form.ink?.length > 0 && (
+          {!expanded && mode === 'type' && form.ink?.length > 0 && (
             <p className="sermon-dual-hint">Handwritten page saved with these notes.</p>
           )}
-          {mode === 'write' && form.notes.trim() && (
+          {!expanded && mode === 'write' && form.notes.trim() && (
             <p className="sermon-dual-hint">Typed notes are kept when you switch to handwriting.</p>
           )}
 

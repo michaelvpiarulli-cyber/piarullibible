@@ -29,7 +29,7 @@ function isInkPointer(e) {
  * Controlled: `strokes` in, `onChange` out, so the ink saves with whatever
  * record owns it (a sermon) rather than to its own storage.
  */
-export default function SketchPad({ strokes, onChange }) {
+export default function SketchPad({ strokes, onChange, expanded = false }) {
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
 
@@ -158,7 +158,7 @@ export default function SketchPad({ strokes, onChange }) {
   };
 
   return (
-    <div className="sketch">
+    <div className={`sketch${expanded ? ' expanded' : ''}`}>
       <div className="ink-bar">
         <div className="ink-group">
           {INKS.map((c) => (
@@ -207,12 +207,18 @@ export default function SketchPad({ strokes, onChange }) {
         </div>
       </div>
 
-      <p className="sketch-hint">Apple Pencil only — rest your hand; fingers just scroll.</p>
+      {!expanded && (
+        <p className="sketch-hint">Apple Pencil only — rest your hand; fingers just scroll.</p>
+      )}
 
       <div
         ref={wrapRef}
         className="sketch-page"
-        style={{ paddingBottom: `${PAGE_RATIO * 100 * pages}%` }}
+        style={
+          expanded
+            ? undefined
+            : { paddingBottom: `${PAGE_RATIO * 100 * pages}%` }
+        }
       >
         <canvas
           ref={canvasRef}

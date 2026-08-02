@@ -2905,12 +2905,93 @@
 .mode-switch {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.notes-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notes-stage-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.notes-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.notes-expand-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Full-screen note taking — covers nav/chrome so the pad owns the device. */
+.notes-stage.expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: var(--bg);
+  padding: calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom));
+  gap: 10px;
+}
+
+.notes-expand-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notes-stage.expanded .notes-expand-textarea,
+.notes-stage.expanded textarea.notes-expand-textarea {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  resize: none;
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.notes-expand-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.notes-expand-actions .sketch-hint {
+  flex: 1;
+  min-width: 160px;
+}
+
+.notes-expand-actions-btns {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .sketch {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.sketch.expanded {
+  flex: 1;
+  min-height: 0;
 }
 
 /* Ruled paper. padding-bottom sets the height as a ratio of the width, so the
@@ -2930,6 +3011,13 @@
     var(--border) 33px,
     var(--border) 34px
   );
+}
+
+.sketch.expanded .sketch-page {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+  padding-bottom: 0 !important;
 }
 
 .sketch-page.preview {
