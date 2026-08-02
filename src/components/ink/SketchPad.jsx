@@ -57,10 +57,21 @@ export default function SketchPad({
   strokesRef.current = strokes;
   const draftRef = useRef(null);
   const activePointerRef = useRef(null); // only this pointer may extend/end the stroke
+  const fingerScrollRef = useRef(null); // { pointerId, y, scroller } — manual pan
   const toolRef = useRef(tool);
   toolRef.current = tool;
   const pagesRef = useRef(pages);
   pagesRef.current = pages;
+
+  const findScroller = useCallback(() => {
+    const el = wrapRef.current;
+    if (!el) return null;
+    return (
+      el.closest('.notes-overlay-body') ||
+      el.closest('.app-main') ||
+      document.scrollingElement
+    );
+  }, []);
 
   /**
    * Grow the ruled pad. Because stroke y is normalized to the full canvas,
@@ -149,6 +160,27 @@ export default function SketchPad({
 
   useEffect(redraw, [strokes, redraw]);
 
+  /*
+   * touch-action:none kills native scroll on the canvas (needed so Pencil
+   * doesn’t drag the page). Block residual touchmove while inking, and drive
+   * finger pans ourselves against the scroll parent.
+   */
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+
+    const blockWhileInking = (e) => {
+      if (activePointerRef.current != null) e.preventDefault();
+    };
+
+    c.addEventListener('touchstart', blockWhileInking, { passive: false });
+    c.addEventListener('touchmove', blockWhileInking, { passive: false });
+    return () => {
+      c.removeEventListener('touchstart', blockWhileInking);
+      c.removeEventListener('touchmove', blockWhileInking);
+    };
+  }, []);
+
   const toNorm = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
     return {
@@ -162,15 +194,28 @@ export default function SketchPad({
     if (hit.length) onChange(strokesRef.current.filter((s) => !hit.includes(s)));
   };
 
-  const endStroke = (e) => {
-    // Palm / finger up must not finish (or wipe) an Apple Pencil stroke.
-    if (activePointerRef.current !== e.pointerId) return;
-    activePointerRef.current = null;
+  const releasePointer = (target, pointerId) => {
     try {
-      e.currentTarget.releasePointerCapture?.(e.pointerId);
+      target.releasePointerCapture?.(pointerId);
     } catch {
       /* already released */
     }
+  };
+
+  const endFingerScroll = (e) => {
+    if (fingerScrollRef.current?.pointerId !== e.pointerId) return false;
+    fingerScrollRef.current = null;
+    releasePointer(e.currentTarget, e.pointerId);
+    return true;
+  };
+
+  const endStroke = (e) => {
+    if (endFingerScroll(e)) return;
+    // Palm / finger up must not finish (or wipe) an Apple Pencil stroke.
+    if (activePointerRef.current !== e.pointerId) return;
+    activePointerRef.current = null;
+    e.currentTarget.classList.remove('is-inking');
+    releasePointer(e.currentTarget, e.pointerId);
     const d = draftRef.current;
     draftRef.current = null;
     if (d) onChange([...strokesRef.current, d]);
@@ -178,6 +223,24 @@ export default function SketchPad({
   };
 
   const onPointerDown = (e) => {
+    // Finger on the pad → pan the scroll parent (canvas has touch-action: none).
+    if (e.pointerType === 'touch') {
+      if (activePointerRef.current != null) {
+        // Palm while Pencil is down — swallow so it can’t scroll.
+        e.preventDefault();
+        return;
+      }
+      const scroller = findScroller();
+      if (!scroller) return;
+      fingerScrollRef.current = { pointerId: e.pointerId, y: e.clientY, scroller };
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+
     if (!isInkPointer(e)) return;
     // One stroke at a time — ignore a second pen/mouse while drawing.
     if (activePointerRef.current != null) return;
@@ -189,6 +252,7 @@ export default function SketchPad({
       /* synthetic or already-released pointer */
     }
     activePointerRef.current = e.pointerId;
+    e.currentTarget.classList.add('is-inking');
     const { x, y } = toNorm(e);
     const t = toolRef.current;
     if (t.mode === 'erase') {
@@ -205,10 +269,19 @@ export default function SketchPad({
   };
 
   const onPointerMove = (e) => {
+    const finger = fingerScrollRef.current;
+    if (finger?.pointerId === e.pointerId) {
+      e.preventDefault();
+      const dy = finger.y - e.clientY;
+      finger.y = e.clientY;
+      finger.scroller.scrollTop += dy;
+      return;
+    }
+
     if (activePointerRef.current !== e.pointerId) return;
-    if (!e.buttons) return;
-    // Keep Pencil strokes from scrolling the page underneath.
+    // Always cancel while inking — don’t wait on e.buttons (iOS Pencil is flaky).
     e.preventDefault();
+    if (e.buttons === 0 && e.pointerType === 'mouse') return;
     const { x, y } = toNorm(e);
     if (toolRef.current.mode === 'erase') return eraseAt(x, y);
     const d = draftRef.current;

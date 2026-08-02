@@ -1002,8 +1002,10 @@
 .draw-canvas.active {
   pointer-events: auto;
   cursor: crosshair;
-  /* Fingers scroll; only Apple Pencil / mouse inks. */
-  touch-action: pan-y;
+  /* none — pan-y lets Safari scroll while the Pencil is down. */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Tint the page while drawing so the mode is obvious. */
@@ -3319,8 +3321,13 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  touch-action: pan-y;
   padding-bottom: 8px;
+}
+
+/* Hard-lock the scroller while Apple Pencil is actively inking. */
+.notes-overlay-body.is-ink:has(.sketch-canvas.is-inking) {
+  overflow-y: hidden;
+  overscroll-behavior: none;
 }
 
 .notes-overlay-body.is-ink .sketch {
@@ -3399,8 +3406,11 @@
     var(--border) 34px
   );
   box-shadow: var(--shadow-lift);
-  /* Fingers pan the scroll parent; Pencil is handled in JS. */
-  touch-action: pan-y;
+  /*
+   * none — Safari will scroll the overlay if this is pan-y while the Pencil
+   * is down. Finger pans are handled in SketchPad JS instead.
+   */
+  touch-action: none;
 }
 
 .sketch.expanded .sketch-page {
@@ -3415,8 +3425,15 @@
 .sketch-canvas {
   position: absolute;
   inset: 0;
-  touch-action: pan-y; /* fingers scroll; only Apple Pencil / mouse inks */
+  touch-action: none;
   cursor: crosshair;
+  /* Avoid iOS callout / selection while writing. */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.sketch-canvas.is-inking {
+  cursor: none;
 }
 
 .sketch-hint {

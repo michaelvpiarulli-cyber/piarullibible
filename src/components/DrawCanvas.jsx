@@ -15,6 +15,7 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
   strokesRef.current = strokes;
   const draftRef = useRef(null); // stroke in progress
   const activePointerRef = useRef(null);
+  const fingerScrollRef = useRef(null);
   const toolRef = useRef(tool);
   toolRef.current = tool;
 
@@ -65,6 +66,20 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
     });
   }, [registerApi, saveStrokes]);
 
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!c || !active) return;
+    const blockWhileInking = (e) => {
+      if (activePointerRef.current != null) e.preventDefault();
+    };
+    c.addEventListener('touchstart', blockWhileInking, { passive: false });
+    c.addEventListener('touchmove', blockWhileInking, { passive: false });
+    return () => {
+      c.removeEventListener('touchstart', blockWhileInking);
+      c.removeEventListener('touchmove', blockWhileInking);
+    };
+  }, [active]);
+
   const toNorm = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
     return {
@@ -78,15 +93,24 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
     if (near.length) saveStrokes(strokesRef.current.filter((s) => !near.includes(s)));
   };
 
-  const endStroke = (e) => {
-    // Palm / finger up must not finish (or wipe) an Apple Pencil stroke.
-    if (activePointerRef.current !== e.pointerId) return;
-    activePointerRef.current = null;
+  const releasePointer = (target, pointerId) => {
     try {
-      e.currentTarget.releasePointerCapture?.(e.pointerId);
+      target.releasePointerCapture?.(pointerId);
     } catch {
       /* already released */
     }
+  };
+
+  const endStroke = (e) => {
+    if (fingerScrollRef.current?.pointerId === e.pointerId) {
+      fingerScrollRef.current = null;
+      releasePointer(e.currentTarget, e.pointerId);
+      return;
+    }
+    // Palm / finger up must not finish (or wipe) an Apple Pencil stroke.
+    if (activePointerRef.current !== e.pointerId) return;
+    activePointerRef.current = null;
+    releasePointer(e.currentTarget, e.pointerId);
 
     const d = draftRef.current;
     draftRef.current = null;
@@ -103,7 +127,26 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
   };
 
   const onPointerDown = (e) => {
-    if (!active || !isInkPointer(e)) return;
+    if (!active) return;
+
+    if (e.pointerType === 'touch') {
+      if (activePointerRef.current != null) {
+        e.preventDefault();
+        return;
+      }
+      const scroller =
+        e.currentTarget.closest('.app-main') || document.scrollingElement;
+      if (!scroller) return;
+      fingerScrollRef.current = { pointerId: e.pointerId, y: e.clientY, scroller };
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+
+    if (!isInkPointer(e)) return;
     if (activePointerRef.current != null) return;
     // Stop iPad from treating the Pencil stroke as a scroll/zoom gesture.
     e.preventDefault();
@@ -128,7 +171,20 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
   };
 
   const onPointerMove = (e) => {
-    if (!active || activePointerRef.current !== e.pointerId || !e.buttons) return;
+    if (!active) return;
+
+    const finger = fingerScrollRef.current;
+    if (finger?.pointerId === e.pointerId) {
+      e.preventDefault();
+      const dy = finger.y - e.clientY;
+      finger.y = e.clientY;
+      finger.scroller.scrollTop += dy;
+      return;
+    }
+
+    if (activePointerRef.current !== e.pointerId) return;
+    e.preventDefault();
+    if (e.buttons === 0 && e.pointerType === 'mouse') return;
     const { x, y } = toNorm(e);
 
     if (toolRef.current.mode === 'erase') {
