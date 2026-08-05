@@ -22,10 +22,12 @@ const KEYS = {
   sermonFolders: 'bible-plan-sermon-folders',
   examens: 'bible-plan-examens',
   rule: 'bible-plan-rule',
+  quizzes: 'bible-plan-quizzes',
 };
 
 const EMPTY_MEMORY = { verses: [], reviewedOn: null, dailyCount: 0 };
 const EMPTY_RULE = { habits: [] };
+const EMPTY_QUIZZES = {};
 
 /**
  * Journal, memory, and sermon notes are stored inside the `progress` jsonb
@@ -50,6 +52,7 @@ function unpackExtras(stored) {
     sermonFolders: Array.isArray(extras?.sermonFolders) ? extras.sermonFolders : [],
     examens: Array.isArray(extras?.examens) ? extras.examens : [],
     rule: extras?.rule && typeof extras.rule === 'object' ? extras.rule : EMPTY_RULE,
+    quizzes: extras?.quizzes && typeof extras.quizzes === 'object' ? extras.quizzes : EMPTY_QUIZZES,
   };
 }
 
@@ -93,6 +96,7 @@ export function DataProvider({ children }) {
   const [sermonFolders, setSermonFolders] = useState(() => loadObject(KEYS.sermonFolders, []));
   const [examens, setExamens] = useState(() => loadObject(KEYS.examens, []));
   const [rule, setRule] = useState(() => loadObject(KEYS.rule, EMPTY_RULE));
+  const [quizzes, setQuizzes] = useState(() => loadObject(KEYS.quizzes, EMPTY_QUIZZES));
 
   const [syncState, setSyncState] = useState('idle'); // idle | syncing | synced | error
 
@@ -107,6 +111,7 @@ export function DataProvider({ children }) {
   useEffect(() => localStorage.setItem(KEYS.sermonFolders, JSON.stringify(sermonFolders)), [sermonFolders]);
   useEffect(() => localStorage.setItem(KEYS.examens, JSON.stringify(examens)), [examens]);
   useEffect(() => localStorage.setItem(KEYS.rule, JSON.stringify(rule)), [rule]);
+  useEffect(() => localStorage.setItem(KEYS.quizzes, JSON.stringify(quizzes)), [quizzes]);
 
   // hydratedFor holds the user id we've already pulled+merged for, so changes
   // only start pushing after the initial merge (and never before login).
@@ -201,6 +206,24 @@ export function DataProvider({ children }) {
       });
       const mergedRule = { habits: [...habitById.values()] };
 
+      // Quizzes: union by reading id; keep the higher score (or newer on a tie).
+      const mergedQuizzes = { ...(remote.quizzes || {}) };
+      Object.entries(quizzes || {}).forEach(([id, local]) => {
+        const remoteQ = mergedQuizzes[id];
+        if (!remoteQ) {
+          mergedQuizzes[id] = local;
+          return;
+        }
+        const localScore = local?.score ?? 0;
+        const remoteScore = remoteQ?.score ?? 0;
+        if (localScore > remoteScore) mergedQuizzes[id] = local;
+        else if (localScore === remoteScore) {
+          const lt = Date.parse(local?.passedAt || 0) || 0;
+          const rt = Date.parse(remoteQ?.passedAt || 0) || 0;
+          if (lt >= rt) mergedQuizzes[id] = local;
+        }
+      });
+
       setProgress(mergedProgress);
       setHighlights(mergedHighlights);
       setNotes(mergedNotes);
@@ -211,6 +234,7 @@ export function DataProvider({ children }) {
       setSermonFolders(mergedFolders);
       setExamens(mergedExamens);
       setRule(mergedRule);
+      setQuizzes(mergedQuizzes);
 
       hydratedFor.current = user.id;
 
@@ -224,6 +248,7 @@ export function DataProvider({ children }) {
           sermonFolders: mergedFolders,
           examens: mergedExamens,
           rule: mergedRule,
+          quizzes: mergedQuizzes,
         }),
         highlights: mergedHighlights,
         notes: mergedNotes,
@@ -250,7 +275,15 @@ export function DataProvider({ children }) {
     pushTimer.current = setTimeout(async () => {
       const { error } = await supabase.from('user_data').upsert({
         user_id: user.id,
-        progress: packExtras(progress, { journal, memory, sermons, sermonFolders, examens, rule }),
+        progress: packExtras(progress, {
+          journal,
+          memory,
+          sermons,
+          sermonFolders,
+          examens,
+          rule,
+          quizzes,
+        }),
         highlights,
         notes,
         start_date: startDate,
@@ -271,6 +304,7 @@ export function DataProvider({ children }) {
     sermonFolders,
     examens,
     rule,
+    quizzes,
     available,
     user,
   ]);
@@ -315,6 +349,7 @@ export function DataProvider({ children }) {
     sermonFolders,
     examens,
     rule,
+    quizzes,
     setStartDate: setStartDateState,
     setJournal,
     setMemory,
@@ -322,6 +357,7 @@ export function DataProvider({ children }) {
     setSermonFolders,
     setExamens,
     setRule,
+    setQuizzes,
     toggleProgress,
     setHighlight,
     setNote,

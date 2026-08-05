@@ -1,6 +1,11 @@
 import PassageText from './PassageText';
+import ReadingQuiz from './ReadingQuiz';
+import { useQuizzes } from '../hooks/useQuizzes';
 
 export default function ReadingRow({ reading, done, onToggle, expanded, onExpand }) {
+  const { resultFor } = useQuizzes();
+  const quizResult = resultFor(reading.id);
+
   return (
     <li className={`reading-row${done ? ' done' : ''}`}>
       <div className="reading-main">
@@ -20,6 +25,11 @@ export default function ReadingRow({ reading, done, onToggle, expanded, onExpand
         <button type="button" className="reading-info" onClick={onExpand}>
           <span className="track-name">{reading.trackName}</span>
           <span className="reading-label">{reading.label}</span>
+          {quizResult && (
+            <span className={`quiz-badge${quizResult.score === quizResult.total ? ' perfect' : ''}`}>
+              Quiz {quizResult.score}/{quizResult.total}
+            </span>
+          )}
         </button>
 
         <button type="button" className="chevron" onClick={onExpand} aria-label={expanded ? 'Hide text' : 'Read'}>
@@ -29,7 +39,12 @@ export default function ReadingRow({ reading, done, onToggle, expanded, onExpand
         </button>
       </div>
 
-      {expanded && <PassageText chapters={reading.chapters} />}
+      {expanded && (
+        <>
+          <PassageText chapters={reading.chapters} />
+          <ReadingQuiz reading={reading} />
+        </>
+      )}
     </li>
   );
 }

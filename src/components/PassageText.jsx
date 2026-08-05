@@ -79,7 +79,8 @@ async function fetchJson(url) {
   throw lastErr;
 }
 
-async function fetchChapter(book, chapter) {
+/** Fetch a chapter (WEB) — shared with the reading quiz so both hit the same cache. */
+export async function fetchChapter(book, chapter) {
   const reference = `${book} ${chapter}`;
   const cacheKey = `${HELLOAO_TRANSLATION}|${reference}`;
   if (textCache.has(cacheKey)) return textCache.get(cacheKey);
