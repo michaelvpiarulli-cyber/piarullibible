@@ -2157,6 +2157,12 @@
   transform: translateY(1px);
 }
 
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: default;
+  box-shadow: none;
+}
+
 .btn-secondary {
   display: inline-flex;
   align-items: center;
