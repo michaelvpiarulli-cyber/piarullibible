@@ -1268,9 +1268,23 @@
     var(--surface-alt);
 }
 
+.reading-quiz.day-quiz {
+  margin: 18px 0 0;
+  padding: 22px 18px 18px;
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(90% 80% at 50% 0%, var(--accent-wash), transparent 65%),
+    var(--surface);
+  box-shadow: var(--shadow-lift);
+}
+
 .reading-quiz.active {
   background: var(--surface);
   box-shadow: var(--shadow-lift);
+}
+
+.reading-quiz.day-quiz.active {
+  background: var(--surface);
 }
 
 .quiz-progress {

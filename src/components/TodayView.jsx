@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import ReadingRow from './ReadingRow';
+import DayQuiz from './DayQuiz';
 import { DAYS, DAYS_PER_WEEK } from '../data/generatePlan';
 import { prayerForDay } from '../data/prayers';
 import { computeStreak } from '../data/streaks';
@@ -130,6 +131,8 @@ export default function TodayView({ plan, currentDay, dayDate, isDone, toggle })
           />
         ))}
       </ul>
+
+      <DayQuiz day={selectedDay} readings={dayData.readings} />
 
       {(() => {
         const prayer = prayerForDay(selectedDay);
