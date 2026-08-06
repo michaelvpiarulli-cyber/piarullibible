@@ -73,7 +73,7 @@ export default async function handler(req, res) {
       day: body.day,
       labels: body.labels,
       instruction:
-        'Write 4 multiple-choice questions for this day. Mix: (1) what God said/did, (2) what that reveals about Him, (3) the response God seeks, (4) the heart of one major movement in the text.',
+        'Write exactly 10 multiple-choice questions for this day. Cover each major passage. Mix: what God said/did, what that reveals about Him, the response God seeks, and the heart of key movements in the text. Every question must require having read THIS text.',
       passages,
       schema: {
         questions: [
@@ -126,7 +126,7 @@ export default async function handler(req, res) {
     }
 
     const questions = normalizeQuestions(parsed);
-    if (questions.length < 2) {
+    if (questions.length < 5) {
       return res.status(502).json({ error: 'Too few questions', fallback: true });
     }
 

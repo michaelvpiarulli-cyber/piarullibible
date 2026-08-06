@@ -6,7 +6,7 @@
  * you could answer without reading.
  */
 
-const QUESTIONS_PER_QUIZ = 4;
+const QUESTIONS_PER_QUIZ = 10;
 
 export function hashSeed(str) {
   let h = 2166136261;
@@ -399,38 +399,40 @@ function makeClaimQuestion(claim, rand, used) {
 function makeQuoteComprehension(speeches, rand, used) {
   if (speeches.length < 2) return null;
   const divine = speeches.filter((s) => /^(lord|god|jesus|christ|angel)/i.test(s.speaker));
-  const pool = divine.length ? divine : speeches;
-  const chosen = pick(pool, rand);
-  if (!chosen) return null;
-  const id = `quote-${refLabel(chosen.verse)}`;
-  if (used.has(id)) return null;
-  used.add(id);
+  const pool = shuffle(divine.length ? divine : speeches, rand);
 
-  const answer = snip(chosen.quote, 130);
-  const distractors = shuffle(
-    speeches.filter((s) => s.quote !== chosen.quote).map((s) => snip(s.quote, 130)),
-    rand
-  ).slice(0, 3);
+  for (const chosen of pool) {
+    const id = `quote-${refLabel(chosen.verse)}-${chosen.quote.slice(0, 24)}`;
+    if (used.has(id)) continue;
+    used.add(id);
 
-  while (distractors.length < 3) {
-    distractors.push(
-      [
-        'Ignore the poor and keep the festivals going',
-        'Trust only what you can control with your own hands',
-        'God is finished speaking and no longer involved',
-      ][distractors.length]
-    );
+    const answer = snip(chosen.quote, 130);
+    const distractors = shuffle(
+      speeches.filter((s) => s.quote !== chosen.quote).map((s) => snip(s.quote, 130)),
+      rand
+    ).slice(0, 3);
+
+    while (distractors.length < 3) {
+      distractors.push(
+        [
+          'Ignore the poor and keep the festivals going',
+          'Trust only what you can control with your own hands',
+          'God is finished speaking and no longer involved',
+        ][distractors.length]
+      );
+    }
+
+    return {
+      id,
+      type: 'quote',
+      prompt: `In ${refLabel(chosen.verse)}, what does ${chosen.speaker} say?`,
+      passage: 'This line sits at the heart of today’s reading — catch what was actually spoken.',
+      options: shuffle([answer, ...distractors.slice(0, 3)], rand),
+      answer,
+      explain: `${refLabel(chosen.verse)} — “${snip(chosen.quote, 180)}”`,
+    };
   }
-
-  return {
-    id,
-    type: 'quote',
-    prompt: `In ${refLabel(chosen.verse)}, what does ${chosen.speaker} say?`,
-    passage: 'This line sits at the heart of today’s reading — catch what was actually spoken.',
-    options: shuffle([answer, ...distractors.slice(0, 3)], rand),
-    answer,
-    explain: `${refLabel(chosen.verse)} — “${snip(chosen.quote, 180)}”`,
-  };
+  return null;
 }
 
 /**
@@ -494,20 +496,37 @@ export function buildQuiz(readingId, parts, meta = {}) {
     }
   }
 
-  // Remaining high-weight speeches for uncovered ground.
+  // Remaining speeches / claims to reach a full quiz.
   for (const s of [...speeches].sort((a, b) => speechWeight(b) - speechWeight(a))) {
     if (questions.length >= QUESTIONS_PER_QUIZ) break;
-    if (speechWeight(s) < 8) continue;
+    if (speechWeight(s) < 4) continue;
+    const teachKey = /let there be/i.test(s.quote)
+      ? 'creation-word'
+      : /fear god for nothing|hedge/i.test(s.quote)
+        ? 'job-test'
+        : /rebelled|seek justice|wash yourselves|scarlet/i.test(s.quote)
+          ? 'isaiah-repent'
+          : /save .+ sins|immanuel/i.test(s.quote)
+            ? 'jesus-save'
+            : null;
+    if (teachKey && seenTeachKeys.has(teachKey)) continue;
     const q = makeSpeechQuestion(s, rand, used);
     if (q) {
       questions.push(q);
-      booksCovered.add(s.verse.book);
+      if (teachKey) seenTeachKeys.add(teachKey);
     }
   }
 
-  if (questions.length < QUESTIONS_PER_QUIZ) {
-    const q = makeQuoteComprehension(speeches, rand, used);
+  for (const claim of shuffle(claims, rand)) {
+    if (questions.length >= QUESTIONS_PER_QUIZ) break;
+    const q = makeClaimQuestion(claim, rand, used);
     if (q) questions.push(q);
+  }
+
+  while (questions.length < QUESTIONS_PER_QUIZ) {
+    const q = makeQuoteComprehension(speeches, rand, used);
+    if (!q) break;
+    questions.push(q);
   }
 
   // Last resort: still passage-tied

@@ -78,7 +78,7 @@ export default function DayQuiz({ day, readings }) {
           });
           if (res.ok) {
             const data = await res.json();
-            if (Array.isArray(data.questions) && data.questions.length >= 2) {
+            if (Array.isArray(data.questions) && data.questions.length >= 5) {
               aiQuestions = data.questions;
             }
           }
