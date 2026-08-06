@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import './App.css';
-import { buildPlanById, getPlanMeta, groupIntoWeeks } from './data/plans';
+import { buildPlanById, DEFAULT_PLAN_ID, getPlanMeta, groupIntoWeeks } from './data/plans';
 import { useProgress } from './hooks/useProgress';
 import { usePlanStart } from './hooks/usePlanStart';
 import { useAnnotations } from './hooks/useAnnotations';
@@ -22,6 +22,7 @@ import GroupView from './components/GroupView';
 import VerseActionSheet from './components/VerseActionSheet';
 import AccountMenu from './components/AccountMenu';
 import ThemeToggle from './components/ThemeToggle';
+import PregnancySetup from './components/PregnancySetup';
 import { computeStreak } from './data/streaks';
 
 const TITLES = {
@@ -55,7 +56,7 @@ const NOTE_SECTIONS = [
 ];
 
 function App() {
-  const { planId, setPlanId } = useData();
+  const { planId, setPlanId, dueDate, setPregnancyDates } = useData();
   const planMeta = useMemo(() => getPlanMeta(planId), [planId]);
   const plan = useMemo(() => buildPlanById(planId), [planId]);
   const weeks = useMemo(() => groupIntoWeeks(plan), [plan]);
@@ -71,6 +72,34 @@ function App() {
   const [selectedVerse, setSelectedVerse] = useState(null);
   // Jump target for the Read tab — set by cross-ref links (and later deep links).
   const [readJump, setReadJump] = useState(null);
+  const [pregSetup, setPregSetup] = useState(null); // null | 'switch' | 'edit' | 'required'
+
+  // Soft pink palette while the pregnancy plan is active.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (planId === 'pregnancy') root.setAttribute('data-plan', 'pregnancy');
+    else root.removeAttribute('data-plan');
+    // Nudge theme-color meta (useTheme also listens via MutationObserver-free path on toggle).
+    root.dispatchEvent(new Event('plan-change'));
+  }, [planId]);
+
+  // First visit on pregnancy without a due date — ask before reading.
+  useEffect(() => {
+    if (planId === 'pregnancy' && !dueDate && !pregSetup) {
+      setPregSetup('required');
+    }
+  }, [planId, dueDate, pregSetup]);
+
+  const requestPlanChange = useCallback(
+    (id) => {
+      if (id === 'pregnancy' && !dueDate) {
+        setPregSetup('switch');
+        return;
+      }
+      setPlanId(id);
+    },
+    [dueDate, setPlanId]
+  );
 
   const openPassage = useCallback((target) => {
     setReadJump(target);
@@ -213,7 +242,9 @@ function App() {
                       plan={plan}
                       planMeta={planMeta}
                       planId={planId}
-                      setPlanId={setPlanId}
+                      setPlanId={requestPlanChange}
+                      dueDate={dueDate}
+                      onEditDueDate={() => setPregSetup('edit')}
                       isDone={isDone}
                       doneCount={doneCount}
                       totalReadings={totalReadings}
@@ -228,6 +259,24 @@ function App() {
             </div>
           </main>
         </div>
+
+        {pregSetup && (
+          <PregnancySetup
+            initialDueDate={dueDate}
+            onSave={(dates) => {
+              setPregnancyDates(dates);
+              setPregSetup(null);
+            }}
+            onCancel={
+              pregSetup === 'required'
+                ? () => {
+                    setPlanId(DEFAULT_PLAN_ID);
+                    setPregSetup(null);
+                  }
+                : () => setPregSetup(null)
+            }
+          />
+        )}
 
         {selectedVerse && (
           <VerseActionSheet

@@ -5,12 +5,18 @@ const KEY = 'bible-plan-theme'; // 'light' | 'dark' | 'system'
 const systemPrefersDark = () =>
   window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
+function themeColorFor(dark) {
+  const pregnancy = document.documentElement.getAttribute('data-plan') === 'pregnancy';
+  if (pregnancy) return dark ? '#1a1216' : '#faf4f6';
+  return dark ? '#15181d' : '#fbfbfb';
+}
+
 function apply(pref) {
   const dark = pref === 'dark' || (pref === 'system' && systemPrefersDark());
   document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
   // Keep the mobile browser chrome in step with the page.
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', dark ? '#15181d' : '#fbfbfb');
+  if (meta) meta.setAttribute('content', themeColorFor(dark));
 }
 
 /** Theme preference: follow the system, or pin light/dark. */
@@ -26,6 +32,13 @@ export function useTheme() {
     const onChange = () => apply('system');
     mq.addEventListener('change', onChange);
     return () => mq.removeEventListener('change', onChange);
+  }, [pref]);
+
+  // Refresh browser chrome when the reading plan switches (pink vs navy).
+  useEffect(() => {
+    const onPlan = () => apply(pref);
+    document.documentElement.addEventListener('plan-change', onPlan);
+    return () => document.documentElement.removeEventListener('plan-change', onPlan);
   }, [pref]);
 
   const isDark = pref === 'dark' || (pref === 'system' && systemPrefersDark());

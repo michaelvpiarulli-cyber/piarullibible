@@ -1,6 +1,7 @@
 import { TRACKS } from '../data/books';
 import { PLANS } from '../data/plans';
 import { computeStreak } from '../data/streaks';
+import { formatPrettyDate, pregnancyWeekFromDueDate } from '../data/pregnancyDates';
 
 const TRACK_LIST = [TRACKS.LAW_HISTORY, TRACKS.WISDOM, TRACKS.PROPHETS, TRACKS.NEW_TESTAMENT];
 
@@ -15,6 +16,8 @@ export default function ProgressView({
   planMeta,
   planId,
   setPlanId,
+  dueDate,
+  onEditDueDate,
   isDone,
   doneCount,
   totalReadings,
@@ -147,10 +150,31 @@ export default function ProgressView({
           </select>
         </label>
         <p className="setting-blurb">{planMeta.blurb}</p>
-        <label className="setting-row">
-          <span className="setting-label">Start date</span>
-          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-        </label>
+
+        {isPregnancy ? (
+          <>
+            <div className="setting-row">
+              <span className="setting-label">Due date</span>
+              <button type="button" className="btn-text setting-edit" onClick={onEditDueDate}>
+                {dueDate ? formatPrettyDate(dueDate) : 'Set due date'}
+              </button>
+            </div>
+            {dueDate && (
+              <div className="setting-row">
+                <span className="setting-label">Pregnancy</span>
+                <span className="setting-value">
+                  Week {pregnancyWeekFromDueDate(dueDate)} of 40
+                </span>
+              </div>
+            )}
+          </>
+        ) : (
+          <label className="setting-row">
+            <span className="setting-label">Start date</span>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          </label>
+        )}
+
         <div className="setting-row">
           <span className="setting-label">Today</span>
           <span className="setting-value">

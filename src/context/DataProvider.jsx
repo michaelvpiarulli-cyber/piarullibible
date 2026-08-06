@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { DEFAULT_PLAN_ID, getPlanMeta } from '../data/plans';
+import { startDateFromDueDate } from '../data/pregnancyDates';
 
 /**
  * Single owner of all per-user data (progress, highlights, notes, start date).
@@ -25,6 +26,8 @@ const KEYS = {
   rule: 'bible-plan-rule',
   quizzes: 'bible-plan-quizzes',
   planId: 'bible-plan-id',
+  dueDate: 'bible-plan-due-date',
+  planStartDates: 'bible-plan-start-dates',
 };
 
 const EMPTY_MEMORY = { verses: [], reviewedOn: null, dailyCount: 0 };
@@ -59,6 +62,11 @@ function unpackExtras(stored) {
       extras?.planId && getPlanMeta(extras.planId).id === extras.planId
         ? extras.planId
         : null,
+    dueDate: typeof extras?.dueDate === 'string' && extras.dueDate ? extras.dueDate : null,
+    planStartDates:
+      extras?.planStartDates && typeof extras.planStartDates === 'object'
+        ? extras.planStartDates
+        : {},
   };
 }
 
@@ -106,6 +114,12 @@ export function DataProvider({ children }) {
   const [planId, setPlanIdState] = useState(
     () => localStorage.getItem(KEYS.planId) || DEFAULT_PLAN_ID
   );
+  const [dueDate, setDueDateState] = useState(
+    () => localStorage.getItem(KEYS.dueDate) || ''
+  );
+  const [planStartDates, setPlanStartDates] = useState(() =>
+    loadObject(KEYS.planStartDates, {})
+  );
 
   const [syncState, setSyncState] = useState('idle'); // idle | syncing | synced | error
 
@@ -122,6 +136,14 @@ export function DataProvider({ children }) {
   useEffect(() => localStorage.setItem(KEYS.rule, JSON.stringify(rule)), [rule]);
   useEffect(() => localStorage.setItem(KEYS.quizzes, JSON.stringify(quizzes)), [quizzes]);
   useEffect(() => localStorage.setItem(KEYS.planId, planId), [planId]);
+  useEffect(() => {
+    if (dueDate) localStorage.setItem(KEYS.dueDate, dueDate);
+    else localStorage.removeItem(KEYS.dueDate);
+  }, [dueDate]);
+  useEffect(
+    () => localStorage.setItem(KEYS.planStartDates, JSON.stringify(planStartDates)),
+    [planStartDates]
+  );
 
   // hydratedFor holds the user id we've already pulled+merged for, so changes
   // only start pushing after the initial merge (and never before login).
@@ -253,6 +275,11 @@ export function DataProvider({ children }) {
         DEFAULT_PLAN_ID;
       setPlanIdState(mergedPlanId);
 
+      const mergedDueDate = remote.dueDate || dueDate || '';
+      setDueDateState(mergedDueDate);
+      const mergedPlanStarts = { ...(remote.planStartDates || {}), ...planStartDates };
+      setPlanStartDates(mergedPlanStarts);
+
       hydratedFor.current = user.id;
 
       // Push the merged result up so the remote row is created/reconciled.
@@ -267,6 +294,8 @@ export function DataProvider({ children }) {
           rule: mergedRule,
           quizzes: mergedQuizzes,
           planId: mergedPlanId,
+          dueDate: mergedDueDate || null,
+          planStartDates: mergedPlanStarts,
         }),
         highlights: mergedHighlights,
         notes: mergedNotes,
@@ -302,6 +331,8 @@ export function DataProvider({ children }) {
           rule,
           quizzes,
           planId,
+          dueDate: dueDate || null,
+          planStartDates,
         }),
         highlights,
         notes,
@@ -325,6 +356,8 @@ export function DataProvider({ children }) {
     rule,
     quizzes,
     planId,
+    dueDate,
+    planStartDates,
     available,
     user,
   ]);
@@ -358,10 +391,46 @@ export function DataProvider({ children }) {
     });
   }, []);
 
-  const setPlanId = useCallback((id) => {
-    const meta = getPlanMeta(id);
-    setPlanIdState(meta.id);
+  const setPlanId = useCallback(
+    (id) => {
+      const meta = getPlanMeta(id);
+      setPlanStartDates((prev) => {
+        const next = { ...prev, [planId]: startDate };
+        if (meta.id === 'pregnancy' && dueDate) {
+          const aligned = startDateFromDueDate(dueDate);
+          if (aligned) {
+            setStartDateState(aligned);
+            next.pregnancy = aligned;
+          }
+        } else if (meta.id !== 'pregnancy' && next[meta.id]) {
+          setStartDateState(next[meta.id]);
+        }
+        return next;
+      });
+      setPlanIdState(meta.id);
+    },
+    [planId, startDate, dueDate]
+  );
+
+  const setDueDate = useCallback((iso) => {
+    setDueDateState(iso || '');
   }, []);
+
+  /** Activate pregnancy with a due date and matching plan start. */
+  const setPregnancyDates = useCallback(
+    ({ dueDate: due, startDate: start }) => {
+      setPlanStartDates((prev) => {
+        const next = { ...prev };
+        if (planId !== 'pregnancy') next[planId] = startDate;
+        if (start) next.pregnancy = start;
+        return next;
+      });
+      if (due) setDueDateState(due);
+      if (start) setStartDateState(start);
+      setPlanIdState('pregnancy');
+    },
+    [planId, startDate]
+  );
 
   const value = {
     progress,
@@ -369,6 +438,7 @@ export function DataProvider({ children }) {
     notes,
     startDate,
     planId,
+    dueDate,
     journal,
     memory,
     sermons,
@@ -378,6 +448,8 @@ export function DataProvider({ children }) {
     quizzes,
     setStartDate: setStartDateState,
     setPlanId,
+    setDueDate,
+    setPregnancyDates,
     setJournal,
     setMemory,
     setSermons,

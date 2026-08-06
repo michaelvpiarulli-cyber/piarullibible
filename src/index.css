@@ -78,6 +78,43 @@
   --shadow-lift: 0 12px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
+/* Pregnancy plan — soft rose over the same paper / night surfaces. */
+:root[data-plan='pregnancy'] {
+  --bg: #faf4f6;
+  --bg-deep: #f3e8ec;
+  --surface: #fff9fb;
+  --surface-alt: #f7ecef;
+  --surface-hover: #efdde3;
+  --border: #e4d0d6;
+  --border-strong: #d0b4bd;
+  --accent: #c45c7a;
+  --accent-press: #a84866;
+  --accent-soft: #f8e6ec;
+  --accent-wash: rgba(196, 92, 122, 0.14);
+  --today-tint: #f8e8ee;
+  --surface-blur: rgba(250, 244, 246, 0.84);
+  --gold: #b8876a;
+  --gold-soft: rgba(184, 135, 106, 0.16);
+}
+
+:root[data-plan='pregnancy'][data-theme='dark'] {
+  --bg: #1a1216;
+  --bg-deep: #140e11;
+  --surface: #24181d;
+  --surface-alt: #2e1f26;
+  --surface-hover: #3a2831;
+  --border: #4a3540;
+  --border-strong: #5e4451;
+  --accent: #e8a0b4;
+  --accent-press: #f0b8c6;
+  --accent-soft: rgba(232, 160, 180, 0.16);
+  --accent-wash: rgba(232, 160, 180, 0.18);
+  --today-tint: #2a1c22;
+  --surface-blur: rgba(26, 18, 22, 0.86);
+  --gold: #d4a88a;
+  --gold-soft: rgba(212, 168, 138, 0.18);
+}
+
 * {
   box-sizing: border-box;
 }
