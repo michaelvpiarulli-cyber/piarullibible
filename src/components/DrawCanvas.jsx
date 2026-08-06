@@ -7,6 +7,30 @@ function isInkPointer(e) {
   return e.pointerType === 'pen' || e.pointerType === 'mouse';
 }
 
+/** Walk up for the element that actually scrolls (study overlay, app main, etc.). */
+function findScroller(from) {
+  let el = from?.parentElement || null;
+  while (el && el !== document.documentElement) {
+    if (
+      el.classList?.contains('study-overlay-body') ||
+      el.classList?.contains('notes-overlay-body') ||
+      el.classList?.contains('app-main')
+    ) {
+      return el;
+    }
+    const style = window.getComputedStyle(el);
+    const oy = style.overflowY;
+    if (
+      (oy === 'auto' || oy === 'scroll' || oy === 'overlay') &&
+      el.scrollHeight > el.clientHeight + 1
+    ) {
+      return el;
+    }
+    el = el.parentElement;
+  }
+  return document.scrollingElement;
+}
+
 export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
   const canvasRef = useRef(null);
   const [strokes, saveStrokes] = useChapterDrawing(chapterKey);
@@ -66,6 +90,11 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
     });
   }, [registerApi, saveStrokes]);
 
+  /*
+   * touch-action:none kills native scroll on the canvas (needed so Pencil
+   * doesn’t drag the page). Block residual touchmove while inking, and drive
+   * finger pans ourselves against the scroll parent.
+   */
   useEffect(() => {
     const c = canvasRef.current;
     if (!c || !active) return;
@@ -110,6 +139,7 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
     // Palm / finger up must not finish (or wipe) an Apple Pencil stroke.
     if (activePointerRef.current !== e.pointerId) return;
     activePointerRef.current = null;
+    e.currentTarget.classList.remove('is-inking');
     releasePointer(e.currentTarget, e.pointerId);
 
     const d = draftRef.current;
@@ -129,13 +159,14 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
   const onPointerDown = (e) => {
     if (!active) return;
 
+    // Finger → pan the real scroll parent (canvas has touch-action: none).
     if (e.pointerType === 'touch') {
       if (activePointerRef.current != null) {
+        // Palm while Pencil is down — swallow so it can’t scroll.
         e.preventDefault();
         return;
       }
-      const scroller =
-        e.currentTarget.closest('.app-main') || document.scrollingElement;
+      const scroller = findScroller(e.currentTarget);
       if (!scroller) return;
       fingerScrollRef.current = { pointerId: e.pointerId, y: e.clientY, scroller };
       try {
@@ -156,6 +187,7 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
       /* pointer already released, or a synthetic event — drawing still works */
     }
     activePointerRef.current = e.pointerId;
+    e.currentTarget.classList.add('is-inking');
     const { x, y } = toNorm(e);
     const t = toolRef.current;
 
