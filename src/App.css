@@ -1478,6 +1478,59 @@
   font-weight: 600;
 }
 
+.quiz-reflection-input {
+  width: 100%;
+  margin-top: 4px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-alt);
+  color: var(--text);
+  font-family: Georgia, 'Iowan Old Style', Palatino, 'Times New Roman', serif;
+  font-size: 1rem;
+  line-height: 1.55;
+  resize: vertical;
+  min-height: 120px;
+}
+
+.quiz-reflection-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-wash);
+}
+
+.quiz-reflection-input::placeholder {
+  color: var(--text-dim);
+  opacity: 0.75;
+}
+
+.quiz-reflection-saved {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.quiz-reflection-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.quiz-reflection-saved p {
+  margin: 0;
+  font-family: Georgia, 'Iowan Old Style', Palatino, 'Times New Roman', serif;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+
 .quiz-status {
   font-size: 0.85rem;
   color: var(--text-dim);

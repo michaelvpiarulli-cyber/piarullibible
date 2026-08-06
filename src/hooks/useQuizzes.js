@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useData } from '../context/DataProvider';
 
 /**
- * Per-reading quiz results. Stored in the shared data store under extras so
+ * Per-day quiz results. Stored in the shared data store under extras so
  * scores sync with the account the same way journal/memory do.
  */
 export function useQuizzes() {
@@ -19,6 +19,8 @@ export function useQuizzes() {
           total: result.total,
           passedAt: result.passedAt || new Date().toISOString(),
           label: result.label || null,
+          reflection: result.reflection || null,
+          reflectionPrompt: result.reflectionPrompt || null,
         },
       }));
     },
