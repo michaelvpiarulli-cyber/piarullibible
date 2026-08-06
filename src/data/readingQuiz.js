@@ -166,16 +166,16 @@ function teachingFromSpeech(speech, rand) {
     // First-style: teaching about God's word. Later fills: what specifically was commanded.
     const specific = q.match(/let(?:’s| us)? (?:there be |make |the )([^,.]+)/i);
     if (specific && !/light/i.test(specific[1])) {
-      const thing = snip(specific[1].trim(), 60);
+      const thing = snip(specific[1].trim(), 70);
       return {
-        prompt: `In ${ref}, God commands something into being: “${snip(q, 95)}” What is He ordering here?`,
-        answer: `That ${thing} would come about by His word`,
+        prompt: `In ${ref}, God says, “${snip(q, 95)}” What is He bringing about?`,
+        answer: `${thing.charAt(0).toUpperCase()}${thing.slice(1)} — by His spoken command`,
         wrong: [
-          'That people should invent this without Him',
-          'That chaos should remain untouched',
-          'That only angels may act in the world',
+          'A world that runs without His involvement',
+          'Chaos left exactly as it was',
+          'A creation that people invent on their own',
         ],
-        explain: `${ref} shows a specific work of creation spoken by God.`,
+        explain: `${ref} records a specific work God speaks into being.`,
       };
     }
     return {
@@ -482,15 +482,17 @@ export function buildQuiz(readingId, parts, meta = {}) {
     const best = ranked.find((s) => speechWeight(s) >= 6) || ranked[0];
     if (!best || speechWeight(best) < 6) continue;
     // Avoid near-duplicate “Let there be…” creation questions.
-    const teachKey = /let there be/i.test(best.quote)
+    const teachKey = /let there be light/i.test(best.quote)
       ? 'creation-word'
       : /fear god for nothing|hedge/i.test(best.quote)
         ? 'job-test'
-        : /rebelled|seek justice|wash yourselves|scarlet/i.test(best.quote)
-          ? 'isaiah-repent'
-          : /save .+ sins|immanuel/i.test(best.quote)
-            ? 'jesus-save'
-            : `${best.verse.book}:${best.verse.chapter}`;
+        : /rebelled against me|ox knows his owner/i.test(best.quote)
+          ? 'isaiah-rebel'
+          : /seek justice|wash yourselves|scarlet/i.test(best.quote)
+            ? 'isaiah-repent'
+            : /save .+ sins|immanuel/i.test(best.quote)
+              ? 'jesus-save'
+              : `${best.verse.book}:${best.verse.chapter}:${best.verse.number}`;
     if (seenTeachKeys.has(teachKey)) continue;
     const q = makeSpeechQuestion(best, rand, used);
     if (q) {
@@ -515,15 +517,17 @@ export function buildQuiz(readingId, parts, meta = {}) {
   for (const s of [...speeches].sort((a, b) => speechWeight(b) - speechWeight(a))) {
     if (questions.length >= QUESTIONS_PER_QUIZ) break;
     if (speechWeight(s) < 4) continue;
-    const teachKey = /let there be/i.test(s.quote)
+    const teachKey = /let there be light/i.test(s.quote)
       ? 'creation-word'
       : /fear god for nothing|hedge/i.test(s.quote)
         ? 'job-test'
-        : /rebelled|seek justice|wash yourselves|scarlet/i.test(s.quote)
-          ? 'isaiah-repent'
-          : /save .+ sins|immanuel/i.test(s.quote)
-            ? 'jesus-save'
-            : null;
+        : /rebelled against me|ox knows his owner/i.test(s.quote)
+          ? 'isaiah-rebel'
+          : /seek justice|wash yourselves|scarlet/i.test(s.quote)
+            ? 'isaiah-repent'
+            : /save .+ sins|immanuel/i.test(s.quote)
+              ? 'jesus-save'
+              : null;
     if (teachKey && seenTeachKeys.has(teachKey)) continue;
     const q = makeSpeechQuestion(s, rand, used);
     if (q) {
