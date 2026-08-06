@@ -125,9 +125,9 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: 'Bad AI JSON', fallback: true });
     }
 
-    const questions = normalizeQuestions(parsed);
-    if (questions.length < 5) {
-      return res.status(502).json({ error: 'Too few questions', fallback: true });
+    const questions = normalizeQuestions(parsed).slice(0, 10);
+    if (questions.length < 10) {
+      return res.status(502).json({ error: 'Need exactly 10 questions', fallback: true });
     }
 
     return res.status(200).json({ questions, source: 'ai' });

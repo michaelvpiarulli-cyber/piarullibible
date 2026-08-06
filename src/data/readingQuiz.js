@@ -407,12 +407,21 @@ function makeClaimQuestion(claim, rand, used) {
   };
 }
 
+const QUOTE_DISTRACTORS = [
+  'Ignore the poor and keep the festivals going',
+  'Trust only what you can control with your own hands',
+  'God is finished speaking and no longer involved',
+  'Blessed are those who never need mercy',
+  'The covenant is optional when life gets hard',
+  'Worship without justice is all God requires',
+];
+
 /**
  * Quote-comprehension: what was actually said? (still meaningful, not trivia)
- * Prefer when we have multiple speeches so distractors are other real lines.
+ * Works with one or many speeches — distractors from other lines when available.
  */
 function makeQuoteComprehension(speeches, rand, used) {
-  if (speeches.length < 2) return null;
+  if (!speeches.length) return null;
   const divine = speeches.filter((s) => /^(lord|god|jesus|christ|angel)/i.test(s.speaker));
   const pool = shuffle(divine.length ? divine : speeches, rand);
 
@@ -428,13 +437,7 @@ function makeQuoteComprehension(speeches, rand, used) {
     ).slice(0, 3);
 
     while (distractors.length < 3) {
-      distractors.push(
-        [
-          'Ignore the poor and keep the festivals going',
-          'Trust only what you can control with your own hands',
-          'God is finished speaking and no longer involved',
-        ][distractors.length]
-      );
+      distractors.push(QUOTE_DISTRACTORS[distractors.length % QUOTE_DISTRACTORS.length]);
     }
 
     return {
@@ -450,6 +453,79 @@ function makeQuoteComprehension(speeches, rand, used) {
   return null;
 }
 
+const FILL_STOP = new Set([
+  'which', 'their', 'there', 'these', 'those', 'about', 'would', 'could', 'should',
+  'shall', 'unto', 'from', 'with', 'that', 'this', 'they', 'them', 'have', 'been',
+  'were', 'when', 'what', 'your', 'into', 'also', 'then', 'than', 'upon', 'said',
+  'says', 'lord', 'god', 'jesus', 'christ', 'before', 'after', 'under', 'over',
+  'every', 'great', 'small', 'again', 'because', 'therefore',
+]);
+
+function significantWords(text) {
+  return (text || '')
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-zA-Z']/g, ''))
+    .filter((w) => w.length >= 5 && !FILL_STOP.has(w.toLowerCase()));
+}
+
+/** Fill-in-the-blank from a real verse — works on short single-chapter days. */
+function makeFillBlank(verse, verses, rand, used) {
+  const words = significantWords(verse.text);
+  if (words.length < 1) return null;
+  const word = pick(words, rand);
+  if (!word) return null;
+  const id = `blank-${refLabel(verse)}-${word.toLowerCase()}`;
+  if (used.has(id)) return null;
+  used.add(id);
+
+  const blanked = verse.text.replace(new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i'), '______');
+  const pool = new Set();
+  for (const v of verses) {
+    for (const w of significantWords(v.text)) {
+      if (w.toLowerCase() !== word.toLowerCase()) pool.add(w);
+    }
+  }
+  const distractors = shuffle([...pool], rand).slice(0, 3);
+  const fallbacks = ['mercy', 'faith', 'temple', 'nation', 'peace', 'glory'];
+  for (const f of fallbacks) {
+    if (distractors.length >= 3) break;
+    if (f.toLowerCase() !== word.toLowerCase() && !distractors.includes(f)) distractors.push(f);
+  }
+
+  return {
+    id,
+    type: 'fill',
+    prompt: `Complete this line from ${refLabel(verse)}:`,
+    passage: `“${snip(blanked, 170)}”`,
+    options: shuffle([word, ...distractors.slice(0, 3)], rand),
+    answer: word,
+    explain: `${refLabel(verse)} — “${snip(verse.text, 180)}”`,
+  };
+}
+
+/** Close reading: which paraphrase matches the verse? */
+function makeVerseParaphrase(verse, rand, used) {
+  const id = `para-${refLabel(verse)}`;
+  if (used.has(id)) return null;
+  used.add(id);
+  const snippet = snip(verse.text, 130);
+  const answer = snip(verse.text, 95);
+  const distractors = [
+    'God has abandoned this people and will not speak again',
+    'Faithfulness to God never matters in ordinary life',
+    'This passage teaches that human strength is enough alone',
+  ];
+  return {
+    id,
+    type: 'passage',
+    prompt: `Which wording matches what ${refLabel(verse)} actually says?`,
+    passage: 'Stay close to the text — not a vague summary of “the Bible in general.”',
+    options: shuffle([answer, ...distractors], rand),
+    answer,
+    explain: `${refLabel(verse)} — “${snippet}”`,
+  };
+}
+
 /**
  * @param {string} readingId
  * @param {{ book: string, chapter: number, verses: { number: number, text: string }[] }[]} parts
@@ -459,7 +535,7 @@ export function buildQuiz(readingId, parts, meta = {}) {
   const verses = flattenVerses(parts);
   if (!verses.length) return { questions: [], verseCount: 0 };
 
-  const rand = rngFrom(hashSeed(`${readingId}|passage-v3`));
+  const rand = rngFrom(hashSeed(`${readingId}|passage-v4`));
   const used = new Set();
   const speeches = extractSpeeches(verses);
   const claims = extractKeyClaims(verses);
@@ -548,14 +624,38 @@ export function buildQuiz(readingId, parts, meta = {}) {
     questions.push(q);
   }
 
-  // Last resort: still passage-tied
-  if (!questions.length && verses[0]) {
-    const v = verses[Math.floor(verses.length / 3)] || verses[0];
+  // Verse-anchored fillers so single-chapter days still reach 10.
+  const versePool = shuffle(
+    verses.filter((v) => v.text.split(/\s+/).length >= 8),
+    rand
+  );
+  for (const v of versePool) {
+    if (questions.length >= QUESTIONS_PER_QUIZ) break;
+    const q = makeFillBlank(v, verses, rand, used);
+    if (q) questions.push(q);
+  }
+  for (const v of versePool) {
+    if (questions.length >= QUESTIONS_PER_QUIZ) break;
+    const q = makeVerseParaphrase(v, rand, used);
+    if (q) questions.push(q);
+  }
+
+  // Last resort: still passage-tied (repeat-safe unique ids)
+  let rescue = 0;
+  while (questions.length < QUESTIONS_PER_QUIZ && verses.length) {
+    const v = verses[rescue % verses.length];
+    const id = `anchor-${refLabel(v)}-${rescue}`;
+    rescue += 1;
+    if (used.has(id)) {
+      if (rescue > verses.length * 3) break;
+      continue;
+    }
+    used.add(id);
     questions.push({
-      id: `anchor-${refLabel(v)}`,
+      id,
       type: 'passage',
-      prompt: `After reading ${meta.labels || 'today’s chapters'}, which habit best fits receiving God’s word?`,
-      passage: `A line from today’s text: “${snip(v.text, 120)}” (${refLabel(v)})`,
+      prompt: `After reading ${meta.labels || 'today’s chapters'}, which habit best fits receiving God’s word in ${refLabel(v)}?`,
+      passage: `“${snip(v.text, 120)}”`,
       options: shuffle(
         [
           'Ask what this shows about God and how you should respond',
@@ -574,6 +674,20 @@ export function buildQuiz(readingId, parts, meta = {}) {
     questions: questions.slice(0, QUESTIONS_PER_QUIZ),
     verseCount: verses.length,
   };
+}
+
+/** Prefer AI questions, then pad with local until exactly QUESTIONS_PER_QUIZ. */
+export function mergeQuizQuestions(aiQuestions, localQuestions) {
+  const out = [];
+  const seen = new Set();
+  for (const q of [...(aiQuestions || []), ...(localQuestions || [])]) {
+    if (!q || out.length >= QUESTIONS_PER_QUIZ) break;
+    const key = String(q.id || q.prompt || '');
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(q);
+  }
+  return out;
 }
 
 export { QUESTIONS_PER_QUIZ };

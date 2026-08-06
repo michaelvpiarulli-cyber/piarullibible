@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { fetchChapter } from './PassageText';
-import { buildQuiz } from '../data/readingQuiz';
+import { buildQuiz, mergeQuizQuestions, QUESTIONS_PER_QUIZ } from '../data/readingQuiz';
 import { useQuizzes } from '../hooks/useQuizzes';
 import { useJournal } from '../hooks/useJournal';
 
@@ -93,7 +93,7 @@ export default function DayQuiz({ day, readings }) {
           });
           if (res.ok) {
             const data = await res.json();
-            if (Array.isArray(data.questions) && data.questions.length >= 5) {
+            if (Array.isArray(data.questions) && data.questions.length > 0) {
               aiQuestions = data.questions;
             }
           }
@@ -103,13 +103,18 @@ export default function DayQuiz({ day, readings }) {
 
         if (cancelled) return;
 
-        if (aiQuestions) {
-          setQuestions(aiQuestions);
-          setSource('ai');
-        } else {
-          const local = buildQuiz(quizId, loaded, { labels });
-          setQuestions(local.questions || []);
+        const local = buildQuiz(quizId, loaded, { labels });
+        const localQs = local.questions || [];
+        const merged = mergeQuizQuestions(aiQuestions, localQs);
+        if (merged.length >= QUESTIONS_PER_QUIZ) {
+          setQuestions(merged.slice(0, QUESTIONS_PER_QUIZ));
+          setSource(aiQuestions?.length ? 'ai' : 'local');
+        } else if (localQs.length >= QUESTIONS_PER_QUIZ) {
+          setQuestions(localQs.slice(0, QUESTIONS_PER_QUIZ));
           setSource('local');
+        } else {
+          setQuestions(merged.length ? merged : localQs);
+          setSource(aiQuestions?.length ? 'ai' : 'local');
         }
         setLoading(false);
       } catch (err) {
