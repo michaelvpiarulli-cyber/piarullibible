@@ -514,30 +514,76 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
           <div className="study-overlay" role="dialog" aria-modal="true" aria-label={`${part.heading} study`}>
             <header className="study-overlay-bar">
               <div className="study-overlay-heading">
-                <span className="eyebrow">Study</span>
                 <h2>
                   {part.heading}
                   <span className="reader-translation">{TRANSLATION_LABEL}</span>
                 </h2>
-                <p className="study-overlay-hint">
-                  Write in the side margins with Apple Pencil · tap a verse for typed notes
-                </p>
               </div>
-              <div className="study-overlay-actions">
-                <button
-                  type="button"
-                  className={`commentary-toggle${drawing ? ' active' : ''}`}
-                  onClick={() => setDrawing(!drawing)}
-                >
-                  {drawing ? 'Done drawing' : 'Draw'}
-                </button>
-                <button type="button" className="btn-secondary" onClick={closeStudy}>
-                  Close
-                </button>
+
+              <div className="study-overlay-toolbar">
+                {drawing && (
+                  <div className="ink-bar study-ink-bar">
+                    <div className="ink-group">
+                      {INK_COLORS.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className={`ink-swatch${tool.color === c.value && tool.mode !== 'erase' ? ' active' : ''}`}
+                          style={{ background: c.value }}
+                          aria-label={c.label}
+                          onClick={() =>
+                            setTool((t) => ({
+                              ...t,
+                              color: c.value,
+                              mode: t.mode === 'erase' ? 'pen' : t.mode,
+                            }))
+                          }
+                        />
+                      ))}
+                    </div>
+                    <div className="ink-group">
+                      <button
+                        type="button"
+                        className={`ink-tool${tool.mode === 'pen' ? ' active' : ''}`}
+                        onClick={() => setTool((t) => ({ ...t, mode: 'pen' }))}
+                      >
+                        Pen
+                      </button>
+                      <button
+                        type="button"
+                        className={`ink-tool${tool.mode === 'circle' ? ' active' : ''}`}
+                        onClick={() => setTool((t) => ({ ...t, mode: 'circle' }))}
+                      >
+                        Circle
+                      </button>
+                      <button
+                        type="button"
+                        className={`ink-tool${tool.mode === 'erase' ? ' active' : ''}`}
+                        onClick={() => setTool((t) => ({ ...t, mode: 'erase' }))}
+                      >
+                        Erase
+                      </button>
+                      <button type="button" className="ink-tool" onClick={() => studyDrawApi.current?.undo()}>
+                        Undo
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="study-overlay-actions">
+                  <button
+                    type="button"
+                    className={`commentary-toggle${drawing ? ' active' : ''}`}
+                    onClick={() => setDrawing(!drawing)}
+                  >
+                    {drawing ? 'Done drawing' : 'Draw'}
+                  </button>
+                  <button type="button" className="btn-secondary" onClick={closeStudy}>
+                    Close
+                  </button>
+                </div>
               </div>
             </header>
-
-            {inkBar(studyDrawApi)}
 
             <div className={`study-overlay-body${drawing ? ' is-inking' : ''}`}>
               <div className={`chapter-page study-page${drawing ? ' drawing' : ''}`}>

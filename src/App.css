@@ -1100,21 +1100,27 @@
   box-shadow: 0 0 0 2px var(--accent);
 }
 
-/* Study mode: chapter fills the sheet; side padding is the note margin.
+/* Study mode: full-bleed paper; side padding is the note margin.
    Absolute canvas covers the full page including gutters. */
 .chapter-page.study-page {
-  min-height: calc(100dvh - 160px);
-  padding-block: 20px 48px;
-  padding-inline: 12px;
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+  padding-block: 18px 56px;
+  padding-inline: 0.55in;
   border-radius: 0;
   box-shadow: none;
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--accent-wash) 55%, transparent) 0,
-      color-mix(in srgb, var(--accent-wash) 55%, transparent) 1in,
-      transparent 1in,
-      transparent calc(100% - 1in),
-      color-mix(in srgb, var(--accent-wash) 55%, transparent) calc(100% - 1in),
-      color-mix(in srgb, var(--accent-wash) 55%, transparent) 100%),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--accent-soft) 35%, var(--surface)) 0,
+      color-mix(in srgb, var(--accent-soft) 35%, var(--surface)) 0.55in,
+      transparent 0.55in,
+      transparent calc(100% - 0.55in),
+      color-mix(in srgb, var(--accent-soft) 35%, var(--surface)) calc(100% - 0.55in),
+      color-mix(in srgb, var(--accent-soft) 35%, var(--surface)) 100%
+    ),
     var(--surface);
 }
 
@@ -1123,21 +1129,35 @@
 }
 
 .chapter-page.study-page .reader-body {
-  max-width: 62ch;
-  margin-inline: auto;
+  /* Fill the space between note margins — no thin centered strip. */
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  font-size: clamp(17px, 1.55vw, 20px);
+  line-height: 1.85;
 }
 
 @media (min-width: 768px) {
   .chapter-page.study-page {
-    /* ~1 inch note gutters on each side (iPad / tablet). */
-    padding-inline: 1in;
+    /* ~0.75in note gutters on each side (iPad / tablet). */
+    padding-inline: 0.75in;
+    background:
+      linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--accent-soft) 35%, var(--surface)) 0,
+        color-mix(in srgb, var(--accent-soft) 35%, var(--surface)) 0.75in,
+        transparent 0.75in,
+        transparent calc(100% - 0.75in),
+        color-mix(in srgb, var(--accent-soft) 35%, var(--surface)) calc(100% - 0.75in),
+        color-mix(in srgb, var(--accent-soft) 35%, var(--surface)) 100%
+      ),
+      var(--surface);
   }
 }
 
 @media (max-width: 767px) {
   .chapter-page.study-page {
-    /* Phones: keep a smaller margin so text still has room. */
-    padding-inline: 0.45in;
+    padding-inline: 0.4in;
     background: var(--surface);
   }
 }
@@ -3958,16 +3978,13 @@
   z-index: 200;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  background-color: var(--bg);
-  background-image:
-    radial-gradient(100% 70% at 0% 0%, var(--accent-wash), transparent 55%),
-    linear-gradient(180deg, var(--bg), var(--bg-deep));
+  gap: 0;
+  background: var(--surface);
   padding:
-    calc(10px + env(safe-area-inset-top, 0px))
-    calc(12px + env(safe-area-inset-right, 0px))
-    calc(10px + env(safe-area-inset-bottom, 0px))
-    calc(12px + env(safe-area-inset-left, 0px));
+    env(safe-area-inset-top, 0px)
+    env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
   height: 100vh;
   height: 100dvh;
   width: 100%;
@@ -3978,37 +3995,42 @@
 
 .study-overlay-bar {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 10px 16px;
+  flex-wrap: nowrap;
   flex-shrink: 0;
-  padding: 4px 4px 12px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 92%, var(--bg));
 }
 
-.study-overlay-heading .eyebrow {
-  display: block;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--accent);
+.study-overlay-heading {
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
 .study-overlay-heading h2 {
-  margin: 4px 0 0;
-  font-size: 1.15rem;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
-.study-overlay-hint {
-  margin: 6px 0 0;
-  font-size: 0.85rem;
-  color: var(--text-dim);
+.study-overlay-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .study-overlay-actions {
@@ -4018,14 +4040,13 @@
   flex-shrink: 0;
 }
 
-.study-overlay .ink-bar {
+.study-overlay .study-ink-bar {
   margin: 0;
-  flex-shrink: 0;
-}
-
-.study-overlay .sketch-hint {
-  margin: 0;
-  flex-shrink: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: flex-end;
+  padding: 6px 10px;
+  border-radius: 10px;
 }
 
 .study-overlay-body {
@@ -4033,10 +4054,15 @@
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  border-radius: 14px;
-  border: 1px solid var(--border);
+  border-radius: 0;
+  border: none;
   background: var(--surface);
   -webkit-overflow-scrolling: touch;
+}
+
+.study-overlay-body.is-inking:has(.draw-canvas.is-inking) {
+  overflow-y: hidden;
+  overscroll-behavior: none;
 }
 
 .notes-overlay .ink-bar {
