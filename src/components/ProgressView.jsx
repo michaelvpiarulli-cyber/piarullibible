@@ -18,6 +18,7 @@ export default function ProgressView({
   setPlanId,
   dueDate,
   onEditDueDate,
+  onRestartFromToday,
   isDone,
   doneCount,
   totalReadings,
@@ -167,6 +168,12 @@ export default function ProgressView({
                 </span>
               </div>
             )}
+            <div className="setting-row">
+              <span className="setting-label">Reading start</span>
+              <button type="button" className="btn-text setting-edit" onClick={onRestartFromToday}>
+                Restart from today
+              </button>
+            </div>
           </>
         ) : (
           <label className="setting-row">

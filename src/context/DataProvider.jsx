@@ -84,6 +84,25 @@ function todayISO() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+/** Any checked-off pregnancy reading means they’ve truly started that plan. */
+function hasPregnancyProgress(progress) {
+  return Object.keys(progress || {}).some((k) => k.startsWith('preg-'));
+}
+
+/**
+ * Pregnancy readings should begin the day you start — not months earlier.
+ * If there’s no pregnancy progress yet and the start is already in the past,
+ * snap to today so “days behind” doesn’t fire on day one.
+ */
+function freshPregnancyStart(startISO, dueISO, progress) {
+  const today = todayISO();
+  if (!startISO || startISO >= today) return startISO || today;
+  if (hasPregnancyProgress(progress)) return startISO;
+  if (isBackdatedPregnancyStart(startISO, dueISO)) return today;
+  // Any past start with zero pregnancy checkoffs — treat as not-yet-begun.
+  return today;
+}
+
 function loadObject(key, fallback = {}) {
   try {
     const raw = localStorage.getItem(key);
@@ -145,22 +164,16 @@ export function DataProvider({ children }) {
     [planStartDates]
   );
 
-  // Old pregnancy setups backdated to the start of pregnancy, which made new
-  // readers look weeks behind. Move those starts to today once.
+  // Pregnancy plan: never look “behind” before the reader has actually started.
+  // Covers old LMP backdates, year-plan start dates left in place, and sync
+  // restoring a past start_date after a local fix.
   useEffect(() => {
-    if (planId !== 'pregnancy' || !dueDate) return;
-    const saved = planStartDates.pregnancy;
-    if (
-      !isBackdatedPregnancyStart(startDate, dueDate) &&
-      !isBackdatedPregnancyStart(saved, dueDate)
-    ) {
-      return;
-    }
-    const today = todayISO();
-    setStartDateState(today);
-    setPlanStartDates((prev) => ({ ...prev, pregnancy: today }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (planId !== 'pregnancy') return;
+    const next = freshPregnancyStart(startDate, dueDate, progress);
+    if (!next || next === startDate) return;
+    setStartDateState(next);
+    setPlanStartDates((prev) => ({ ...prev, pregnancy: next }));
+  }, [planId, startDate, dueDate, progress]);
 
   // hydratedFor holds the user id we've already pulled+merged for, so changes
   // only start pushing after the initial merge (and never before login).
@@ -200,7 +213,7 @@ export function DataProvider({ children }) {
       const mergedProgress = { ...remote.progress, ...progress };
       const mergedHighlights = { ...(data?.highlights || {}), ...highlights };
       const mergedNotes = { ...(data?.notes || {}), ...notes };
-      const mergedStart = data?.start_date || startDate;
+      let mergedStart = data?.start_date || startDate;
 
       // Journal is a list: union by id, newest first, so entries written on one
       // device don't overwrite another's.
@@ -276,7 +289,6 @@ export function DataProvider({ children }) {
       setProgress(mergedProgress);
       setHighlights(mergedHighlights);
       setNotes(mergedNotes);
-      setStartDateState(mergedStart);
       setJournal(mergedJournal);
       setMemory(mergedMemory);
       setSermons(mergedSermons);
@@ -295,6 +307,13 @@ export function DataProvider({ children }) {
       const mergedDueDate = remote.dueDate || dueDate || '';
       setDueDateState(mergedDueDate);
       const mergedPlanStarts = { ...(remote.planStartDates || {}), ...planStartDates };
+
+      // Don’t let sync re-apply a past pregnancy start that would show “behind.”
+      if (mergedPlanId === 'pregnancy') {
+        mergedStart = freshPregnancyStart(mergedStart, mergedDueDate, mergedProgress);
+        mergedPlanStarts.pregnancy = mergedStart;
+      }
+      setStartDateState(mergedStart);
       setPlanStartDates(mergedPlanStarts);
 
       hydratedFor.current = user.id;
@@ -414,10 +433,12 @@ export function DataProvider({ children }) {
       setPlanStartDates((prev) => {
         const next = { ...prev, [planId]: startDate };
         if (meta.id === 'pregnancy') {
-          // Resume a saved pregnancy start, or begin today — never backdate to LMP.
+          // Resume a saved pregnancy start, or begin today — never keep a past
+          // start when they haven’t checked off any pregnancy readings yet.
           const saved = next.pregnancy;
-          const nextStart =
+          const candidate =
             saved && !isBackdatedPregnancyStart(saved, dueDate) ? saved : todayISO();
+          const nextStart = freshPregnancyStart(candidate, dueDate, progress);
           setStartDateState(nextStart);
           next.pregnancy = nextStart;
         } else if (next[meta.id]) {
@@ -427,28 +448,36 @@ export function DataProvider({ children }) {
       });
       setPlanIdState(meta.id);
     },
-    [planId, startDate, dueDate]
+    [planId, startDate, dueDate, progress]
   );
 
   const setDueDate = useCallback((iso) => {
     setDueDateState(iso || '');
   }, []);
 
-  /** Activate pregnancy with a due date and matching plan start. */
+  /** Activate pregnancy with a due date; readings begin today unless already underway. */
   const setPregnancyDates = useCallback(
     ({ dueDate: due, startDate: start }) => {
+      const nextStart = freshPregnancyStart(start || todayISO(), due, progress);
       setPlanStartDates((prev) => {
         const next = { ...prev };
         if (planId !== 'pregnancy') next[planId] = startDate;
-        if (start) next.pregnancy = start;
+        next.pregnancy = nextStart;
         return next;
       });
       if (due) setDueDateState(due);
-      if (start) setStartDateState(start);
+      setStartDateState(nextStart);
       setPlanIdState('pregnancy');
     },
-    [planId, startDate]
+    [planId, startDate, progress]
   );
+
+  /** Move pregnancy day 1 to today (clears the “behind” backlog). */
+  const restartPregnancyFromToday = useCallback(() => {
+    const today = todayISO();
+    setStartDateState(today);
+    setPlanStartDates((prev) => ({ ...prev, pregnancy: today }));
+  }, []);
 
   const value = {
     progress,
@@ -468,6 +497,7 @@ export function DataProvider({ children }) {
     setPlanId,
     setDueDate,
     setPregnancyDates,
+    restartPregnancyFromToday,
     setJournal,
     setMemory,
     setSermons,

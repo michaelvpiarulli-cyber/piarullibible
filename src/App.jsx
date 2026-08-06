@@ -56,7 +56,7 @@ const NOTE_SECTIONS = [
 ];
 
 function App() {
-  const { planId, setPlanId, dueDate, setPregnancyDates } = useData();
+  const { planId, setPlanId, dueDate, setPregnancyDates, restartPregnancyFromToday } = useData();
   const planMeta = useMemo(() => getPlanMeta(planId), [planId]);
   const plan = useMemo(() => buildPlanById(planId), [planId]);
   const weeks = useMemo(() => groupIntoWeeks(plan), [plan]);
@@ -245,6 +245,7 @@ function App() {
                       setPlanId={requestPlanChange}
                       dueDate={dueDate}
                       onEditDueDate={() => setPregSetup('edit')}
+                      onRestartFromToday={restartPregnancyFromToday}
                       isDone={isDone}
                       doneCount={doneCount}
                       totalReadings={totalReadings}
