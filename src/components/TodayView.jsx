@@ -4,9 +4,18 @@ import DayQuiz from './DayQuiz';
 import { DAYS_PER_WEEK } from '../data/plans';
 import { prayerForDay } from '../data/prayers';
 import { pregnancyStageForWeek } from '../data/pregnancyStages';
+import { pregnancyWeekFromDueDate } from '../data/pregnancyDates';
 import { computeStreak } from '../data/streaks';
 
-export default function TodayView({ plan, planMeta, currentDay, dayDate, isDone, toggle }) {
+export default function TodayView({
+  plan,
+  planMeta,
+  dueDate,
+  currentDay,
+  dayDate,
+  isDone,
+  toggle,
+}) {
   const [selectedDay, setSelectedDay] = useState(currentDay);
   const [expandedId, setExpandedId] = useState(null);
 
@@ -28,11 +37,19 @@ export default function TodayView({ plan, planMeta, currentDay, dayDate, isDone,
   const dayData = plan[selectedDay - 1];
   if (!dayData) return null;
 
-  const week = dayData.week;
-  const weekDays =
-    planMeta?.id === 'pregnancy'
-      ? plan.filter((d) => d.week === week)
-      : plan.slice((week - 1) * DAYS_PER_WEEK, week * DAYS_PER_WEEK);
+  const isPregnancy = planMeta?.id === 'pregnancy';
+  // Gestational week from due date + this day’s calendar date (not catalog index).
+  const pregnancyWeek =
+    isPregnancy && dueDate
+      ? pregnancyWeekFromDueDate(dueDate, dayDate(selectedDay))
+      : dayData.week;
+  const week = pregnancyWeek;
+  const weekDays = isPregnancy
+    ? plan.filter((d) => {
+        if (!dueDate) return d.week === dayData.week;
+        return pregnancyWeekFromDueDate(dueDate, dayDate(d.day)) === pregnancyWeek;
+      })
+    : plan.slice((week - 1) * DAYS_PER_WEEK, week * DAYS_PER_WEEK);
 
   const total = dayData.readings.length;
   const doneCount = dayData.readings.filter((r) => isDone(r.id)).length;
@@ -96,7 +113,7 @@ export default function TodayView({ plan, planMeta, currentDay, dayDate, isDone,
           >
             {streak.behind} {streak.behind === 1 ? 'day' : 'days'} behind · Catch up
           </button>
-        ) : planMeta?.id === 'pregnancy' ? (
+        ) : isPregnancy ? (
           <div className="streak-pill caught-up">
             <span>Day {currentDay} · right on time</span>
           </div>
@@ -154,9 +171,9 @@ export default function TodayView({ plan, planMeta, currentDay, dayDate, isDone,
       {/* After the day's chapters — quiz, then closing card. */}
       <DayQuiz day={selectedDay} readings={dayData.readings} />
 
-      {planMeta?.id === 'pregnancy' ? (
+      {isPregnancy ? (
         (() => {
-          const stage = pregnancyStageForWeek(dayData.week);
+          const stage = pregnancyStageForWeek(pregnancyWeek);
           return (
             <section className="prayer-card preg-stage-card">
               <span className="prayer-label">Week {stage.week} · What God is forming</span>

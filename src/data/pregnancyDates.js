@@ -1,4 +1,11 @@
-/** Pregnancy calendar helpers — due date is for context; reading start is today. */
+/**
+ * Pregnancy calendar helpers.
+ *
+ * Dating matches common clinical gestational age:
+ * - LMP (last menstrual period) = due date − 280 days
+ * - “I’m X weeks pregnant” ≈ floor(daysSinceLMP / 7) (week 0 in the first
+ *   few days is shown as week 1 for our plan UI)
+ */
 
 const PREGNANCY_DAYS = 280;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -18,53 +25,74 @@ export function parseISODate(iso) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/**
- * Legacy LMP-style backdate (day 280 = due date). Kept only to detect /
- * migrate old setups that made people look “behind.”
- */
-export function startDateFromDueDate(dueISO) {
-  const due = parseISODate(dueISO);
-  if (!due) return null;
-  return toISODate(new Date(due.getTime() - (PREGNANCY_DAYS - 1) * MS_PER_DAY));
+function startOfLocalDay(d) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-/** Due date if day 1 of the plan started on `startISO`. */
+/** LMP date from due date (due = LMP + 280 days). */
+export function lmpFromDueDate(dueISO) {
+  const due = parseISODate(dueISO);
+  if (!due) return null;
+  return toISODate(new Date(due.getTime() - PREGNANCY_DAYS * MS_PER_DAY));
+}
+
+/** @deprecated alias — LMP start for gestation math */
+export function startDateFromDueDate(dueISO) {
+  return lmpFromDueDate(dueISO);
+}
+
+/** Due date if LMP was `startISO`. */
 export function dueDateFromStartDate(startISO) {
   const start = parseISODate(startISO);
   if (!start) return null;
-  return toISODate(new Date(start.getTime() + (PREGNANCY_DAYS - 1) * MS_PER_DAY));
+  return toISODate(new Date(start.getTime() + PREGNANCY_DAYS * MS_PER_DAY));
+}
+
+/** Whole days since LMP (0 on the LMP date). */
+export function daysSinceLmp(dueISO, onDate = new Date()) {
+  const lmpISO = lmpFromDueDate(dueISO);
+  const lmp = parseISODate(lmpISO);
+  if (!lmp) return 0;
+  const on = startOfLocalDay(onDate);
+  return Math.floor((on - lmp) / MS_PER_DAY);
 }
 
 /**
  * Infer a due date from “I’m currently at week W” (1–40).
- * Places “today” at the first day of that pregnancy week.
+ * Uses the start of that gestational week (W weeks 0 days).
  */
 export function dueDateFromCurrentWeek(week, today = new Date()) {
   const w = Math.min(40, Math.max(1, Math.round(Number(week) || 1)));
-  const dayOfPlan = (w - 1) * 7 + 1;
-  const base = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  return toISODate(new Date(base.getTime() + (PREGNANCY_DAYS - dayOfPlan) * MS_PER_DAY));
+  const daysSince = w * 7; // e.g. week 6 → 42 days since LMP (6w0d)
+  const base = startOfLocalDay(today);
+  return toISODate(new Date(base.getTime() + (PREGNANCY_DAYS - daysSince) * MS_PER_DAY));
 }
 
-/** Pregnancy day number (1–280) for a calendar date given a due date. */
+/**
+ * Plan/catalog day 1–280 for a calendar date.
+ * Aligns with gestational days so week 6 content matches “6 weeks pregnant.”
+ */
 export function pregnancyDayFromDueDate(dueISO, onDate = new Date()) {
-  const startISO = startDateFromDueDate(dueISO);
-  const start = parseISODate(startISO);
-  if (!start) return 1;
-  const on = new Date(onDate.getFullYear(), onDate.getMonth(), onDate.getDate());
-  const day = Math.floor((on - start) / MS_PER_DAY) + 1;
-  return Math.min(PREGNANCY_DAYS, Math.max(1, day));
+  const since = daysSinceLmp(dueISO, onDate);
+  // Map 0 (LMP day) → plan day 1; 42 (6w0d) → plan day 42 (end of catalog week 6).
+  return Math.min(PREGNANCY_DAYS, Math.max(1, since || 1));
 }
 
+/**
+ * Gestational week people mean by “I’m X weeks pregnant.”
+ * At 42–48 days since LMP → 6; at 49 → 7.
+ */
 export function pregnancyWeekFromDueDate(dueISO, onDate = new Date()) {
-  return Math.ceil(pregnancyDayFromDueDate(dueISO, onDate) / 7);
+  const since = daysSinceLmp(dueISO, onDate);
+  const w = Math.floor(since / 7);
+  return Math.min(40, Math.max(1, w || 1));
 }
 
 /** Days from today through due date (inclusive), clamped to 1–280. */
 export function daysLeftInPregnancy(dueISO, onDate = new Date()) {
   const due = parseISODate(dueISO);
   if (!due) return PREGNANCY_DAYS;
-  const on = new Date(onDate.getFullYear(), onDate.getMonth(), onDate.getDate());
+  const on = startOfLocalDay(onDate);
   const left = Math.floor((due - on) / MS_PER_DAY) + 1;
   return Math.min(PREGNANCY_DAYS, Math.max(1, left));
 }
@@ -75,8 +103,8 @@ export function formatPrettyDate(iso) {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-/** True if this start date is the old backdated LMP start for the due date. */
+/** True if this start date is an old LMP-style backdate for the due date. */
 export function isBackdatedPregnancyStart(startISO, dueISO) {
-  const aligned = startDateFromDueDate(dueISO);
+  const aligned = lmpFromDueDate(dueISO);
   return Boolean(aligned && startISO && aligned === startISO);
 }

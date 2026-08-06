@@ -150,6 +150,7 @@ function App() {
                 <TodayView
                   plan={plan}
                   planMeta={planMeta}
+                  dueDate={dueDate}
                   currentDay={currentDay}
                   dayDate={dayDate}
                   isDone={isDone}
