@@ -3,6 +3,7 @@ import ReadingRow from './ReadingRow';
 import DayQuiz from './DayQuiz';
 import { DAYS_PER_WEEK } from '../data/plans';
 import { prayerForDay } from '../data/prayers';
+import { pregnancyStageForWeek } from '../data/pregnancyStages';
 import { computeStreak } from '../data/streaks';
 
 export default function TodayView({ plan, planMeta, currentDay, dayDate, isDone, toggle }) {
@@ -150,23 +151,40 @@ export default function TodayView({ plan, planMeta, currentDay, dayDate, isDone,
         ))}
       </ul>
 
-      {/* After the day's chapters — quiz before closing prayer. */}
+      {/* After the day's chapters — quiz, then closing card. */}
       <DayQuiz day={selectedDay} readings={dayData.readings} />
 
-      {(() => {
-        const prayer = prayerForDay(selectedDay);
-        return (
-          <section className="prayer-card">
-            <span className="prayer-label">{prayer.label || 'Closing Prayer'}</span>
-            <p className="prayer-text">{prayer.text}</p>
-            <p className="prayer-author">
-              {prayer.cite
-                ? prayer.cite
-                : `${prayer.attributed ? 'attributed to ' : '— '}${prayer.author} · ${prayer.era}`}
-            </p>
-          </section>
-        );
-      })()}
+      {planMeta?.id === 'pregnancy' ? (
+        (() => {
+          const stage = pregnancyStageForWeek(dayData.week);
+          return (
+            <section className="prayer-card preg-stage-card">
+              <span className="prayer-label">Week {stage.week} · What God is forming</span>
+              <h3 className="preg-stage-title">{stage.title}</h3>
+              <p className="prayer-text">{stage.forming}</p>
+              <div className="preg-tip">
+                <span className="preg-tip-label">Tip</span>
+                <p className="preg-tip-text">{stage.tip}</p>
+              </div>
+            </section>
+          );
+        })()
+      ) : (
+        (() => {
+          const prayer = prayerForDay(selectedDay);
+          return (
+            <section className="prayer-card">
+              <span className="prayer-label">{prayer.label || 'Closing Prayer'}</span>
+              <p className="prayer-text">{prayer.text}</p>
+              <p className="prayer-author">
+                {prayer.cite
+                  ? prayer.cite
+                  : `${prayer.attributed ? 'attributed to ' : '— '}${prayer.author} · ${prayer.era}`}
+              </p>
+            </section>
+          );
+        })()
+      )}
 
       <div className="day-pager">
         <button
