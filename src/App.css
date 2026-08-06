@@ -1129,8 +1129,8 @@
 }
 
 .chapter-page.study-page .reader-body {
-  /* Fill the space between note margins — no thin centered strip. */
-  max-width: none;
+  /* Sit against the left note gutter; readable measure, not a centered strip. */
+  max-width: min(78ch, 100%);
   width: 100%;
   margin: 0;
   font-size: clamp(17px, 1.55vw, 20px);
