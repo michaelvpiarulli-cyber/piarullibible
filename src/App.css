@@ -1108,20 +1108,11 @@
   min-height: 100%;
   box-sizing: border-box;
   padding-block: 18px 56px;
-  padding-inline: 0.55in;
+  padding-inline: 0.85in;
   border-radius: 0;
   box-shadow: none;
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--accent-soft) 35%, var(--surface)) 0,
-      color-mix(in srgb, var(--accent-soft) 35%, var(--surface)) 0.55in,
-      transparent 0.55in,
-      transparent calc(100% - 0.55in),
-      color-mix(in srgb, var(--accent-soft) 35%, var(--surface)) calc(100% - 0.55in),
-      color-mix(in srgb, var(--accent-soft) 35%, var(--surface)) 100%
-    ),
-    var(--surface);
+  /* Same white as the page — no tinted gutters that look cut off. */
+  background: var(--surface);
 }
 
 .chapter-page.study-page.drawing {
@@ -1139,26 +1130,14 @@
 
 @media (min-width: 768px) {
   .chapter-page.study-page {
-    /* ~0.75in note gutters on each side (iPad / tablet). */
-    padding-inline: 0.75in;
-    background:
-      linear-gradient(
-        90deg,
-        color-mix(in srgb, var(--accent-soft) 35%, var(--surface)) 0,
-        color-mix(in srgb, var(--accent-soft) 35%, var(--surface)) 0.75in,
-        transparent 0.75in,
-        transparent calc(100% - 0.75in),
-        color-mix(in srgb, var(--accent-soft) 35%, var(--surface)) calc(100% - 0.75in),
-        color-mix(in srgb, var(--accent-soft) 35%, var(--surface)) 100%
-      ),
-      var(--surface);
+    /* ~1.15in white note gutters on each side (iPad / tablet). */
+    padding-inline: 1.15in;
   }
 }
 
 @media (max-width: 767px) {
   .chapter-page.study-page {
-    padding-inline: 0.4in;
-    background: var(--surface);
+    padding-inline: 0.55in;
   }
 }
 
