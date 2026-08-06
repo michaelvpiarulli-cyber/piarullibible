@@ -132,6 +132,7 @@ export default function TodayView({ plan, currentDay, dayDate, isDone, toggle })
         ))}
       </ul>
 
+      {/* After the day's chapters — quiz before closing prayer. */}
       <DayQuiz day={selectedDay} readings={dayData.readings} />
 
       {(() => {

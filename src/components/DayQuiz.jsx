@@ -135,15 +135,15 @@ export default function DayQuiz({ day, readings }) {
     return (
       <section className="reading-quiz day-quiz" aria-label={`Day ${day} quiz`}>
         <div className="quiz-head">
-          <span className="quiz-eyebrow">Check your reading</span>
-          <h4 className="quiz-title">Today’s quiz</h4>
+          <span className="quiz-eyebrow">After today’s chapters</span>
+          <h4 className="quiz-title">Daily reading quiz</h4>
           <p className="quiz-blurb">
             {loading
               ? `Loading questions on ${labels}…`
               : error
                 ? error
                 : ready
-                  ? `${questions.length} questions on ${labels}${
+                  ? `${questions.length} questions on what you just read${
                       prior ? ` · Last score ${prior.score}/${prior.total}` : ''
                     }`
                   : `Not enough verse text yet for ${labels}.`}
