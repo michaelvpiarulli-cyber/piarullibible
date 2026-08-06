@@ -62,6 +62,11 @@ function refLabel(v) {
   return `${v.book} ${v.chapter}:${v.number}`;
 }
 
+function explainFor(verse) {
+  const text = verse.text.length > 160 ? `${verse.text.slice(0, 157)}…` : verse.text;
+  return `${refLabel(verse)} — “${text}”`;
+}
+
 function contentWords(text) {
   return text
     .split(/\s+/)
@@ -141,7 +146,7 @@ function makeBlankQuestion(verses, rand, used) {
       passage: blanked.prompt,
       options,
       answer: blanked.answer,
-      explain: `${refLabel(verse)} — “${verse.text}”`,
+      explain: explainFor(verse),
     };
   }
   return null;
@@ -170,7 +175,7 @@ function makeReferenceQuestion(verses, rand, used) {
     passage: `“${snippet}”`,
     options: shuffle([refLabel(verse), ...others.map(refLabel)], rand),
     answer: refLabel(verse),
-    explain: `${refLabel(verse)} — “${verse.text}”`,
+    explain: explainFor(verse),
   };
 }
 
@@ -209,7 +214,7 @@ function makeContinuationQuestion(verses, rand, used) {
     passage: `“${start}…”`,
     options: shuffle([answerDisplay, ...distractors], rand),
     answer: answerDisplay,
-    explain: `${refLabel(verse)} — “${verse.text}”`,
+    explain: explainFor(verse),
   };
 }
 

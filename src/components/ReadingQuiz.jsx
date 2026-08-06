@@ -23,6 +23,7 @@ export default function ReadingQuiz({ reading }) {
   const [finished, setFinished] = useState(Boolean(prior));
   const answersRef = useRef(answers);
   answersRef.current = answers;
+  const feedbackRef = useRef(null);
 
   // Reload chapter text (hits PassageText's shared cache when already read).
   useEffect(() => {
@@ -89,6 +90,10 @@ export default function ReadingQuiz({ reading }) {
       const next = [...prev, correct];
       answersRef.current = next;
       return next;
+    });
+    // Keep the feedback + Next button on screen after long option lists.
+    requestAnimationFrame(() => {
+      feedbackRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
   };
 
@@ -209,7 +214,7 @@ export default function ReadingQuiz({ reading }) {
       </ul>
 
       {revealed && (
-        <div className="quiz-feedback">
+        <div className="quiz-feedback" ref={feedbackRef}>
           <p className={selected === question.answer ? 'ok' : 'miss'}>
             {selected === question.answer ? 'Correct' : 'Not quite'}
           </p>
