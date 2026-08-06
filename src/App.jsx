@@ -1,9 +1,10 @@
 import { useCallback, useMemo, useState } from 'react';
 import './App.css';
-import { buildPlan, groupIntoWeeks } from './data/generatePlan';
+import { buildPlanById, getPlanMeta, groupIntoWeeks } from './data/plans';
 import { useProgress } from './hooks/useProgress';
 import { usePlanStart } from './hooks/usePlanStart';
 import { useAnnotations } from './hooks/useAnnotations';
+import { useData } from './context/DataProvider';
 import { AnnotationsProvider } from './context/annotations';
 import BottomNav from './components/BottomNav';
 import TodayView from './components/TodayView';
@@ -54,7 +55,9 @@ const NOTE_SECTIONS = [
 ];
 
 function App() {
-  const plan = useMemo(() => buildPlan(), []);
+  const { planId, setPlanId } = useData();
+  const planMeta = useMemo(() => getPlanMeta(planId), [planId]);
+  const plan = useMemo(() => buildPlanById(planId), [planId]);
   const weeks = useMemo(() => groupIntoWeeks(plan), [plan]);
   const totalReadings = useMemo(() => plan.reduce((n, d) => n + d.readings.length, 0), [plan]);
 
@@ -92,7 +95,7 @@ function App() {
   return (
     <AnnotationsProvider value={annotations}>
       <div className="app">
-        <BottomNav active={tab} onChange={setTab} />
+        <BottomNav active={tab} onChange={setTab} planTitle={planMeta.title} />
 
         <div className="app-body">
           <header className="app-bar">
@@ -104,10 +107,11 @@ function App() {
           </header>
 
           <main className="app-main">
-            <div className="view-pane" key={tab}>
+            <div className="view-pane" key={`${tab}-${planId}`}>
               {tab === 'today' && (
                 <TodayView
                   plan={plan}
+                  planMeta={planMeta}
                   currentDay={currentDay}
                   dayDate={dayDate}
                   isDone={isDone}
@@ -185,7 +189,7 @@ function App() {
                 </>
               )}
 
-              {tab === 'family' && <GroupView myStats={myStats} />}
+              {tab === 'family' && <GroupView myStats={myStats} totalDays={planMeta.days} />}
 
               {tab === 'progress' && (
                 <>
@@ -203,10 +207,13 @@ function App() {
                   </div>
 
                   {progressSection === 'year' ? (
-                    <YearReview plan={plan} currentDay={currentDay} />
+                    <YearReview plan={plan} planMeta={planMeta} currentDay={currentDay} />
                   ) : (
                     <ProgressView
                       plan={plan}
+                      planMeta={planMeta}
+                      planId={planId}
+                      setPlanId={setPlanId}
                       isDone={isDone}
                       doneCount={doneCount}
                       totalReadings={totalReadings}

@@ -1701,7 +1701,8 @@
   color: var(--text-dim);
 }
 
-.setting-row input[type='date'] {
+.setting-row input[type='date'],
+.setting-select {
   font-family: inherit;
   font-size: 0.9rem;
   padding: 6px 10px;
@@ -1709,6 +1710,23 @@
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
+  max-width: min(220px, 55vw);
+}
+
+.setting-blurb {
+  margin: 0;
+  padding: 0 16px 14px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+.week-theme {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent, var(--text));
 }
 
 /* ---------- notes view ---------- */

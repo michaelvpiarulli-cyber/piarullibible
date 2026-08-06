@@ -1,21 +1,22 @@
 import { useCallback } from 'react';
-import { DAYS, DAYS_PER_WEEK } from '../data/generatePlan';
+import { DAYS_PER_WEEK, getPlanMeta } from '../data/plans';
 import { useData } from '../context/DataProvider';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
- * Derives the current day/week and date helpers from the plan start date, which
- * now lives in the shared data store (localStorage + Supabase sync).
+ * Derives the current day/week and date helpers from the plan start date and
+ * the active plan’s length.
  */
 export function usePlanStart() {
-  const { startDate, setStartDate } = useData();
+  const { startDate, setStartDate, planId } = useData();
+  const totalDays = getPlanMeta(planId).days;
 
   const start = new Date(`${startDate}T00:00:00`);
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const elapsedDays = Math.floor((today - start) / MS_PER_DAY);
-  const currentDay = Math.min(Math.max(elapsedDays + 1, 1), DAYS);
+  const currentDay = Math.min(Math.max(elapsedDays + 1, 1), totalDays);
   const currentWeek = Math.ceil(currentDay / DAYS_PER_WEEK);
 
   const dayDate = useCallback(
@@ -33,5 +34,14 @@ export function usePlanStart() {
     [start]
   );
 
-  return { startDate, setStartDate, currentDay, currentWeek, dayDate, weekDateRange };
+  return {
+    startDate,
+    setStartDate,
+    planId,
+    totalDays,
+    currentDay,
+    currentWeek,
+    dayDate,
+    weekDateRange,
+  };
 }

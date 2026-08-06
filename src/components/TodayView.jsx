@@ -1,22 +1,30 @@
 import { useEffect, useState } from 'react';
 import ReadingRow from './ReadingRow';
 import DayQuiz from './DayQuiz';
-import { DAYS, DAYS_PER_WEEK } from '../data/generatePlan';
+import { DAYS_PER_WEEK } from '../data/plans';
 import { prayerForDay } from '../data/prayers';
 import { computeStreak } from '../data/streaks';
 
-export default function TodayView({ plan, currentDay, dayDate, isDone, toggle }) {
+export default function TodayView({ plan, planMeta, currentDay, dayDate, isDone, toggle }) {
   const [selectedDay, setSelectedDay] = useState(currentDay);
   const [expandedId, setExpandedId] = useState(null);
 
   const streak = computeStreak(plan, isDone, currentDay);
+  const totalDays = planMeta?.days ?? plan.length;
 
   // If the plan's start date changes, follow it back to the real "today".
   useEffect(() => {
     setSelectedDay(currentDay);
   }, [currentDay]);
 
+  // Keep the selected day in range when switching plans.
+  useEffect(() => {
+    setSelectedDay((d) => Math.min(Math.max(d, 1), totalDays));
+  }, [totalDays]);
+
   const dayData = plan[selectedDay - 1];
+  if (!dayData) return null;
+
   const week = Math.ceil(selectedDay / DAYS_PER_WEEK);
   const weekDays = plan.slice((week - 1) * DAYS_PER_WEEK, week * DAYS_PER_WEEK);
 
@@ -95,10 +103,11 @@ export default function TodayView({ plan, currentDay, dayDate, isDone, toggle })
       <div className="today-hero">
         <span className="eyebrow">
           {isToday ? 'Today' : date.toLocaleDateString(undefined, { weekday: 'long' })} · Week {week}
+          {dayData.theme ? ` · ${dayData.theme}` : ''}
         </span>
         <h2>{date.toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}</h2>
         <span className="today-dates">
-          Day {selectedDay} of {DAYS}
+          Day {selectedDay} of {totalDays}
         </span>
 
         <div className="hero-progress">
@@ -167,7 +176,7 @@ export default function TodayView({ plan, currentDay, dayDate, isDone, toggle })
         <button
           type="button"
           className="pager-btn"
-          disabled={selectedDay === DAYS}
+          disabled={selectedDay === totalDays}
           onClick={() => setSelectedDay(selectedDay + 1)}
         >
           Next day →

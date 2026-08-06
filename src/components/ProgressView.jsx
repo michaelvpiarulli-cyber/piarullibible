@@ -1,11 +1,20 @@
 import { TRACKS } from '../data/books';
-import { DAYS, TOTAL_CHAPTERS } from '../data/generatePlan';
+import { PLANS } from '../data/plans';
 import { computeStreak } from '../data/streaks';
 
 const TRACK_LIST = [TRACKS.LAW_HISTORY, TRACKS.WISDOM, TRACKS.PROPHETS, TRACKS.NEW_TESTAMENT];
 
+const TRIMESTERS = [
+  { id: 't1', name: 'First trimester', weeks: [1, 13] },
+  { id: 't2', name: 'Second trimester', weeks: [14, 27] },
+  { id: 't3', name: 'Third trimester', weeks: [28, 40] },
+];
+
 export default function ProgressView({
   plan,
+  planMeta,
+  planId,
+  setPlanId,
   isDone,
   doneCount,
   totalReadings,
@@ -16,6 +25,7 @@ export default function ProgressView({
 }) {
   const pct = Math.round((doneCount / totalReadings) * 100);
   const allReadings = plan.flatMap((d) => d.readings);
+  const isPregnancy = planId === 'pregnancy';
 
   const chaptersRead = allReadings
     .filter((r) => isDone(r.id))
@@ -27,22 +37,44 @@ export default function ProgressView({
 
   const streak = computeStreak(plan, isDone, currentDay);
 
-  const perTrack = TRACK_LIST.map((name) => {
-    const readings = allReadings.filter((r) => r.trackName === name);
-    const done = readings.filter((r) => isDone(r.id)).length;
-    const chapters = readings.reduce((n, r) => n + r.chapters.length, 0);
-    const chaptersDone = readings
-      .filter((r) => isDone(r.id))
-      .reduce((n, r) => n + r.chapters.length, 0);
-    return { name, chapters, chaptersDone, pct: Math.round((done / readings.length) * 100) };
-  });
+  const perSection = isPregnancy
+    ? TRIMESTERS.map((t) => {
+        const days = plan.filter((d) => d.week >= t.weeks[0] && d.week <= t.weeks[1]);
+        const readings = days.flatMap((d) => d.readings);
+        const done = readings.filter((r) => isDone(r.id)).length;
+        const chapters = readings.reduce((n, r) => n + r.chapters.length, 0);
+        const chaptersDone = readings
+          .filter((r) => isDone(r.id))
+          .reduce((n, r) => n + r.chapters.length, 0);
+        return {
+          name: t.name,
+          chapters,
+          chaptersDone,
+          pct: readings.length ? Math.round((done / readings.length) * 100) : 0,
+        };
+      })
+    : TRACK_LIST.map((name) => {
+        const readings = allReadings.filter((r) => r.trackName === name);
+        const done = readings.filter((r) => isDone(r.id)).length;
+        const chapters = readings.reduce((n, r) => n + r.chapters.length, 0);
+        const chaptersDone = readings
+          .filter((r) => isDone(r.id))
+          .reduce((n, r) => n + r.chapters.length, 0);
+        return {
+          name,
+          chapters,
+          chaptersDone,
+          pct: readings.length ? Math.round((done / readings.length) * 100) : 0,
+        };
+      });
 
   return (
     <div className="progress-view">
       <div className="stat-hero">
         <span className="stat-big">{pct}%</span>
         <span className="stat-sub">
-          {chaptersRead} of {TOTAL_CHAPTERS} chapters · {doneCount} of {totalReadings} readings
+          {chaptersRead} of {planMeta.totalChapters} chapters · {doneCount} of {totalReadings}{' '}
+          readings
         </span>
         <div className="progress-bar-outer">
           <div className="progress-bar-inner" style={{ width: `${pct}%` }} />
@@ -56,11 +88,11 @@ export default function ProgressView({
         </div>
         <div className="stat-tile">
           <span className="tile-num">{currentDay}</span>
-          <span className="tile-label">of {DAYS} days</span>
+          <span className="tile-label">of {planMeta.days} days</span>
         </div>
         <div className="stat-tile">
           <span className="tile-num">{currentWeek}</span>
-          <span className="tile-label">of 52 weeks</span>
+          <span className="tile-label">of {planMeta.weeks} weeks</span>
         </div>
       </div>
 
@@ -82,7 +114,7 @@ export default function ProgressView({
 
       <h3 className="section-title">By section</h3>
       <div className="track-stats">
-        {perTrack.map((t) => (
+        {perSection.map((t) => (
           <div key={t.name} className="track-stat">
             <div className="track-stat-head">
               <span className="track-stat-name">{t.name}</span>
@@ -99,6 +131,22 @@ export default function ProgressView({
 
       <h3 className="section-title">Plan settings</h3>
       <div className="setting-card">
+        <label className="setting-row">
+          <span className="setting-label">Reading plan</span>
+          <select
+            className="setting-select"
+            value={planId}
+            onChange={(e) => setPlanId(e.target.value)}
+            aria-label="Choose reading plan"
+          >
+            {PLANS.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.title}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="setting-blurb">{planMeta.blurb}</p>
         <label className="setting-row">
           <span className="setting-label">Start date</span>
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />

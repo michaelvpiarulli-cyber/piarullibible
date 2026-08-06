@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { DEFAULT_PLAN_ID, getPlanMeta } from '../data/plans';
 
 /**
  * Single owner of all per-user data (progress, highlights, notes, start date).
@@ -23,6 +24,7 @@ const KEYS = {
   examens: 'bible-plan-examens',
   rule: 'bible-plan-rule',
   quizzes: 'bible-plan-quizzes',
+  planId: 'bible-plan-id',
 };
 
 const EMPTY_MEMORY = { verses: [], reviewedOn: null, dailyCount: 0 };
@@ -53,6 +55,10 @@ function unpackExtras(stored) {
     examens: Array.isArray(extras?.examens) ? extras.examens : [],
     rule: extras?.rule && typeof extras.rule === 'object' ? extras.rule : EMPTY_RULE,
     quizzes: extras?.quizzes && typeof extras.quizzes === 'object' ? extras.quizzes : EMPTY_QUIZZES,
+    planId:
+      extras?.planId && getPlanMeta(extras.planId).id === extras.planId
+        ? extras.planId
+        : null,
   };
 }
 
@@ -97,6 +103,9 @@ export function DataProvider({ children }) {
   const [examens, setExamens] = useState(() => loadObject(KEYS.examens, []));
   const [rule, setRule] = useState(() => loadObject(KEYS.rule, EMPTY_RULE));
   const [quizzes, setQuizzes] = useState(() => loadObject(KEYS.quizzes, EMPTY_QUIZZES));
+  const [planId, setPlanIdState] = useState(
+    () => localStorage.getItem(KEYS.planId) || DEFAULT_PLAN_ID
+  );
 
   const [syncState, setSyncState] = useState('idle'); // idle | syncing | synced | error
 
@@ -112,6 +121,7 @@ export function DataProvider({ children }) {
   useEffect(() => localStorage.setItem(KEYS.examens, JSON.stringify(examens)), [examens]);
   useEffect(() => localStorage.setItem(KEYS.rule, JSON.stringify(rule)), [rule]);
   useEffect(() => localStorage.setItem(KEYS.quizzes, JSON.stringify(quizzes)), [quizzes]);
+  useEffect(() => localStorage.setItem(KEYS.planId, planId), [planId]);
 
   // hydratedFor holds the user id we've already pulled+merged for, so changes
   // only start pushing after the initial merge (and never before login).
@@ -236,6 +246,13 @@ export function DataProvider({ children }) {
       setRule(mergedRule);
       setQuizzes(mergedQuizzes);
 
+      // Plan choice: remote wins when it names a known plan; otherwise keep local.
+      const mergedPlanId =
+        (remote.planId && getPlanMeta(remote.planId).id === remote.planId && remote.planId) ||
+        planId ||
+        DEFAULT_PLAN_ID;
+      setPlanIdState(mergedPlanId);
+
       hydratedFor.current = user.id;
 
       // Push the merged result up so the remote row is created/reconciled.
@@ -249,6 +266,7 @@ export function DataProvider({ children }) {
           examens: mergedExamens,
           rule: mergedRule,
           quizzes: mergedQuizzes,
+          planId: mergedPlanId,
         }),
         highlights: mergedHighlights,
         notes: mergedNotes,
@@ -283,6 +301,7 @@ export function DataProvider({ children }) {
           examens,
           rule,
           quizzes,
+          planId,
         }),
         highlights,
         notes,
@@ -305,6 +324,7 @@ export function DataProvider({ children }) {
     examens,
     rule,
     quizzes,
+    planId,
     available,
     user,
   ]);
@@ -338,11 +358,17 @@ export function DataProvider({ children }) {
     });
   }, []);
 
+  const setPlanId = useCallback((id) => {
+    const meta = getPlanMeta(id);
+    setPlanIdState(meta.id);
+  }, []);
+
   const value = {
     progress,
     highlights,
     notes,
     startDate,
+    planId,
     journal,
     memory,
     sermons,
@@ -351,6 +377,7 @@ export function DataProvider({ children }) {
     rule,
     quizzes,
     setStartDate: setStartDateState,
+    setPlanId,
     setJournal,
     setMemory,
     setSermons,

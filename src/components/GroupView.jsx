@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useGroups } from '../hooks/useGroups';
-import { DAYS } from '../data/generatePlan';
 
-export default function GroupView({ myStats }) {
+export default function GroupView({ myStats, totalDays = 364 }) {
   const { available, user, groups, loading, error, createGroup, joinGroup, leaveGroup } =
     useGroups(myStats);
 
@@ -80,7 +79,9 @@ export default function GroupView({ myStats }) {
                     <div className="progress-bar-outer thin">
                       <div
                         className="progress-bar-inner"
-                        style={{ width: `${Math.round((m.current_day / DAYS) * 100)}%` }}
+                        style={{
+                          width: `${Math.round((m.current_day / totalDays) * 100)}%`,
+                        }}
                       />
                     </div>
                     <span className="member-day">Day {m.current_day}</span>

@@ -3,8 +3,6 @@ import { useData } from '../context/DataProvider';
 import { useProgress } from '../hooks/useProgress';
 import { computeStreak, dayComplete } from '../data/streaks';
 import { MAX_LEVEL } from '../hooks/useMemory';
-import { TOTAL_CHAPTERS } from '../data/generatePlan';
-
 const pretty = (iso) => {
   if (!iso) return '';
   const d = new Date(iso);
@@ -14,12 +12,14 @@ const pretty = (iso) => {
 };
 
 /**
- * A look back at the year: what was read, what was learned, and — the part
+ * A look back at the plan: what was read, what was learned, and — the part
  * worth keeping — the prayers that were answered.
  */
-export default function YearReview({ plan, currentDay }) {
+export default function YearReview({ plan, planMeta, currentDay }) {
   const { journal, memory, sermons, examens, rule, highlights, notes } = useData();
   const { isDone } = useProgress();
+  const totalChapters = planMeta?.totalChapters || 1;
+  const isYearPlan = planMeta?.id === 'bible-year';
 
   const stats = useMemo(() => {
     const readings = plan.flatMap((d) => d.readings);
@@ -37,7 +37,7 @@ export default function YearReview({ plan, currentDay }) {
 
     return {
       chapters,
-      pct: Math.round((chapters / TOTAL_CHAPTERS) * 100),
+      pct: Math.round((chapters / totalChapters) * 100),
       daysDone,
       best,
       answered,
@@ -50,7 +50,19 @@ export default function YearReview({ plan, currentDay }) {
       highlightCount: Object.keys(highlights).length,
       noteCount: Object.keys(notes).length,
     };
-  }, [plan, isDone, currentDay, journal, memory, sermons, examens, rule, highlights, notes]);
+  }, [
+    plan,
+    isDone,
+    currentDay,
+    journal,
+    memory,
+    sermons,
+    examens,
+    rule,
+    highlights,
+    notes,
+    totalChapters,
+  ]);
 
   const nothingYet =
     stats.chapters === 0 &&
@@ -65,10 +77,13 @@ export default function YearReview({ plan, currentDay }) {
           <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" />
           <circle cx="12" cy="12" r="3" />
         </svg>
-        <p className="empty-title">Your year is just beginning</p>
+        <p className="empty-title">
+          {isYearPlan ? 'Your year is just beginning' : 'Your plan is just beginning'}
+        </p>
         <p className="empty-sub">
-          As you read, pray, and memorise, this page fills in — a record of what God did over
-          twelve months.
+          {isYearPlan
+            ? 'As you read, pray, and memorise, this page fills in — a record of what God did over twelve months.'
+            : 'As you read, pray, and memorise, this page fills in — a record of what God did along the way.'}
         </p>
       </div>
     );
@@ -77,10 +92,11 @@ export default function YearReview({ plan, currentDay }) {
   return (
     <div className="year-review">
       <section className="year-hero">
-        <span className="eyebrow">Your year so far</span>
+        <span className="eyebrow">{isYearPlan ? 'Your year so far' : 'Your plan so far'}</span>
         <span className="year-big">{stats.chapters.toLocaleString()}</span>
         <span className="year-big-label">
-          chapters read — {stats.pct}% of the whole Bible
+          chapters read — {stats.pct}% of{' '}
+          {isYearPlan ? 'the whole Bible' : planMeta?.title || 'this plan'}
         </span>
       </section>
 

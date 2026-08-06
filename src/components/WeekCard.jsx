@@ -14,6 +14,7 @@ export default function WeekCard({ weekData, currentDay, dateRange, dayDate, isD
             Week {weekData.week}
             {isCurrentWeek && <span className="today-pill">This week</span>}
           </h3>
+          {weekData.theme && <span className="week-theme">{weekData.theme}</span>}
           <span className="week-date-range">{dateRange}</span>
         </div>
         <span className={`week-progress${complete ? ' complete' : ''}`}>

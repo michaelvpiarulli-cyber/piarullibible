@@ -68,12 +68,12 @@ const TABS = [
   },
 ];
 
-export default function BottomNav({ active, onChange }) {
+export default function BottomNav({ active, onChange, planTitle = 'Bible in a Year' }) {
   return (
     <nav className="app-nav">
       <div className="nav-brand">
         <span className="brand-lockup">Piarulli</span>
-        <span className="brand-sub">Bible in a Year</span>
+        <span className="brand-sub">{planTitle}</span>
       </div>
 
       <div className="nav-tabs">
