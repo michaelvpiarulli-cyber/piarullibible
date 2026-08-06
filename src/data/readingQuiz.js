@@ -67,8 +67,9 @@ function snip(text, n = 180) {
 const THEMES = [
   {
     id: 'creation',
-    test: (t) =>
-      /\b(created|creation|heavens and the earth|let there be|formless|image of god|male and female)\b/i.test(
+    test: (t, books) =>
+      (books.has('Genesis') && /\b(created|creation|heavens and the earth|let there be|image of god)\b/i.test(t)) ||
+      /\b(created|creation|heavens and the earth|let there be light|formless and empty|image of god|male and female he created)\b/i.test(
         t
       ),
     questions: [
