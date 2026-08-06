@@ -162,7 +162,22 @@ function teachingFromSpeech(speech, rand) {
   const isDivine = /^(lord|god|jesus|christ|angel)/i.test(speaker);
 
   // Creation by word
-  if (/let there be|be fruitful|let us make/i.test(q)) {
+  if (/let there be|be fruitful|let us make|let’s make|let the (earth|waters)/i.test(q)) {
+    // First-style: teaching about God's word. Later fills: what specifically was commanded.
+    const specific = q.match(/let(?:’s| us)? (?:there be |make |the )([^,.]+)/i);
+    if (specific && !/light/i.test(specific[1])) {
+      const thing = snip(specific[1].trim(), 60);
+      return {
+        prompt: `In ${ref}, God commands something into being: “${snip(q, 95)}” What is He ordering here?`,
+        answer: `That ${thing} would come about by His word`,
+        wrong: [
+          'That people should invent this without Him',
+          'That chaos should remain untouched',
+          'That only angels may act in the world',
+        ],
+        explain: `${ref} shows a specific work of creation spoken by God.`,
+      };
+    }
     return {
       prompt: `In ${ref}, ${speaker} says, “${snip(q, 90)}” What does this show about how God works?`,
       answer: 'God accomplishes His will by His powerful word',
