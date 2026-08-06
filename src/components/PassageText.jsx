@@ -242,7 +242,7 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
 
   const openStudy = () => {
     setStudyOpen(true);
-    setDrawing(true);
+    setDrawing(false);
   };
 
   const closeStudy = useCallback(() => {
