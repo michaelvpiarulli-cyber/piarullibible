@@ -1,7 +1,7 @@
 import { TRACKS } from '../data/books';
 import { PLANS } from '../data/plans';
 import { computeStreak } from '../data/streaks';
-import { formatPrettyDate, pregnancyWeekFromDueDate } from '../data/pregnancyDates';
+import { formatPrettyDate, pregnancyWeekFromDueDate, daysLeftInPregnancy } from '../data/pregnancyDates';
 
 const TRACK_LIST = [TRACKS.LAW_HISTORY, TRACKS.WISDOM, TRACKS.PROPHETS, TRACKS.NEW_TESTAMENT];
 
@@ -56,7 +56,7 @@ export default function ProgressView({
           chaptersDone,
           pct: readings.length ? Math.round((done / readings.length) * 100) : 0,
         };
-      })
+      }).filter((t) => t.chapters > 0)
     : TRACK_LIST.map((name) => {
         const readings = allReadings.filter((r) => r.trackName === name);
         const done = readings.filter((r) => isDone(r.id)).length;
@@ -166,7 +166,8 @@ export default function ProgressView({
               <div className="setting-row">
                 <span className="setting-label">Pregnancy</span>
                 <span className="setting-value">
-                  Week {pregnancyWeekFromDueDate(dueDate)} of 40
+                  Week {pregnancyWeekFromDueDate(dueDate)} of 40 · {daysLeftInPregnancy(dueDate)}{' '}
+                  days left
                 </span>
               </div>
             )}
@@ -187,7 +188,9 @@ export default function ProgressView({
         <div className="setting-row">
           <span className="setting-label">Today</span>
           <span className="setting-value">
-            Day {currentDay} · Week {currentWeek}
+            {isPregnancy
+              ? `Day ${currentDay} of ${planMeta.days}`
+              : `Day ${currentDay} · Week ${currentWeek}`}
           </span>
         </div>
       </div>

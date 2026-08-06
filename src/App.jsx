@@ -56,14 +56,23 @@ const NOTE_SECTIONS = [
 ];
 
 function App() {
-  const { planId, setPlanId, dueDate, setPregnancyDates, restartPregnancyFromToday } = useData();
-  const planMeta = useMemo(() => getPlanMeta(planId), [planId]);
-  const plan = useMemo(() => buildPlanById(planId), [planId]);
+  const { planId, setPlanId, dueDate, startDate, setPregnancyDates, restartPregnancyFromToday } =
+    useData();
+  const plan = useMemo(
+    () => buildPlanById(planId, { dueDate, startDate }),
+    [planId, dueDate, startDate]
+  );
+  const planMeta = useMemo(
+    () => getPlanMeta(planId, { dueDate, startDate, plan }),
+    [planId, dueDate, startDate, plan]
+  );
   const weeks = useMemo(() => groupIntoWeeks(plan), [plan]);
   const totalReadings = useMemo(() => plan.reduce((n, d) => n + d.readings.length, 0), [plan]);
 
   const { isDone, toggle, doneCount } = useProgress();
-  const { startDate, setStartDate, currentDay, currentWeek, dayDate, weekDateRange } = usePlanStart();
+  const { setStartDate, currentDay, currentWeek, dayDate, weekDateRange } = usePlanStart(
+    planMeta.days
+  );
   const { highlights, notes, setHighlight, setNote } = useAnnotations();
   const [tab, setTab] = useState('today');
   const [noteSection, setNoteSection] = useState('sermons');
@@ -150,17 +159,32 @@ function App() {
 
               {tab === 'plan' && (
                 <div className="week-list">
-                  {weeks.map((weekData) => (
-                    <WeekCard
-                      key={weekData.week}
-                      weekData={weekData}
-                      currentDay={currentDay}
-                      dateRange={weekDateRange(weekData.week)}
-                      dayDate={dayDate}
-                      isDone={isDone}
-                      toggle={toggle}
-                    />
-                  ))}
+                  {weeks.map((weekData) => {
+                    const range =
+                      planId === 'pregnancy' && weekData.days?.length
+                        ? (() => {
+                            const fmt = (dayNum) =>
+                              dayDate(dayNum).toLocaleDateString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                              });
+                            const first = weekData.days[0].day;
+                            const last = weekData.days[weekData.days.length - 1].day;
+                            return first === last ? fmt(first) : `${fmt(first)} – ${fmt(last)}`;
+                          })()
+                        : weekDateRange(weekData.week);
+                    return (
+                      <WeekCard
+                        key={weekData.week}
+                        weekData={weekData}
+                        currentDay={currentDay}
+                        dateRange={range}
+                        dayDate={dayDate}
+                        isDone={isDone}
+                        toggle={toggle}
+                      />
+                    );
+                  })}
                 </div>
               )}
 
@@ -267,7 +291,12 @@ function App() {
             preserveStart={pregSetup === 'edit'}
             existingStartDate={startDate}
             onSave={(dates) => {
-              setPregnancyDates(dates);
+              // Re-anchor to today whenever due date is set/changed so the plan
+              // length matches days left from now through the due date.
+              setPregnancyDates({
+                dueDate: dates.dueDate,
+                startDate: dates.startDate,
+              });
               setPregSetup(null);
             }}
             onCancel={

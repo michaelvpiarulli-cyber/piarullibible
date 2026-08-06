@@ -5,6 +5,8 @@
  * trust, Mary’s yes, peace, and readiness to welcome a child.
  */
 
+import { pregnancyDayFromDueDate, parseISODate } from './pregnancyDates';
+
 export const PREGNANCY_DAYS = 280;
 export const PREGNANCY_WEEKS = 40;
 
@@ -499,8 +501,8 @@ function labelFor(book, chapter) {
   return `${book} ${chapter}`;
 }
 
-/** Build the 280-day pregnancy plan in the same shape as the year plan. */
-export function buildPregnancyPlan() {
+/** Full 280-day catalog (pregnancy day 1 → due date). */
+export function buildFullPregnancyPlan() {
   const days = [];
   let dayNum = 0;
 
@@ -510,6 +512,7 @@ export function buildPregnancyPlan() {
       days.push({
         day: dayNum,
         week: weekIdx + 1,
+        pregnancyDay: dayNum,
         theme: week.theme,
         readings: [
           {
@@ -530,8 +533,33 @@ export function buildPregnancyPlan() {
   return days;
 }
 
-export function pregnancyTotalChapters() {
-  return buildPregnancyPlan().reduce(
+/**
+ * Build the pregnancy plan for the time left until the due date.
+ * Starts at the pregnancy day for `asOfDate` (usually the day they joined)
+ * and runs through day 280 — remapped so their Day 1 is that join day.
+ *
+ * @param {{ dueDate?: string, asOfDate?: string }} [opts]
+ */
+export function buildPregnancyPlan(opts = {}) {
+  const full = buildFullPregnancyPlan();
+  const dueDate = opts.dueDate;
+
+  if (!dueDate) {
+    return full.map((d, i) => ({ ...d, day: i + 1 }));
+  }
+
+  const asOf = opts.asOfDate ? parseISODate(opts.asOfDate) : new Date();
+  const fromPregDay = pregnancyDayFromDueDate(dueDate, asOf || new Date());
+  const remaining = full.slice(fromPregDay - 1);
+
+  return remaining.map((d, i) => ({
+    ...d,
+    day: i + 1,
+  }));
+}
+
+export function pregnancyTotalChapters(opts = {}) {
+  return buildPregnancyPlan(opts).reduce(
     (n, d) => n + d.readings.reduce((m, r) => m + r.chapters.length, 0),
     0
   );

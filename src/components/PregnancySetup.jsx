@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  daysLeftInPregnancy,
   dueDateFromCurrentWeek,
   formatPrettyDate,
   pregnancyWeekFromDueDate,
@@ -8,7 +9,7 @@ import {
 
 /**
  * First-run (and re-open) setup for the pregnancy plan: due date or current week.
- * Readings always begin today so you aren’t marked “behind” for weeks before you started.
+ * Plan length = days left until due; Day 1 is today (nothing behind).
  */
 export default function PregnancySetup({
   initialDueDate = '',
@@ -30,13 +31,15 @@ export default function PregnancySetup({
     return dueDateFromCurrentWeek(week);
   }, [mode, dueDate, week]);
 
-  const previewStart = useMemo(() => {
-    if (preserveStart && existingStartDate) return existingStartDate;
-    return todayISO();
-  }, [preserveStart, existingStartDate]);
+  const previewStart = useMemo(() => todayISO(), []);
 
   const previewWeek = useMemo(
     () => (previewDue ? pregnancyWeekFromDueDate(previewDue) : null),
+    [previewDue]
+  );
+
+  const previewDaysLeft = useMemo(
+    () => (previewDue ? daysLeftInPregnancy(previewDue) : null),
     [previewDue]
   );
 
@@ -61,8 +64,8 @@ export default function PregnancySetup({
         <span className="eyebrow">Pregnancy plan</span>
         <h2 id="preg-setup-title">When is your due date?</h2>
         <p className="preg-setup-lead">
-          Your readings start today at Day 1 — you won’t be marked behind for time before you
-          began. Your due date just keeps pregnancy week in view.
+          We’ll build a reading plan for the days you have left — starting today at your current
+          pregnancy week, through your due date.
         </p>
 
         <div className="preg-setup-modes" role="tablist" aria-label="How to set your date">
@@ -115,9 +118,8 @@ export default function PregnancySetup({
 
           {canSave && (
             <p className="preg-setup-preview">
-              {preserveStart
-                ? `Pregnancy week ${previewWeek} · due ${formatPrettyDate(previewDue)}`
-                : `Starting today at Day 1 · pregnancy week ${previewWeek} · due ${formatPrettyDate(previewDue)}`}
+              {previewDaysLeft} day{previewDaysLeft === 1 ? '' : 's'} of reading · pregnancy week{' '}
+              {previewWeek} through due date · {formatPrettyDate(previewDue)}
             </p>
           )}
 

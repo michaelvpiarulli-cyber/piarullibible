@@ -7,16 +7,20 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /**
  * Derives the current day/week and date helpers from the plan start date and
  * the active plan’s length.
+ *
+ * @param {number} [totalDaysOverride] — use the built plan’s length (needed for
+ *   pregnancy, which shrinks to days left until the due date).
  */
-export function usePlanStart() {
-  const { startDate, setStartDate, planId } = useData();
-  const totalDays = getPlanMeta(planId).days;
+export function usePlanStart(totalDaysOverride) {
+  const { startDate, setStartDate, planId, dueDate } = useData();
+  const totalDays =
+    totalDaysOverride ?? getPlanMeta(planId, { dueDate }).days;
 
   const start = new Date(`${startDate}T00:00:00`);
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const elapsedDays = Math.floor((today - start) / MS_PER_DAY);
-  const currentDay = Math.min(Math.max(elapsedDays + 1, 1), totalDays);
+  const currentDay = Math.min(Math.max(elapsedDays + 1, 1), Math.max(1, totalDays));
   const currentWeek = Math.ceil(currentDay / DAYS_PER_WEEK);
 
   const dayDate = useCallback(
@@ -26,6 +30,8 @@ export function usePlanStart() {
 
   const weekDateRange = useCallback(
     (week) => {
+      // Pregnancy weeks use absolute pregnancy week numbers; fall back to
+      // sequential week index for the year plan.
       const first = new Date(start.getTime() + (week - 1) * DAYS_PER_WEEK * MS_PER_DAY);
       const last = new Date(first.getTime() + 6 * MS_PER_DAY);
       const fmt = (d) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });

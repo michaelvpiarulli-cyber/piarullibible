@@ -60,6 +60,15 @@ export function pregnancyWeekFromDueDate(dueISO, onDate = new Date()) {
   return Math.ceil(pregnancyDayFromDueDate(dueISO, onDate) / 7);
 }
 
+/** Days from today through due date (inclusive), clamped to 1–280. */
+export function daysLeftInPregnancy(dueISO, onDate = new Date()) {
+  const due = parseISODate(dueISO);
+  if (!due) return PREGNANCY_DAYS;
+  const on = new Date(onDate.getFullYear(), onDate.getMonth(), onDate.getDate());
+  const left = Math.floor((due - on) / MS_PER_DAY) + 1;
+  return Math.min(PREGNANCY_DAYS, Math.max(1, left));
+}
+
 export function formatPrettyDate(iso) {
   const d = parseISODate(iso);
   if (!d) return '';

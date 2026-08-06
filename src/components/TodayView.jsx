@@ -27,8 +27,11 @@ export default function TodayView({ plan, planMeta, currentDay, dayDate, isDone,
   const dayData = plan[selectedDay - 1];
   if (!dayData) return null;
 
-  const week = Math.ceil(selectedDay / DAYS_PER_WEEK);
-  const weekDays = plan.slice((week - 1) * DAYS_PER_WEEK, week * DAYS_PER_WEEK);
+  const week = dayData.week;
+  const weekDays =
+    planMeta?.id === 'pregnancy'
+      ? plan.filter((d) => d.week === week)
+      : plan.slice((week - 1) * DAYS_PER_WEEK, week * DAYS_PER_WEEK);
 
   const total = dayData.readings.length;
   const doneCount = dayData.readings.filter((r) => isDone(r.id)).length;
