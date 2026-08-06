@@ -263,6 +263,8 @@ function App() {
         {pregSetup && (
           <PregnancySetup
             initialDueDate={dueDate}
+            preserveStart={pregSetup === 'edit'}
+            existingStartDate={startDate}
             onSave={(dates) => {
               setPregnancyDates(dates);
               setPregSetup(null);

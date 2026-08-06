@@ -3,13 +3,20 @@ import {
   dueDateFromCurrentWeek,
   formatPrettyDate,
   pregnancyWeekFromDueDate,
-  startDateFromDueDate,
+  todayISO,
 } from '../data/pregnancyDates';
 
 /**
  * First-run (and re-open) setup for the pregnancy plan: due date or current week.
+ * Readings always begin today so you aren’t marked “behind” for weeks before you started.
  */
-export default function PregnancySetup({ initialDueDate = '', onSave, onCancel }) {
+export default function PregnancySetup({
+  initialDueDate = '',
+  preserveStart = false,
+  existingStartDate = '',
+  onSave,
+  onCancel,
+}) {
   const [mode, setMode] = useState('due'); // due | week
   const [dueDate, setDueDate] = useState(initialDueDate || '');
   const [week, setWeek] = useState('20');
@@ -23,7 +30,11 @@ export default function PregnancySetup({ initialDueDate = '', onSave, onCancel }
     return dueDateFromCurrentWeek(week);
   }, [mode, dueDate, week]);
 
-  const previewStart = useMemo(() => startDateFromDueDate(previewDue), [previewDue]);
+  const previewStart = useMemo(() => {
+    if (preserveStart && existingStartDate) return existingStartDate;
+    return todayISO();
+  }, [preserveStart, existingStartDate]);
+
   const previewWeek = useMemo(
     () => (previewDue ? pregnancyWeekFromDueDate(previewDue) : null),
     [previewDue]
@@ -50,8 +61,8 @@ export default function PregnancySetup({ initialDueDate = '', onSave, onCancel }
         <span className="eyebrow">Pregnancy plan</span>
         <h2 id="preg-setup-title">When is your due date?</h2>
         <p className="preg-setup-lead">
-          We’ll line up the 40-week reading plan with your pregnancy so today’s reading matches
-          where you are.
+          Your readings start today at Day 1 — you won’t be marked behind for time before you
+          began. Your due date just keeps pregnancy week in view.
         </p>
 
         <div className="preg-setup-modes" role="tablist" aria-label="How to set your date">
@@ -104,8 +115,9 @@ export default function PregnancySetup({ initialDueDate = '', onSave, onCancel }
 
           {canSave && (
             <p className="preg-setup-preview">
-              About week {previewWeek} today · readings start {formatPrettyDate(previewStart)} · due{' '}
-              {formatPrettyDate(previewDue)}
+              {preserveStart
+                ? `Pregnancy week ${previewWeek} · due ${formatPrettyDate(previewDue)}`
+                : `Starting today at Day 1 · pregnancy week ${previewWeek} · due ${formatPrettyDate(previewDue)}`}
             </p>
           )}
 
@@ -116,7 +128,7 @@ export default function PregnancySetup({ initialDueDate = '', onSave, onCancel }
               </button>
             )}
             <button type="submit" className="btn-primary" disabled={!canSave}>
-              Start this plan
+              {preserveStart ? 'Save due date' : 'Start this plan'}
             </button>
           </div>
         </form>

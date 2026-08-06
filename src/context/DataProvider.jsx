@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { DEFAULT_PLAN_ID, getPlanMeta } from '../data/plans';
-import { startDateFromDueDate } from '../data/pregnancyDates';
+import { isBackdatedPregnancyStart } from '../data/pregnancyDates';
 
 /**
  * Single owner of all per-user data (progress, highlights, notes, start date).
@@ -144,6 +144,23 @@ export function DataProvider({ children }) {
     () => localStorage.setItem(KEYS.planStartDates, JSON.stringify(planStartDates)),
     [planStartDates]
   );
+
+  // Old pregnancy setups backdated to the start of pregnancy, which made new
+  // readers look weeks behind. Move those starts to today once.
+  useEffect(() => {
+    if (planId !== 'pregnancy' || !dueDate) return;
+    const saved = planStartDates.pregnancy;
+    if (
+      !isBackdatedPregnancyStart(startDate, dueDate) &&
+      !isBackdatedPregnancyStart(saved, dueDate)
+    ) {
+      return;
+    }
+    const today = todayISO();
+    setStartDateState(today);
+    setPlanStartDates((prev) => ({ ...prev, pregnancy: today }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // hydratedFor holds the user id we've already pulled+merged for, so changes
   // only start pushing after the initial merge (and never before login).
@@ -396,13 +413,14 @@ export function DataProvider({ children }) {
       const meta = getPlanMeta(id);
       setPlanStartDates((prev) => {
         const next = { ...prev, [planId]: startDate };
-        if (meta.id === 'pregnancy' && dueDate) {
-          const aligned = startDateFromDueDate(dueDate);
-          if (aligned) {
-            setStartDateState(aligned);
-            next.pregnancy = aligned;
-          }
-        } else if (meta.id !== 'pregnancy' && next[meta.id]) {
+        if (meta.id === 'pregnancy') {
+          // Resume a saved pregnancy start, or begin today — never backdate to LMP.
+          const saved = next.pregnancy;
+          const nextStart =
+            saved && !isBackdatedPregnancyStart(saved, dueDate) ? saved : todayISO();
+          setStartDateState(nextStart);
+          next.pregnancy = nextStart;
+        } else if (next[meta.id]) {
           setStartDateState(next[meta.id]);
         }
         return next;

@@ -1,4 +1,4 @@
-/** Pregnancy calendar helpers — 40 weeks / 280 days, due date = plan day 280. */
+/** Pregnancy calendar helpers — due date is for context; reading start is today. */
 
 const PREGNANCY_DAYS = 280;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -8,6 +8,10 @@ export function toISODate(d) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+export function todayISO(onDate = new Date()) {
+  return toISODate(new Date(onDate.getFullYear(), onDate.getMonth(), onDate.getDate()));
+}
+
 export function parseISODate(iso) {
   if (!iso || typeof iso !== 'string') return null;
   const d = new Date(`${iso}T00:00:00`);
@@ -15,8 +19,8 @@ export function parseISODate(iso) {
 }
 
 /**
- * Day 280 of the plan lands on the due date (standard 40-week / 280-day pregnancy).
- * So plan start = due date − 279 days.
+ * Legacy LMP-style backdate (day 280 = due date). Kept only to detect /
+ * migrate old setups that made people look “behind.”
  */
 export function startDateFromDueDate(dueISO) {
   const due = parseISODate(dueISO);
@@ -60,4 +64,10 @@ export function formatPrettyDate(iso) {
   const d = parseISODate(iso);
   if (!d) return '';
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/** True if this start date is the old backdated LMP start for the due date. */
+export function isBackdatedPregnancyStart(startISO, dueISO) {
+  const aligned = startDateFromDueDate(dueISO);
+  return Boolean(aligned && startISO && aligned === startISO);
 }
