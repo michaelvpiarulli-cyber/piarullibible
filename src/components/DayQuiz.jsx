@@ -4,9 +4,9 @@ import { buildQuiz } from '../data/readingQuiz';
 import { useQuizzes } from '../hooks/useQuizzes';
 
 /**
- * Day-level comprehension quiz — always visible on Today after the readings.
- * Covers every passage assigned for that day. The card shows immediately;
- * passage text loads when the reader starts (or in the background).
+ * Day-level quiz after today’s chapters.
+ * Prefers AI-generated, passage-specific questions when /api/quiz is configured;
+ * otherwise builds anchored questions from the day’s text locally.
  */
 export default function DayQuiz({ day, readings }) {
   const quizId = `day-${day}`;
@@ -24,8 +24,10 @@ export default function DayQuiz({ day, readings }) {
   const labels = useMemo(() => readings.map((r) => r.label).join(' · '), [readings]);
 
   const [parts, setParts] = useState(null);
+  const [questions, setQuestions] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [source, setSource] = useState(null); // 'ai' | 'local'
 
   const [started, setStarted] = useState(false);
   const [index, setIndex] = useState(0);
@@ -37,12 +39,13 @@ export default function DayQuiz({ day, readings }) {
   answersRef.current = answers;
   const feedbackRef = useRef(null);
 
-  // Prefetch chapter text in the background so Start is snappy.
   useEffect(() => {
     let cancelled = false;
     setParts(null);
+    setQuestions([]);
     setError(null);
     setLoading(true);
+    setSource(null);
     setStarted(false);
     setIndex(0);
     setSelected(null);
@@ -57,10 +60,43 @@ export default function DayQuiz({ day, readings }) {
           loaded.push(await fetchChapter(c.book, c.chapter));
           if (cancelled) return;
         }
-        if (!cancelled) {
-          setParts(loaded);
-          setLoading(false);
+        if (cancelled) return;
+        setParts(loaded);
+
+        // Try AI quiz first (passage-specific teaching questions).
+        let aiQuestions = null;
+        try {
+          const passages = loaded.map((p) => ({
+            book: p.book,
+            chapter: p.chapter,
+            text: (p.verses || []).map((v) => `${v.number}. ${v.text}`).join('\n'),
+          }));
+          const res = await fetch('/api/quiz', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ day, labels, passages }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.questions) && data.questions.length >= 2) {
+              aiQuestions = data.questions;
+            }
+          }
+        } catch {
+          // fall through to local builder
         }
+
+        if (cancelled) return;
+
+        if (aiQuestions) {
+          setQuestions(aiQuestions);
+          setSource('ai');
+        } else {
+          const local = buildQuiz(quizId, loaded, { labels });
+          setQuestions(local.questions || []);
+          setSource('local');
+        }
+        setLoading(false);
       } catch (err) {
         if (!cancelled) {
           setError(err.message || 'Couldn’t load quiz');
@@ -75,12 +111,6 @@ export default function DayQuiz({ day, readings }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quizId, chapterKey]);
 
-  const quiz = useMemo(() => {
-    if (!parts) return null;
-    return buildQuiz(quizId, parts, { labels });
-  }, [parts, quizId, labels]);
-
-  const questions = quiz?.questions || [];
   const question = questions[index];
   const score = answers.filter(Boolean).length;
   const ready = !loading && !error && questions.length > 0;
@@ -130,7 +160,6 @@ export default function DayQuiz({ day, readings }) {
 
   if (!readings.length) return null;
 
-  // Always show the card on Today — don't wait on network before it's visible.
   if (!started) {
     return (
       <section className="reading-quiz day-quiz" aria-label={`Day ${day} quiz`}>
@@ -139,11 +168,11 @@ export default function DayQuiz({ day, readings }) {
           <h4 className="quiz-title">Daily reading quiz</h4>
           <p className="quiz-blurb">
             {loading
-              ? `Preparing questions on ${labels}…`
+              ? `Preparing questions from ${labels}…`
               : error
                 ? error
                 : ready
-                  ? `${questions.length} questions on what God is teaching${
+                  ? `${questions.length} questions from today’s passages${
                       prior ? ` · Last score ${prior.score}/${prior.total}` : ''
                     }`
                   : `Not enough verse text yet for ${labels}.`}
@@ -180,15 +209,18 @@ export default function DayQuiz({ day, readings }) {
       <div className="quiz-head">
         <span className="quiz-eyebrow">
           Question {index + 1} of {questions.length}
+          {source === 'ai' ? '' : ''}
         </span>
         <h4 className="quiz-title">{question.prompt}</h4>
         {question.passage && (
           <p className="quiz-passage">
-            {question.passage.split('\n').map((line, i) => (
-              <span key={i} className="quiz-passage-line">
-                {line}
-              </span>
-            ))}
+            {String(question.passage)
+              .split('\n')
+              .map((line, i) => (
+                <span key={i} className="quiz-passage-line">
+                  {line}
+                </span>
+              ))}
           </p>
         )}
       </div>
