@@ -371,10 +371,31 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
 
   return (
     <article className="reader-chapter">
-      <h4 className="reader-chapter-title">
-        {part.heading}
-        <span className="reader-translation">{TRANSLATION_LABEL}</span>
-      </h4>
+      <div className="reader-chapter-head">
+        <h4 className="reader-chapter-title">
+          {part.heading}
+          <span className="reader-translation">{TRANSLATION_LABEL}</span>
+        </h4>
+        <button
+          type="button"
+          className="study-expand-corner"
+          onClick={openStudy}
+          aria-label="Expand chapter for study notes"
+          title="Expand"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
+          </svg>
+        </button>
+      </div>
 
       <div className={`chapter-page${drawing && !studyOpen ? ' drawing' : ''}`}>
         <p className="reader-body">{renderVerses()}</p>
@@ -392,26 +413,6 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
       {!studyOpen && inkBar(drawApi)}
 
       <div className="commentary-toggle-row">
-        <button
-          type="button"
-          className="commentary-toggle study-expand-btn"
-          onClick={openStudy}
-          aria-label="Expand chapter for study notes"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
-          </svg>
-          Expand
-        </button>
-
         <button
           type="button"
           className={`commentary-toggle${drawing ? ' active' : ''}`}

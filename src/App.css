@@ -863,8 +863,17 @@
   border-top: 1px solid var(--border);
 }
 
-.reader-chapter-title {
+.reader-chapter-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin: 0 0 18px;
+  min-height: 36px;
+}
+
+.reader-chapter-title {
+  margin: 0;
   text-align: center;
   font-size: 0.95rem;
   font-weight: 700;
@@ -874,6 +883,37 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  padding-inline: 44px;
+}
+
+.study-expand-corner {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+}
+
+.study-expand-corner svg {
+  width: 17px;
+  height: 17px;
+}
+
+.study-expand-corner:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent-wash) 70%, var(--surface));
 }
 
 .reader-translation {
@@ -1070,10 +1110,10 @@
   box-shadow: none;
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--accent-wash) 55%, transparent) 0,
-      color-mix(in srgb, var(--accent-wash) 55%, transparent) 2in,
-      transparent 2in,
-      transparent calc(100% - 2in),
-      color-mix(in srgb, var(--accent-wash) 55%, transparent) calc(100% - 2in),
+      color-mix(in srgb, var(--accent-wash) 55%, transparent) 1in,
+      transparent 1in,
+      transparent calc(100% - 1in),
+      color-mix(in srgb, var(--accent-wash) 55%, transparent) calc(100% - 1in),
       color-mix(in srgb, var(--accent-wash) 55%, transparent) 100%),
     var(--surface);
 }
@@ -1089,15 +1129,15 @@
 
 @media (min-width: 768px) {
   .chapter-page.study-page {
-    /* ~2 inch note gutters on each side (iPad / tablet). */
-    padding-inline: 2in;
+    /* ~1 inch note gutters on each side (iPad / tablet). */
+    padding-inline: 1in;
   }
 }
 
 @media (max-width: 767px) {
   .chapter-page.study-page {
     /* Phones: keep a smaller margin so text still has room. */
-    padding-inline: 0.55in;
+    padding-inline: 0.45in;
     background: var(--surface);
   }
 }
