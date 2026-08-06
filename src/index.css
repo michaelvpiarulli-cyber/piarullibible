@@ -178,6 +178,31 @@ html.notes-expanded body::before {
   z-index: 150;
 }
 
+/* Fullscreen chapter study mode (iPad margins for notes). */
+html.study-expanded,
+html.study-expanded body {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+html.study-expanded .app {
+  visibility: hidden;
+}
+
+html.study-expanded body::before {
+  z-index: 150;
+}
+
+/* Keep verse note sheet above the study overlay. */
+html.study-expanded .sheet-scrim {
+  z-index: 220;
+}
+
+html.study-expanded .verse-sheet {
+  z-index: 230;
+}
+
 button {
   border: none;
   font-family: inherit;

@@ -210,10 +210,15 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
   const [showCommentary, setShowCommentary] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [drawing, setDrawing] = useState(false);
+  const [studyOpen, setStudyOpen] = useState(false);
   const [tool, setTool] = useState({ mode: 'pen', color: '#121212', width: 0.006 });
   const drawApi = useRef(null);
+  const studyDrawApi = useRef(null);
   const registerApi = useCallback((api) => {
     drawApi.current = api;
+  }, []);
+  const registerStudyApi = useCallback((api) => {
+    studyDrawApi.current = api;
   }, []);
 
   // Notes for this chapter, in verse order, carrying verse text so tapping one
@@ -235,6 +240,135 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
     })
     .filter(Boolean);
 
+  const openStudy = () => {
+    setStudyOpen(true);
+    setDrawing(true);
+  };
+
+  const closeStudy = useCallback(() => {
+    setStudyOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!studyOpen) return;
+    document.documentElement.classList.add('study-expanded');
+    const onKey = (e) => {
+      if (e.key === 'Escape') closeStudy();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.documentElement.classList.remove('study-expanded');
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [studyOpen, closeStudy]);
+
+  const renderVerses = (idPrefix = '') =>
+    part.verses.map((v) => {
+      const id = verseId(part.book, part.chapter, v.number);
+      const color = colorValue(highlights[id]);
+      const hasNote = Boolean(notes[id]);
+      const refs = crossRefs[v.number] || [];
+      return (
+        <span
+          key={`${idPrefix}${v.number}`}
+          id={
+            idPrefix
+              ? undefined
+              : `v-${part.book.replace(/\s+/g, '-')}-${part.chapter}-${v.number}`
+          }
+          className={`verse${hasNote ? ' has-note' : ''}${refs.length ? ' has-xrefs' : ''}`}
+          style={color ? { background: color } : undefined}
+          onClick={() =>
+            onSelectVerse({
+              id,
+              text: v.text,
+              segments: v.segments,
+              crossRefs: refs,
+            })
+          }
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onSelectVerse({
+                id,
+                text: v.text,
+                segments: v.segments,
+                crossRefs: refs,
+              });
+            }
+          }}
+        >
+          <span className="verse-number">{v.number}</span>
+          <VerseText segments={v.segments} />
+          {refs.length > 0 && (
+            <span className="xref-marker" title={`${refs.length} cross references`} aria-hidden="true">
+              †
+            </span>
+          )}
+          {hasNote && <NoteFlag note={notes[id]} />}{' '}
+        </span>
+      );
+    });
+
+  const inkBar = (apiRef) =>
+    drawing && (
+      <>
+        <p className="sketch-hint">Apple Pencil only — rest your hand; fingers just scroll.</p>
+        <div className="ink-bar">
+          <div className="ink-group">
+            {INK_COLORS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={`ink-swatch${tool.color === c.value && tool.mode !== 'erase' ? ' active' : ''}`}
+                style={{ background: c.value }}
+                aria-label={c.label}
+                onClick={() =>
+                  setTool((t) => ({
+                    ...t,
+                    color: c.value,
+                    mode: t.mode === 'erase' ? 'pen' : t.mode,
+                  }))
+                }
+              />
+            ))}
+          </div>
+
+          <div className="ink-group">
+            <button
+              type="button"
+              className={`ink-tool${tool.mode === 'pen' ? ' active' : ''}`}
+              onClick={() => setTool((t) => ({ ...t, mode: 'pen' }))}
+            >
+              Pen
+            </button>
+            <button
+              type="button"
+              className={`ink-tool${tool.mode === 'circle' ? ' active' : ''}`}
+              onClick={() => setTool((t) => ({ ...t, mode: 'circle' }))}
+            >
+              Circle
+            </button>
+            <button
+              type="button"
+              className={`ink-tool${tool.mode === 'erase' ? ' active' : ''}`}
+              onClick={() => setTool((t) => ({ ...t, mode: 'erase' }))}
+            >
+              Erase
+            </button>
+          </div>
+
+          <div className="ink-group">
+            <button type="button" className="ink-tool" onClick={() => apiRef.current?.undo()}>
+              Undo
+            </button>
+          </div>
+        </div>
+      </>
+    );
+
   return (
     <article className="reader-chapter">
       <h4 className="reader-chapter-title">
@@ -242,120 +376,57 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
         <span className="reader-translation">{TRANSLATION_LABEL}</span>
       </h4>
 
-      <div className={`chapter-page${drawing ? ' drawing' : ''}`}>
-      <p className="reader-body">
-        {part.verses.map((v) => {
-          const id = verseId(part.book, part.chapter, v.number);
-          const color = colorValue(highlights[id]);
-          const hasNote = Boolean(notes[id]);
-          const refs = crossRefs[v.number] || [];
-          return (
-            <span
-              key={v.number}
-              id={`v-${part.book.replace(/\s+/g, '-')}-${part.chapter}-${v.number}`}
-              className={`verse${hasNote ? ' has-note' : ''}${refs.length ? ' has-xrefs' : ''}`}
-              style={color ? { background: color } : undefined}
-              onClick={() =>
-                onSelectVerse({
-                  id,
-                  text: v.text,
-                  segments: v.segments,
-                  crossRefs: refs,
-                })
-              }
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onSelectVerse({
-                    id,
-                    text: v.text,
-                    segments: v.segments,
-                    crossRefs: refs,
-                  });
-                }
-              }}
-            >
-              <span className="verse-number">{v.number}</span>
-              <VerseText segments={v.segments} />
-              {refs.length > 0 && (
-                <span className="xref-marker" title={`${refs.length} cross references`} aria-hidden="true">
-                  †
-                </span>
-              )}
-              {hasNote && <NoteFlag note={notes[id]} />}{' '}
-            </span>
-          );
-        })}
-      </p>
+      <div className={`chapter-page${drawing && !studyOpen ? ' drawing' : ''}`}>
+        <p className="reader-body">{renderVerses()}</p>
 
-        <DrawCanvas
-          chapterKey={part.heading}
-          active={drawing}
-          tool={tool}
-          registerApi={registerApi}
-        />
+        {!studyOpen && (
+          <DrawCanvas
+            chapterKey={part.heading}
+            active={drawing}
+            tool={tool}
+            registerApi={registerApi}
+          />
+        )}
       </div>
 
-      {drawing && (
-        <>
-          <p className="sketch-hint">Apple Pencil only — rest your hand; fingers just scroll.</p>
-          <div className="ink-bar">
-            <div className="ink-group">
-              {INK_COLORS.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  className={`ink-swatch${tool.color === c.value && tool.mode !== 'erase' ? ' active' : ''}`}
-                  style={{ background: c.value }}
-                  aria-label={c.label}
-                  onClick={() => setTool((t) => ({ ...t, color: c.value, mode: t.mode === 'erase' ? 'pen' : t.mode }))}
-                />
-              ))}
-            </div>
-
-            <div className="ink-group">
-              <button
-                type="button"
-                className={`ink-tool${tool.mode === 'pen' ? ' active' : ''}`}
-                onClick={() => setTool((t) => ({ ...t, mode: 'pen' }))}
-              >
-                Pen
-              </button>
-              <button
-                type="button"
-                className={`ink-tool${tool.mode === 'circle' ? ' active' : ''}`}
-                onClick={() => setTool((t) => ({ ...t, mode: 'circle' }))}
-              >
-                Circle
-              </button>
-              <button
-                type="button"
-                className={`ink-tool${tool.mode === 'erase' ? ' active' : ''}`}
-                onClick={() => setTool((t) => ({ ...t, mode: 'erase' }))}
-              >
-                Erase
-              </button>
-            </div>
-
-            <div className="ink-group">
-              <button type="button" className="ink-tool" onClick={() => drawApi.current?.undo()}>
-                Undo
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+      {!studyOpen && inkBar(drawApi)}
 
       <div className="commentary-toggle-row">
+        <button
+          type="button"
+          className="commentary-toggle study-expand-btn"
+          onClick={openStudy}
+          aria-label="Expand chapter for study notes"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
+          </svg>
+          Expand
+        </button>
+
         <button
           type="button"
           className={`commentary-toggle${drawing ? ' active' : ''}`}
           onClick={() => setDrawing(!drawing)}
           aria-expanded={drawing}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
             <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
           </svg>
           {drawing ? 'Done drawing' : 'Draw'}
@@ -368,7 +439,15 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
             onClick={() => setShowNotes(!showNotes)}
             aria-expanded={showNotes}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
             </svg>
             {showNotes ? 'Hide notes' : `Notes (${chapterNotes.length})`}
@@ -381,7 +460,15 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
           onClick={() => setShowCommentary(!showCommentary)}
           aria-expanded={showCommentary}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
             <path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-1.5Z" />
             <path d="M8 7h7M8 11h7" />
           </svg>
@@ -420,6 +507,51 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
           lastVerse={part.verses[part.verses.length - 1]?.number ?? part.verses.length}
         />
       )}
+
+      {studyOpen &&
+        createPortal(
+          <div className="study-overlay" role="dialog" aria-modal="true" aria-label={`${part.heading} study`}>
+            <header className="study-overlay-bar">
+              <div className="study-overlay-heading">
+                <span className="eyebrow">Study</span>
+                <h2>
+                  {part.heading}
+                  <span className="reader-translation">{TRANSLATION_LABEL}</span>
+                </h2>
+                <p className="study-overlay-hint">
+                  Write in the side margins with Apple Pencil · tap a verse for typed notes
+                </p>
+              </div>
+              <div className="study-overlay-actions">
+                <button
+                  type="button"
+                  className={`commentary-toggle${drawing ? ' active' : ''}`}
+                  onClick={() => setDrawing(!drawing)}
+                >
+                  {drawing ? 'Done drawing' : 'Draw'}
+                </button>
+                <button type="button" className="btn-secondary" onClick={closeStudy}>
+                  Close
+                </button>
+              </div>
+            </header>
+
+            {inkBar(studyDrawApi)}
+
+            <div className={`study-overlay-body${drawing ? ' is-inking' : ''}`}>
+              <div className={`chapter-page study-page${drawing ? ' drawing' : ''}`}>
+                <p className="reader-body">{renderVerses('study-')}</p>
+                <DrawCanvas
+                  chapterKey={part.heading}
+                  active={drawing}
+                  tool={tool}
+                  registerApi={registerStudyApi}
+                />
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </article>
   );
 }

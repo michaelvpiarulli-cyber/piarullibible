@@ -1060,6 +1060,48 @@
   box-shadow: 0 0 0 2px var(--accent);
 }
 
+/* Study mode: chapter fills the sheet; side padding is the note margin.
+   Absolute canvas covers the full page including gutters. */
+.chapter-page.study-page {
+  min-height: calc(100dvh - 160px);
+  padding-block: 20px 48px;
+  padding-inline: 12px;
+  border-radius: 0;
+  box-shadow: none;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent-wash) 55%, transparent) 0,
+      color-mix(in srgb, var(--accent-wash) 55%, transparent) 2in,
+      transparent 2in,
+      transparent calc(100% - 2in),
+      color-mix(in srgb, var(--accent-wash) 55%, transparent) calc(100% - 2in),
+      color-mix(in srgb, var(--accent-wash) 55%, transparent) 100%),
+    var(--surface);
+}
+
+.chapter-page.study-page.drawing {
+  box-shadow: none;
+}
+
+.chapter-page.study-page .reader-body {
+  max-width: 62ch;
+  margin-inline: auto;
+}
+
+@media (min-width: 768px) {
+  .chapter-page.study-page {
+    /* ~2 inch note gutters on each side (iPad / tablet). */
+    padding-inline: 2in;
+  }
+}
+
+@media (max-width: 767px) {
+  .chapter-page.study-page {
+    /* Phones: keep a smaller margin so text still has room. */
+    padding-inline: 0.55in;
+    background: var(--surface);
+  }
+}
+
 .ink-bar {
   display: flex;
   flex-wrap: wrap;
@@ -3866,6 +3908,95 @@
   flex-shrink: 0;
   padding-top: 4px;
   border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+/* ---------- fullscreen chapter study (iPad margins) ---------- */
+
+.study-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(100% 70% at 0% 0%, var(--accent-wash), transparent 55%),
+    linear-gradient(180deg, var(--bg), var(--bg-deep));
+  padding:
+    calc(10px + env(safe-area-inset-top, 0px))
+    calc(12px + env(safe-area-inset-right, 0px))
+    calc(10px + env(safe-area-inset-bottom, 0px))
+    calc(12px + env(safe-area-inset-left, 0px));
+  height: 100vh;
+  height: 100dvh;
+  width: 100%;
+  box-sizing: border-box;
+  overscroll-behavior: none;
+  animation: overlay-in 0.22s ease;
+}
+
+.study-overlay-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  padding: 4px 4px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.study-overlay-heading .eyebrow {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.study-overlay-heading h2 {
+  margin: 4px 0 0;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.study-overlay-hint {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.study-overlay-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.study-overlay .ink-bar {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.study-overlay .sketch-hint {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.study-overlay-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  -webkit-overflow-scrolling: touch;
 }
 
 .notes-overlay .ink-bar {
