@@ -77,8 +77,8 @@ export default function DayQuiz({ day, readings }) {
 
   const quiz = useMemo(() => {
     if (!parts) return null;
-    return buildQuiz(quizId, parts);
-  }, [parts, quizId]);
+    return buildQuiz(quizId, parts, { labels });
+  }, [parts, quizId, labels]);
 
   const questions = quiz?.questions || [];
   const question = questions[index];
@@ -139,11 +139,11 @@ export default function DayQuiz({ day, readings }) {
           <h4 className="quiz-title">Daily reading quiz</h4>
           <p className="quiz-blurb">
             {loading
-              ? `Loading questions on ${labels}…`
+              ? `Preparing questions on ${labels}…`
               : error
                 ? error
                 : ready
-                  ? `${questions.length} questions on what you just read${
+                  ? `${questions.length} questions on what God is teaching${
                       prior ? ` · Last score ${prior.score}/${prior.total}` : ''
                     }`
                   : `Not enough verse text yet for ${labels}.`}
