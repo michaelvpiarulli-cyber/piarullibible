@@ -398,16 +398,17 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
       </div>
 
       <div className={`chapter-page${drawing && !studyOpen ? ' drawing' : ''}`}>
-        <p className="reader-body">{renderVerses()}</p>
-
-        {!studyOpen && (
-          <DrawCanvas
-            chapterKey={part.heading}
-            active={drawing}
-            tool={tool}
-            registerApi={registerApi}
-          />
-        )}
+        <div className="reader-ink-layer">
+          <p className="reader-body">{renderVerses()}</p>
+          {!studyOpen && (
+            <DrawCanvas
+              chapterKey={part.heading}
+              active={drawing}
+              tool={tool}
+              registerApi={registerApi}
+            />
+          )}
+        </div>
       </div>
 
       {!studyOpen && inkBar(drawApi)}
@@ -587,13 +588,15 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
 
             <div className={`study-overlay-body${drawing ? ' is-inking' : ''}`}>
               <div className={`chapter-page study-page${drawing ? ' drawing' : ''}`}>
-                <p className="reader-body">{renderVerses('study-')}</p>
-                <DrawCanvas
-                  chapterKey={part.heading}
-                  active={drawing}
-                  tool={tool}
-                  registerApi={registerStudyApi}
-                />
+                <div className="reader-ink-layer">
+                  <p className="reader-body">{renderVerses('study-')}</p>
+                  <DrawCanvas
+                    chapterKey={part.heading}
+                    active={drawing}
+                    tool={tool}
+                    registerApi={registerStudyApi}
+                  />
+                </div>
               </div>
             </div>
           </div>,

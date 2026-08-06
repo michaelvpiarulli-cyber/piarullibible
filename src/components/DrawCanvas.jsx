@@ -31,13 +31,50 @@ function findScroller(from) {
   return document.scrollingElement;
 }
 
+/**
+ * Ink is stored relative to the scripture text box (.reader-body), not the
+ * outer page. That way expand ↔ collapse keeps underlines on the same words
+ * even when study mode adds side margins or a tall sheet.
+ */
+function bodyEl(canvas) {
+  return canvas?.parentElement?.querySelector('.reader-body') || null;
+}
+
+function clientToBodyNorm(clientX, clientY, body) {
+  const br = body.getBoundingClientRect();
+  if (!br.width || !br.height) return { x: 0, y: 0 };
+  return {
+    x: (clientX - br.left) / br.width,
+    y: (clientY - br.top) / br.height,
+  };
+}
+
+function mapStrokeToCanvas(stroke, body, canvas) {
+  const br = body.getBoundingClientRect();
+  const cr = canvas.getBoundingClientRect();
+  if (!br.width || !br.height || !cr.width || !cr.height) return stroke;
+
+  const points = stroke.points.map((pt) => {
+    const [x, y, press] = pt;
+    const absX = br.left + x * br.width;
+    const absY = br.top + y * br.height;
+    const nx = (absX - cr.left) / cr.width;
+    const ny = (absY - cr.top) / cr.height;
+    return press === undefined ? [nx, ny] : [nx, ny, press];
+  });
+
+  // Width is stored as a fraction of the text box; paintStroke multiplies by canvas width.
+  const width = stroke.width * (br.width / cr.width);
+  return { ...stroke, points, width };
+}
+
 export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
   const canvasRef = useRef(null);
   const [strokes, saveStrokes] = useChapterDrawing(chapterKey);
 
   const strokesRef = useRef(strokes);
   strokesRef.current = strokes;
-  const draftRef = useRef(null); // stroke in progress
+  const draftRef = useRef(null); // stroke in progress (body-normalized)
   const activePointerRef = useRef(null);
   const fingerScrollRef = useRef(null);
   const toolRef = useRef(tool);
@@ -46,14 +83,22 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
   const redraw = useCallback(() => {
     const c = canvasRef.current;
     if (!c) return;
+    const body = bodyEl(c);
     const ctx = c.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const w = c.width / dpr;
     const h = c.height / dpr;
     ctx.clearRect(0, 0, w, h);
-    for (const s of strokesRef.current) paintStroke(ctx, s, w, h);
-    if (draftRef.current) paintStroke(ctx, draftRef.current, w, h);
+
+    const paint = (stroke) => {
+      if (!stroke) return;
+      const mapped = body ? mapStrokeToCanvas(stroke, body, c) : stroke;
+      paintStroke(ctx, mapped, w, h);
+    };
+
+    for (const s of strokesRef.current) paint(s);
+    if (draftRef.current) paint(draftRef.current);
   }, []);
 
   // Match the canvas to its parent box (and stay crisp on retina).
@@ -77,6 +122,8 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(parent);
+    const body = bodyEl(c);
+    if (body) ro.observe(body);
     return () => ro.disconnect();
   }, [redraw]);
 
@@ -110,7 +157,10 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
   }, [active]);
 
   const toNorm = (e) => {
-    const rect = canvasRef.current.getBoundingClientRect();
+    const c = canvasRef.current;
+    const body = bodyEl(c);
+    if (body) return clientToBodyNorm(e.clientX, e.clientY, body);
+    const rect = c.getBoundingClientRect();
     return {
       x: (e.clientX - rect.left) / rect.width,
       y: (e.clientY - rect.top) / rect.height,

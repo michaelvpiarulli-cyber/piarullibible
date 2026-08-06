@@ -1078,6 +1078,19 @@
   position: relative;
 }
 
+/* Ink + text share one box so expand/collapse keeps marks on the same words. */
+.reader-ink-layer {
+  position: relative;
+  max-width: 62ch;
+  margin-inline: auto;
+}
+
+.reader-ink-layer .reader-body {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+}
+
 .draw-canvas {
   position: absolute;
   inset: 0;
@@ -1101,7 +1114,7 @@
 }
 
 /* Study mode: full-bleed paper; side padding is the note margin.
-   Absolute canvas covers the full page including gutters. */
+   Ink layer extends into the gutters so Pencil can still annotate there. */
 .chapter-page.study-page {
   position: relative;
   width: 100%;
@@ -1117,21 +1130,38 @@
 
 .chapter-page.study-page.drawing {
   box-shadow: none;
+  border-radius: 0;
+}
+
+.chapter-page.study-page .reader-ink-layer {
+  /* Same text measure as normal mode so line wraps (and underlines) match. */
+  max-width: 62ch;
+  margin-inline: 0;
+  width: 100%;
 }
 
 .chapter-page.study-page .reader-body {
-  /* Sit against the left note gutter; readable measure, not a centered strip. */
-  max-width: min(78ch, 100%);
-  width: 100%;
-  margin: 0;
-  font-size: clamp(17px, 1.55vw, 20px);
-  line-height: 1.85;
+  font-size: 18px;
+  line-height: 36px;
 }
 
 @media (min-width: 768px) {
   .chapter-page.study-page {
     /* ~1.15in white note gutters on each side (iPad / tablet). */
     padding-inline: 1.15in;
+  }
+
+  .chapter-page.study-page .reader-ink-layer {
+    /* Stretch into the white gutters for margin notes; text stays 62ch. */
+    margin-inline: -1.15in;
+    width: calc(100% + 2.3in);
+    max-width: none;
+    padding-inline: 1.15in;
+    box-sizing: border-box;
+  }
+
+  .chapter-page.study-page .reader-ink-layer .reader-body {
+    max-width: 62ch;
   }
 }
 

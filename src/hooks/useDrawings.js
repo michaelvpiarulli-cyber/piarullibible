@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-const KEY = 'bible-plan-drawings';
+const KEY = 'bible-plan-drawings-v2';
 
 /**
  * Freehand marginalia, keyed by chapter ("Genesis 1").
@@ -9,8 +9,8 @@ const KEY = 'bible-plan-drawings';
  * it stays out of the Supabase sync payload for now.
  *
  * A stroke is { color, width, points: [[x, y, pressure], ...] } where x/y/width
- * are proportions of the page box (0–1), so drawings scale with the container
- * instead of being pinned to pixels.
+ * are proportions of the scripture text box (.reader-body), so underlines stay
+ * on the same words when expanding / collapsing study mode.
  */
 function loadAll() {
   try {
