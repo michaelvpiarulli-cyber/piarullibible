@@ -39,7 +39,7 @@ export default function ProgressView({
     (d) => d.readings.length > 0 && d.readings.every((r) => isDone(r.id))
   ).length;
 
-  const streak = computeStreak(plan, isDone, currentDay);
+  const streak = computeStreak(plan, isDone, currentDay, { trackBehind: !isPregnancy });
 
   const perSection = isPregnancy
     ? TRIMESTERS.map((t) => {
@@ -111,8 +111,10 @@ export default function ProgressView({
           <span className="tile-label">Best streak</span>
         </div>
         <div className="stat-tile">
-          <span className="tile-num">{streak.behind}</span>
-          <span className="tile-label">{streak.behind === 0 ? 'Caught up' : 'Days behind'}</span>
+          <span className="tile-num">{isPregnancy ? streak.current : streak.behind}</span>
+          <span className="tile-label">
+            {isPregnancy ? 'Day streak' : streak.behind === 0 ? 'Caught up' : 'Days behind'}
+          </span>
         </div>
       </div>
 

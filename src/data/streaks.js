@@ -11,8 +11,11 @@ export function dayComplete(dayData, isDone) {
  * - best: longest run of completed days anywhere in the plan.
  * - behind: missed days strictly before today (today isn't overdue yet).
  * - firstIncomplete: oldest missed day, for the catch-up jump.
+ *
+ * Pass `trackBehind: false` for plans (like pregnancy) where a mid-stream join
+ * should never look like a backlog.
  */
-export function computeStreak(plan, isDone, currentDay) {
+export function computeStreak(plan, isDone, currentDay, { trackBehind = true } = {}) {
   const complete = (d) => d >= 1 && d <= plan.length && dayComplete(plan[d - 1], isDone);
 
   let start = complete(currentDay) ? currentDay : currentDay - 1;
@@ -24,6 +27,10 @@ export function computeStreak(plan, isDone, currentDay) {
   for (let d = 1; d <= plan.length; d++) {
     run = complete(d) ? run + 1 : 0;
     if (run > best) best = run;
+  }
+
+  if (!trackBehind) {
+    return { current, best, behind: 0, firstIncomplete: null };
   }
 
   let behind = 0;

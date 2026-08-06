@@ -9,7 +9,9 @@ export default function TodayView({ plan, planMeta, currentDay, dayDate, isDone,
   const [selectedDay, setSelectedDay] = useState(currentDay);
   const [expandedId, setExpandedId] = useState(null);
 
-  const streak = computeStreak(plan, isDone, currentDay);
+  const streak = computeStreak(plan, isDone, currentDay, {
+    trackBehind: planMeta?.id !== 'pregnancy',
+  });
   const totalDays = planMeta?.days ?? plan.length;
 
   // If the plan's start date changes, follow it back to the real "today".
@@ -90,6 +92,10 @@ export default function TodayView({ plan, planMeta, currentDay, dayDate, isDone,
           >
             {streak.behind} {streak.behind === 1 ? 'day' : 'days'} behind · Catch up
           </button>
+        ) : planMeta?.id === 'pregnancy' ? (
+          <div className="streak-pill caught-up">
+            <span>Day {currentDay} · right on time</span>
+          </div>
         ) : (
           <div className="streak-pill caught-up">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -2,7 +2,6 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { DEFAULT_PLAN_ID, getPlanMeta } from '../data/plans';
-import { isBackdatedPregnancyStart } from '../data/pregnancyDates';
 
 /**
  * Single owner of all per-user data (progress, highlights, notes, start date).
@@ -84,23 +83,39 @@ function todayISO() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-/** Any checked-off pregnancy reading means they’ve truly started that plan. */
-function hasPregnancyProgress(progress) {
-  return Object.keys(progress || {}).some((k) => k.startsWith('preg-'));
+/** How many distinct pregnancy plan days have at least one reading checked off. */
+function pregnancyDaysDone(progress) {
+  const days = new Set();
+  for (const key of Object.keys(progress || {})) {
+    if (!progress[key]) continue;
+    const m = /^preg-d(\d+)-/.exec(key);
+    if (m) days.add(Number(m[1]));
+  }
+  return days.size;
 }
 
 /**
- * Pregnancy readings should begin the day you start — not months earlier.
- * If there’s no pregnancy progress yet and the start is already in the past,
- * snap to today so “days behind” doesn’t fire on day one.
+ * Pregnancy readings begin when you join — never months earlier.
+ * If the calendar start is already past what you've actually read, snap to today
+ * so “days behind” never shames a mid-pregnancy start.
  */
-function freshPregnancyStart(startISO, dueISO, progress) {
+function freshPregnancyStart(startISO, _dueISO, progress) {
   const today = todayISO();
-  if (!startISO || startISO >= today) return startISO || today;
-  if (hasPregnancyProgress(progress)) return startISO;
-  if (isBackdatedPregnancyStart(startISO, dueISO)) return today;
-  // Any past start with zero pregnancy checkoffs — treat as not-yet-begun.
-  return today;
+  if (!startISO) return today;
+  if (startISO >= today) return startISO;
+
+  const start = new Date(`${startISO}T00:00:00`);
+  if (Number.isNaN(start.getTime())) return today;
+
+  const now = new Date();
+  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const elapsed = Math.floor((todayDate - start) / MS_PER_DAY); // days since start (0 = today)
+  const done = pregnancyDaysDone(progress);
+
+  // Behind the calendar with little/no reading progress → start fresh today.
+  if (done === 0) return today;
+  if (elapsed > done) return today;
+  return startISO;
 }
 
 function loadObject(key, fallback = {}) {
@@ -120,9 +135,18 @@ export function DataProvider({ children }) {
   const [progress, setProgress] = useState(() => loadObject(KEYS.progress));
   const [highlights, setHighlights] = useState(() => loadObject(KEYS.highlights));
   const [notes, setNotes] = useState(() => loadObject(KEYS.notes));
-  const [startDate, setStartDateState] = useState(
-    () => localStorage.getItem(KEYS.startDate) || todayISO()
+  const [planId, setPlanIdState] = useState(
+    () => localStorage.getItem(KEYS.planId) || DEFAULT_PLAN_ID
   );
+  const [dueDate, setDueDateState] = useState(
+    () => localStorage.getItem(KEYS.dueDate) || ''
+  );
+  const [startDate, setStartDateState] = useState(() => {
+    const stored = localStorage.getItem(KEYS.startDate) || todayISO();
+    const plan = localStorage.getItem(KEYS.planId) || DEFAULT_PLAN_ID;
+    if (plan !== 'pregnancy') return stored;
+    return freshPregnancyStart(stored, localStorage.getItem(KEYS.dueDate) || '', loadObject(KEYS.progress));
+  });
   const [journal, setJournal] = useState(() => loadObject(KEYS.journal, []));
   const [memory, setMemory] = useState(() => loadObject(KEYS.memory, EMPTY_MEMORY));
   const [sermons, setSermons] = useState(() => loadObject(KEYS.sermons, []));
@@ -130,15 +154,17 @@ export function DataProvider({ children }) {
   const [examens, setExamens] = useState(() => loadObject(KEYS.examens, []));
   const [rule, setRule] = useState(() => loadObject(KEYS.rule, EMPTY_RULE));
   const [quizzes, setQuizzes] = useState(() => loadObject(KEYS.quizzes, EMPTY_QUIZZES));
-  const [planId, setPlanIdState] = useState(
-    () => localStorage.getItem(KEYS.planId) || DEFAULT_PLAN_ID
-  );
-  const [dueDate, setDueDateState] = useState(
-    () => localStorage.getItem(KEYS.dueDate) || ''
-  );
-  const [planStartDates, setPlanStartDates] = useState(() =>
-    loadObject(KEYS.planStartDates, {})
-  );
+  const [planStartDates, setPlanStartDates] = useState(() => {
+    const stored = loadObject(KEYS.planStartDates, {});
+    const plan = localStorage.getItem(KEYS.planId) || DEFAULT_PLAN_ID;
+    if (plan !== 'pregnancy') return stored;
+    const fixed = freshPregnancyStart(
+      stored.pregnancy || localStorage.getItem(KEYS.startDate) || todayISO(),
+      localStorage.getItem(KEYS.dueDate) || '',
+      loadObject(KEYS.progress)
+    );
+    return { ...stored, pregnancy: fixed };
+  });
 
   const [syncState, setSyncState] = useState('idle'); // idle | syncing | synced | error
 
@@ -433,12 +459,8 @@ export function DataProvider({ children }) {
       setPlanStartDates((prev) => {
         const next = { ...prev, [planId]: startDate };
         if (meta.id === 'pregnancy') {
-          // Resume a saved pregnancy start, or begin today — never keep a past
-          // start when they haven’t checked off any pregnancy readings yet.
           const saved = next.pregnancy;
-          const candidate =
-            saved && !isBackdatedPregnancyStart(saved, dueDate) ? saved : todayISO();
-          const nextStart = freshPregnancyStart(candidate, dueDate, progress);
+          const nextStart = freshPregnancyStart(saved || todayISO(), dueDate, progress);
           setStartDateState(nextStart);
           next.pregnancy = nextStart;
         } else if (next[meta.id]) {
