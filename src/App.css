@@ -706,6 +706,10 @@
   text-align: left;
 }
 
+.preg-tip + .preg-tip {
+  margin-top: 10px;
+}
+
 .preg-tip-label {
   display: block;
   font-size: 0.68rem;

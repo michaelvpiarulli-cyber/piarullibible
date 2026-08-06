@@ -3,8 +3,8 @@ import ReadingRow from './ReadingRow';
 import DayQuiz from './DayQuiz';
 import { DAYS_PER_WEEK } from '../data/plans';
 import { prayerForDay } from '../data/prayers';
-import { pregnancyStageForWeek } from '../data/pregnancyStages';
-import { pregnancyWeekFromDueDate } from '../data/pregnancyDates';
+import { pregnancyStageForDay } from '../data/pregnancyStages';
+import { pregnancyDayFromDueDate, pregnancyWeekFromDueDate } from '../data/pregnancyDates';
 import { computeStreak } from '../data/streaks';
 
 export default function TodayView({
@@ -173,14 +173,22 @@ export default function TodayView({
 
       {isPregnancy ? (
         (() => {
-          const stage = pregnancyStageForWeek(pregnancyWeek);
+          const onDate = dayDate(selectedDay);
+          const pregDay = dueDate ? pregnancyDayFromDueDate(dueDate, onDate) : selectedDay;
+          const stage = pregnancyStageForDay(pregnancyWeek, pregDay);
           return (
             <section className="prayer-card preg-stage-card">
-              <span className="prayer-label">Week {stage.week} · What God is forming</span>
+              <span className="prayer-label">
+                Week {stage.week} · Day {stage.dayInWeek} of 7 · What God is forming
+              </span>
               <h3 className="preg-stage-title">{stage.title}</h3>
               <p className="prayer-text">{stage.forming}</p>
               <div className="preg-tip">
-                <span className="preg-tip-label">Tip</span>
+                <span className="preg-tip-label">Today’s fact</span>
+                <p className="preg-tip-text">{stage.fact}</p>
+              </div>
+              <div className="preg-tip">
+                <span className="preg-tip-label">Today’s tip</span>
                 <p className="preg-tip-text">{stage.tip}</p>
               </div>
             </section>
