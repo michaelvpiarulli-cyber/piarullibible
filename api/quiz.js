@@ -10,12 +10,14 @@
 const SYSTEM = `You write short Bible-reading quiz questions for Christians who just finished today's chapters.
 
 Rules:
-- Every question MUST be about something concrete in the provided text (a person, speech, event, command, or claim).
-- Focus on what God is revealing / teaching / calling for — not trivia like "which verse number comes first".
-- A careful reader of THIS passage should do well; someone who skipped reading should not.
+- Every question MUST be about something concrete in the provided text (a person, speech, event, command, promise, or turning point).
+- Focus on comprehension and discipleship: what God said/did, what that reveals, how people responded, what faithful response looks like.
+- NEVER ask trivia (verse numbers, fill-in-the-blank single words, "which word appears").
+- NEVER use joke wrong answers. Wrong options must be plausible misreadings of THIS passage.
+- A careful reader of THIS text should do well; someone who skipped reading should not.
 - Multiple choice with exactly 4 options; one clearly best answer.
-- Wrong options should be plausible misreadings, not joke answers.
-- Keep prompts to 1–2 sentences. Keep options concise.
+- Keep prompts to 1–2 sentences. Keep options concise (under ~120 characters when possible).
+- Cover the day's passages — don't put all 10 questions on one chapter if several were read.
 - Return ONLY valid JSON matching the schema.`;
 
 function trimPassages(passages) {
@@ -73,7 +75,7 @@ export default async function handler(req, res) {
       day: body.day,
       labels: body.labels,
       instruction:
-        'Write exactly 10 multiple-choice questions for this day. Cover each major passage. Mix: what God said/did, what that reveals about Him, the response God seeks, and the heart of key movements in the text. Every question must require having read THIS text.',
+        'Write exactly 10 multiple-choice questions for this day. Spread across the passages. Prefer: (1) what God said or promised, (2) what that reveals about Him, (3) how people responded, (4) the heart of key movements in the text. Every question must require having read THIS text. No fill-in-the-blank word trivia.',
       passages,
       schema: {
         questions: [

@@ -69,6 +69,9 @@ export function flattenVerses(parts) {
   return verses;
 }
 
+const SPEAKER =
+  '(?:the )?(?:LORD|Lord|God|Jesus|Christ|Holy Spirit|angel of the Lord|Satan|serpent|Pharaoh)|Job|Joseph|Mary|Moses|Abraham|Abram|Isaiah|Peter|Paul|David|Solomon|Samuel|Nathan|Elijah|Elisha|Jonah|Noah|Cain|Jacob|Esau|Ruth|Boaz|Hannah|Deborah|Joshua|Caleb';
+
 /** Speeches: Speaker said “…” (quotes often span multiple verses). */
 function extractSpeeches(verses) {
   const byChapter = new Map();
@@ -99,8 +102,11 @@ function extractSpeeches(verses) {
       return ordered[0];
     };
 
-    const re =
-      /((?:the )?(?:LORD|Lord|God|Jesus|Christ|Holy Spirit|angel of the Lord|Satan|serpent)|Job|Joseph|Mary|Moses|Abraham|Isaiah)\s+(?:answered(?:[\s\S]{0,60}?)(?:,)?\s*and said|has spoken|said|says|saying|spoke|commanded|declared)[,:]?\s*[“"]([\s\S]{12,450}?)[”"]/gi;
+    // Allow “said to Abram,” / “answered him,” between verb and quote.
+    const re = new RegExp(
+      `(${SPEAKER})\\s+(?:answered(?:[\\s\\S]{0,80}?)(?:,)?\\s*and said|has spoken|said|says|saying|spoke|commanded|declared|replied|asked)[\\s\\S]{0,90}?[“"]([\\s\\S]{12,450}?)[”"]`,
+      'gi'
+    );
 
     let m;
     while ((m = re.exec(blob))) {
@@ -139,7 +145,7 @@ function speechWeight(s) {
   if (/^(lord|god|jesus|christ|angel|holy spirit)/i.test(s.speaker)) n += 8;
   if (/^satan$/i.test(s.speaker)) n += 6;
   if (
-    /let there be|save .+ from .+ sins|immanuel|god with us|fear god for nothing|hedge around|skin for skin|rebelled against|seek justice|wash yourselves|though your sins|lord gave, and the lord has taken|naked I came|enough of the burnt|multitude of your sacrifices/i.test(
+    /let there be|save .+ from .+ sins|immanuel|god with us|fear god for nothing|hedge around|skin for skin|rebelled against|seek justice|wash yourselves|though your sins|lord gave, and the lord has taken|naked I came|enough of the burnt|multitude of your sacrifices|leave your country|I will bless|I will make of you|follow me|repent|kingdom of heaven|born again|I am the/i.test(
       s.quote
     )
   ) {
@@ -154,16 +160,42 @@ function speechWeight(s) {
  * Map a concrete speech to a teaching question that still depends on
  * having heard that speech — not a free-floating slogan.
  */
-function teachingFromSpeech(speech, rand) {
+function teachingFromSpeech(speech) {
   const q = speech.quote;
   const speaker = speech.speaker;
   const ref = refLabel(speech.verse);
-  const lower = q.toLowerCase();
   const isDivine = /^(lord|god|jesus|christ|angel)/i.test(speaker);
+
+  // Call / obedience (Abram, disciples, etc.)
+  if (/leave your country|go to the land|follow me|come after me|go therefore|get up and go/i.test(q)) {
+    return {
+      prompt: `In ${ref}, ${speaker} says, “${snip(q, 100)}” What is being asked?`,
+      answer: 'Trust God enough to leave the familiar and obey His call',
+      wrong: [
+        'Stay put until every detail of the future is explained',
+        'Treat God’s word as optional advice for later',
+        'Negotiate a safer path that never costs anything',
+      ],
+      explain: `${ref} shows faith as response — hearing God and moving when He speaks.`,
+    };
+  }
+
+  // Promise / blessing
+  if (/I will bless|I will make|I will give|you will be a blessing|all (?:the )?families|covenant/i.test(q)) {
+    return {
+      prompt: `In ${ref}, God promises: “${snip(q, 100)}” What does this reveal?`,
+      answer: 'God’s purposes are generous — He initiates blessing and keeps His word',
+      wrong: [
+        'Blessing depends only on human cleverness and luck',
+        'God’s promises are vague slogans with no real claim',
+        'God blesses only those who never struggle or fail',
+      ],
+      explain: `${ref} anchors hope in God’s promise, not in self-made security.`,
+    };
+  }
 
   // Creation by word
   if (/let there be|be fruitful|let us make|let’s make|let the (earth|waters)/i.test(q)) {
-    // First-style: teaching about God's word. Later fills: what specifically was commanded.
     const specific = q.match(/let(?:’s| us)? (?:there be |make |the )([^,.]+)/i);
     if (specific && !/light/i.test(specific[1])) {
       const thing = snip(specific[1].trim(), 70);
@@ -232,8 +264,8 @@ function teachingFromSpeech(speech, rand) {
     };
   }
 
-  // Call to repentance / justice (Isaiah-style)
-  if (/wash|seek justice|relieve the oppressed|learn to do well|though your sins/i.test(q)) {
+  // Call to repentance / justice
+  if (/wash|seek justice|relieve the oppressed|learn to do well|though your sins|repent/i.test(q)) {
     return {
       prompt: `In ${ref}, God calls: “${snip(q, 100)}” What does He want from His people?`,
       answer: 'Real repentance that shows up in justice, mercy, and cleaned-up lives',
@@ -243,6 +275,20 @@ function teachingFromSpeech(speech, rand) {
         'Debating doctrine while refusing to turn from sin',
       ],
       explain: `${ref} ties returning to God with concrete righteousness, not empty ritual.`,
+    };
+  }
+
+  // Kingdom / identity of Jesus
+  if (/kingdom of heaven|kingdom of god|son of man|I am the|born again|take up .+ cross/i.test(q)) {
+    return {
+      prompt: `In ${ref}, Jesus says, “${snip(q, 100)}” What is He pressing on His hearers?`,
+      answer: 'A call to receive God’s reign and follow Him on His terms',
+      wrong: [
+        'Religion as a hobby with no claim on daily life',
+        'A kingdom that never asks for trust or change',
+        'Advice to stay exactly as you are',
+      ],
+      explain: `${ref} reveals Jesus’ authority and the response He seeks.`,
     };
   }
 
@@ -301,14 +347,17 @@ function teachingFromSpeech(speech, rand) {
   };
 }
 
-/** Non-speech verses that still carry a clear teaching payload. */
+/** Narrative / claim beats that don’t need quotation marks. */
 function extractKeyClaims(verses) {
   const claims = [];
   for (const v of verses) {
     const t = v.text;
+    const ref = refLabel(v);
+
     if (/^In the beginning, God created/i.test(t)) {
       claims.push({
         verse: v,
+        kind: 'creator',
         prompt: `Genesis ${v.chapter}:${v.number} opens with, “${snip(t, 80)}” What foundation is being laid?`,
         answer: 'The universe exists because God created it — He is Maker of all',
         wrong: [
@@ -322,64 +371,268 @@ function extractKeyClaims(verses) {
     if (/image of God|in his own image/i.test(t)) {
       claims.push({
         verse: v,
-        prompt: `According to ${refLabel(v)}, how are human beings described?`,
+        kind: 'image',
+        prompt: `According to ${ref}, how are human beings described?`,
         answer: 'Made in God’s image — with God-given dignity and purpose',
         wrong: [
           'As cosmic accidents with no sacred worth',
           'As equals to God in power and authority',
           'As valuable only if they achieve greatness',
         ],
-        explain: `${refLabel(v)} grounds human dignity in God’s design, not performance.`,
+        explain: `${ref} grounds human dignity in God’s design, not performance.`,
       });
     }
     if (/blameless and upright|feared God, and turned away from evil/i.test(t)) {
       claims.push({
         verse: v,
-        prompt: `How does ${refLabel(v)} describe Job before his suffering?`,
+        kind: 'job-upright',
+        prompt: `How does ${ref} describe Job before his suffering?`,
         answer: 'As a man who feared God and turned away from evil',
         wrong: [
           'As wealthy but spiritually indifferent',
           'As secretly corrupt while looking religious',
           'As someone God had never noticed',
         ],
-        explain: `${refLabel(v)} establishes Job’s integrity so his later trial is not portrayed as punishment for secret sin.`,
+        explain: `${ref} establishes Job’s integrity so his later trial is not portrayed as punishment for secret sin.`,
       });
     }
     if (/Holy Spirit|conceived|pregnant by the Holy Spirit/i.test(t) && /Mary|Jesus/i.test(t)) {
       claims.push({
         verse: v,
-        prompt: `What does ${refLabel(v)} teach about Jesus’ birth?`,
+        kind: 'virgin-birth',
+        prompt: `What does ${ref} teach about Jesus’ birth?`,
         answer: 'Jesus’ conception is by the Holy Spirit — God initiating salvation',
         wrong: [
           'Jesus is only an ordinary child with an inspiring story',
           'Joseph is presented as the biological father of Jesus',
           'The virgin birth is unrelated to who Jesus is',
         ],
-        explain: `${refLabel(v)} presents Jesus’ coming as God’s own saving action.`,
+        explain: `${ref} presents Jesus’ coming as God’s own saving action.`,
       });
     }
     if (/god saw .+ (good|very good)/i.test(t)) {
       claims.push({
         verse: v,
-        prompt: `In ${refLabel(v)}, God sees what He has made and calls it good. What does that affirm?`,
+        kind: 'creation-good',
+        prompt: `In ${ref}, God sees what He has made and calls it good. What does that affirm?`,
         answer: 'Creation is purposeful and valued by God — not a mistake',
         wrong: [
           'The material world is evil and God regrets making it',
           'God is unsure whether creation was worthwhile',
           'Only spiritual things matter; the world itself does not',
         ],
-        explain: `${refLabel(v)} affirms the goodness of God’s ordered world.`,
+        explain: `${ref} affirms the goodness of God’s ordered world.`,
+      });
+    }
+
+    // Obedience narrative
+    if (
+      /\b(went|did|obeyed|departed|followed)\b.{0,40}(as the LORD|as (?:the )?Lord|as God|as Jesus|as he (?:had )?told|according to (?:all )?that)/i.test(t)
+      || /as the LORD had told him|they left everything and followed|Abram went, as the LORD/i.test(t)
+    ) {
+      claims.push({
+        verse: v,
+        kind: 'obedience',
+        prompt: `In ${ref} we read, “${snip(t, 110)}” What stands out?`,
+        answer: 'Someone responds to God’s word with real-world obedience',
+        wrong: [
+          'Hearing God is enough; action never matters',
+          'The characters ignore God and invent their own plan',
+          'Faith here is only a private feeling with no next step',
+        ],
+        explain: `${ref} shows that trust in God shows up in concrete steps.`,
+      });
+    }
+
+    // Fear / faith failure
+    if (/afraid|feared|because .+ beautiful|say you are my sister|lied|deceived/i.test(t)
+      && /Abram|Abraham|Sarai|Sarah|Isaac|Jacob|Peter|disciple/i.test(t)) {
+      claims.push({
+        verse: v,
+        kind: 'fear',
+        prompt: `Looking at ${ref} (“${snip(t, 95)}”), what tension is in the story?`,
+        answer: 'Fear or self-protection pulls someone away from simple trust in God',
+        wrong: [
+          'Everyone in the story already trusts God perfectly',
+          'The Bible never shows weakness in people of faith',
+          'Fear is presented as wiser than depending on God',
+        ],
+        explain: `${ref} is honest about fear — and invites a better trust.`,
+      });
+    }
+
+    // Worship / altar
+    if (/built an altar|called on the name of the LORD|worshiped|sang to the LORD|gave thanks/i.test(t)) {
+      claims.push({
+        verse: v,
+        kind: 'worship',
+        prompt: `In ${ref}, “${snip(t, 100)}” What response to God is on display?`,
+        answer: 'Worship — turning toward God with gratitude and reverence',
+        wrong: [
+          'Indifference after God has acted',
+          'Using religion only to impress other people',
+          'Treating God’s kindness as something owed',
+        ],
+        explain: `${ref} models a heart that answers God’s work with worship.`,
+      });
+    }
+
+    // Judgment / warning
+    if (/woe to|hypocrite|brood of vipers|unless you repent|day of the LORD|will rise up in the judgment|will condemn/i.test(t)) {
+      claims.push({
+        verse: v,
+        kind: 'warning',
+        prompt: `In ${ref}, the warning is sharp: “${snip(t, 100)}” What is at stake?`,
+        answer: 'God confronts empty religion and calls for a real turn of heart',
+        wrong: [
+          'God is fine with appearance as long as rituals continue',
+          'Warnings in Scripture are only for ancient enemies, never for us',
+          'Judgment language has no moral claim on the reader',
+        ],
+        explain: `${ref} refuses to let us confuse looking religious with loving God.`,
+      });
+    }
+
+    // Compassion / healing
+    if (/healed|had compassion|mercy|forgave|made clean|stretched out (?:his )?hand/i.test(t)
+      && /Jesus|Lord|God/i.test(t)) {
+      claims.push({
+        verse: v,
+        kind: 'mercy',
+        prompt: `From ${ref} (“${snip(t, 100)}”), what do we see about Jesus / the Lord?`,
+        answer: 'He meets real need with mercy and power — not cold distance',
+        wrong: [
+          'He ignores suffering and only teaches ideas',
+          'Compassion is weakness and He refuses to help',
+          'He helps only people who have already fixed themselves',
+        ],
+        explain: `${ref} shows the heart of God toward the broken and needy.`,
+      });
+    }
+
+    // God’s sovereignty (Job-style) — not creation “have dominion”
+    if (
+      (/he (?:increases|destroys|loosens|binds|makes|leads).+(nations|kings|princes|judges|counselors)/i.test(t)
+        || /with God is wisdom|to God belong wisdom/i.test(t))
+      && !/let(?:’s| us) make|let them have dominion/i.test(t)
+    ) {
+      claims.push({
+        verse: v,
+        kind: 'sovereignty',
+        prompt: `In ${ref}, “${snip(t, 100)}” What claim is being made about God?`,
+        answer: 'God rules history and human power — wisdom and dominion are His',
+        wrong: [
+          'Nations rise and fall by chance alone',
+          'Human rulers are the final authority over the world',
+          'God is uninvolved in the affairs of peoples and kings',
+        ],
+        explain: `${ref} lifts our eyes from human control to God’s sovereign hand.`,
+      });
+    }
+
+    // Shepherd / refuge trust
+    if (/the LORD is my shepherd|I shall not want|I shall lack nothing|valley of the shadow|rod and .+ staff|dwell in the house of the LORD/i.test(t)) {
+      claims.push({
+        verse: v,
+        kind: 'shepherd',
+        prompt: `In ${ref}, “${snip(t, 110)}” What is the psalmist confessing?`,
+        answer: 'The LORD personally cares for, guides, and protects His people',
+        wrong: [
+          'God is distant and only helps the self-sufficient',
+          'Safety comes from never walking through hard places',
+          'Shepherd language is only poetry with no claim on trust',
+        ],
+        explain: `${ref} invites deep trust in God’s near, shepherding care.`,
+      });
+    }
+
+    // Presence in trouble
+    if (/you are with me|I will fear no evil|though I walk|my cup (?:runs over|overflows)|prepare .+ table/i.test(t)) {
+      claims.push({
+        verse: v,
+        kind: 'presence',
+        prompt: `From ${ref} (“${snip(t, 100)}”), what hope is held out in hard places?`,
+        answer: 'God’s presence and provision meet fear — even in the darkest valley',
+        wrong: [
+          'Dark valleys prove God has abandoned His people',
+          'Comfort is only for people who never suffer',
+          'God’s care stops at the edge of difficulty',
+        ],
+        explain: `${ref} anchors courage in God being with us, not in easy circumstances.`,
+      });
+    }
+
+    // Praise / trust psalm-like
+    if (/I will trust|I will praise|the LORD is my (?!shepherd)|sing to the LORD|great is the|his love endures|God is my salvation/i.test(t)) {
+      claims.push({
+        verse: v,
+        kind: 'praise',
+        prompt: `In ${ref}, “${snip(t, 100)}” What posture toward God is modeled?`,
+        answer: 'Choosing trust and praise because of who God is',
+        wrong: [
+          'Waiting to worship until life feels effortless',
+          'Praising only when other people are watching',
+          'Treating God as useful only for getting what we want',
+        ],
+        explain: `${ref} invites the same trust and praise in our own lives.`,
       });
     }
   }
   return claims;
 }
 
+/**
+ * Event / detail questions that still reward careful reading —
+ * who acted, what happened, what God did — not random vocabulary blanks.
+ */
+function extractReadingBeats(verses) {
+  const beats = [];
+  for (const v of verses) {
+    const t = v.text;
+    const ref = refLabel(v);
+
+    // Named person + action
+    const actor = t.match(
+      /\b((?:the )?(?:LORD|Lord|God|Jesus|Christ)|Abram|Abraham|Sarai|Sarah|Lot|Job|Isaiah|Moses|Joseph|Mary|Peter|Paul|David|Solomon|Noah|Jacob|Esau|Ruth|Boaz|Pharaoh|Satan)\b[^.]{0,120}?\b(said|went|took|built|called|appeared|blessed|cursed|healed|commanded|answered|followed|departed|sent|gave|saw|heard|feared|worshiped|sang|prayed)\b/i
+    );
+    if (actor) {
+      const who = actor[1].replace(/^the /i, '');
+      const verb = actor[2].toLowerCase();
+      beats.push({
+        verse: v,
+        kind: 'event',
+        prompt: `According to ${ref}, what happens in this part of the story?`,
+        answer: snip(t, 110),
+        wrongPool: 'event',
+        explain: `${ref} — “${snip(t, 160)}” (${who} ${verb}…)`,
+      });
+    }
+
+    // Result / so / therefore
+    if (/\b(so|therefore|then)\b.+\b(went|built|believed|followed|worshiped|left|obeyed|feared)\b/i.test(t)
+      && t.split(/\s+/).length >= 12) {
+      beats.push({
+        verse: v,
+        kind: 'result',
+        prompt: `After what comes before, ${ref} records: “${snip(t, 100)}” What kind of moment is this?`,
+        answer: 'A response to God that moves from hearing into action',
+        wrong: [
+          'A pause where nothing connects to God’s prior word',
+          'Proof that Scripture stories never ask for a response',
+          'A random detail with no link to faith or obedience',
+        ],
+        explain: `${ref} ties God’s word to a lived response.`,
+      });
+    }
+  }
+  return beats;
+}
+
 function makeSpeechQuestion(speech, rand, used) {
   const id = `speech-${refLabel(speech.verse)}-${speech.quote.slice(0, 20)}`;
   if (used.has(id)) return null;
   used.add(id);
-  const built = teachingFromSpeech(speech, rand);
+  const built = teachingFromSpeech(speech);
   if (!built) return null;
   return {
     id,
@@ -393,7 +646,7 @@ function makeSpeechQuestion(speech, rand, used) {
 }
 
 function makeClaimQuestion(claim, rand, used) {
-  const id = `claim-${refLabel(claim.verse)}`;
+  const id = `claim-${refLabel(claim.verse)}-${claim.prompt.slice(0, 24)}`;
   if (used.has(id)) return null;
   used.add(id);
   return {
@@ -407,6 +660,55 @@ function makeClaimQuestion(claim, rand, used) {
   };
 }
 
+const EVENT_DISTRACTORS = [
+  'Everyone ignored God and nothing noteworthy happened',
+  'The chapter pauses for a genealogy with no action',
+  'The people decided God had stopped speaking forever',
+  'A king rewrote the law without any reference to the LORD',
+  'The disciples concluded miracles were impossible',
+  'Worship was canceled because no one remembered God',
+];
+
+function makeBeatQuestion(beat, verses, rand, used) {
+  const id = `beat-${beat.kind}-${refLabel(beat.verse)}`;
+  if (used.has(id)) return null;
+  used.add(id);
+
+  if (beat.wrong) {
+    return {
+      id,
+      type: 'passage',
+      prompt: beat.prompt,
+      passage: null,
+      options: shuffle([beat.answer, ...beat.wrong], rand),
+      answer: beat.answer,
+      explain: beat.explain,
+    };
+  }
+
+  // Event: answer is the real verse snippet; distractors are other verses / generic misses.
+  const others = shuffle(
+    verses
+      .filter((v) => v !== beat.verse && v.text.split(/\s+/).length >= 10)
+      .map((v) => snip(v.text, 110)),
+    rand
+  ).filter((s) => s !== beat.answer);
+  const distractors = others.slice(0, 3);
+  while (distractors.length < 3) {
+    distractors.push(EVENT_DISTRACTORS[distractors.length % EVENT_DISTRACTORS.length]);
+  }
+
+  return {
+    id,
+    type: 'passage',
+    prompt: beat.prompt,
+    passage: `Stay with ${refLabel(beat.verse)} — what does the text actually recount?`,
+    options: shuffle([beat.answer, ...distractors.slice(0, 3)], rand),
+    answer: beat.answer,
+    explain: beat.explain,
+  };
+}
+
 const QUOTE_DISTRACTORS = [
   'Ignore the poor and keep the festivals going',
   'Trust only what you can control with your own hands',
@@ -417,8 +719,7 @@ const QUOTE_DISTRACTORS = [
 ];
 
 /**
- * Quote-comprehension: what was actually said? (still meaningful, not trivia)
- * Works with one or many speeches — distractors from other lines when available.
+ * Quote-comprehension: what was actually said?
  */
 function makeQuoteComprehension(speeches, rand, used) {
   if (!speeches.length) return null;
@@ -444,7 +745,7 @@ function makeQuoteComprehension(speeches, rand, used) {
       id,
       type: 'quote',
       prompt: `In ${refLabel(chosen.verse)}, what does ${chosen.speaker} say?`,
-      passage: 'This line sits at the heart of today’s reading — catch what was actually spoken.',
+      passage: 'Catch what was actually spoken in today’s reading.',
       options: shuffle([answer, ...distractors.slice(0, 3)], rand),
       answer,
       explain: `${refLabel(chosen.verse)} — “${snip(chosen.quote, 180)}”`,
@@ -453,77 +754,42 @@ function makeQuoteComprehension(speeches, rand, used) {
   return null;
 }
 
-const FILL_STOP = new Set([
-  'which', 'their', 'there', 'these', 'those', 'about', 'would', 'could', 'should',
-  'shall', 'unto', 'from', 'with', 'that', 'this', 'they', 'them', 'have', 'been',
-  'were', 'when', 'what', 'your', 'into', 'also', 'then', 'than', 'upon', 'said',
-  'says', 'lord', 'god', 'jesus', 'christ', 'before', 'after', 'under', 'over',
-  'every', 'great', 'small', 'again', 'because', 'therefore',
-]);
-
-function significantWords(text) {
-  return (text || '')
-    .split(/\s+/)
-    .map((w) => w.replace(/[^a-zA-Z']/g, ''))
-    .filter((w) => w.length >= 5 && !FILL_STOP.has(w.toLowerCase()));
-}
-
-/** Fill-in-the-blank from a real verse — works on short single-chapter days. */
-function makeFillBlank(verse, verses, rand, used) {
-  const words = significantWords(verse.text);
-  if (words.length < 1) return null;
-  const word = pick(words, rand);
-  if (!word) return null;
-  const id = `blank-${refLabel(verse)}-${word.toLowerCase()}`;
+/** Meaning question from a substantial verse — not a spelling bee. */
+function makeVerseMeaning(verse, rand, used) {
+  const id = `meaning-${refLabel(verse)}`;
   if (used.has(id)) return null;
+  if (verse.text.split(/\s+/).length < 12) return null;
   used.add(id);
 
-  const blanked = verse.text.replace(new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i'), '______');
-  const pool = new Set();
-  for (const v of verses) {
-    for (const w of significantWords(v.text)) {
-      if (w.toLowerCase() !== word.toLowerCase()) pool.add(w);
-    }
-  }
-  const distractors = shuffle([...pool], rand).slice(0, 3);
-  const fallbacks = ['mercy', 'faith', 'temple', 'nation', 'peace', 'glory'];
-  for (const f of fallbacks) {
-    if (distractors.length >= 3) break;
-    if (f.toLowerCase() !== word.toLowerCase() && !distractors.includes(f)) distractors.push(f);
-  }
-
-  return {
-    id,
-    type: 'fill',
-    prompt: `Complete this line from ${refLabel(verse)}:`,
-    passage: `“${snip(blanked, 170)}”`,
-    options: shuffle([word, ...distractors.slice(0, 3)], rand),
-    answer: word,
-    explain: `${refLabel(verse)} — “${snip(verse.text, 180)}”`,
-  };
-}
-
-/** Close reading: which paraphrase matches the verse? */
-function makeVerseParaphrase(verse, rand, used) {
-  const id = `para-${refLabel(verse)}`;
-  if (used.has(id)) return null;
-  used.add(id);
-  const snippet = snip(verse.text, 130);
-  const answer = snip(verse.text, 95);
-  const distractors = [
-    'God has abandoned this people and will not speak again',
-    'Faithfulness to God never matters in ordinary life',
-    'This passage teaches that human strength is enough alone',
-  ];
+  const snippet = snip(verse.text, 140);
   return {
     id,
     type: 'passage',
-    prompt: `Which wording matches what ${refLabel(verse)} actually says?`,
-    passage: 'Stay close to the text — not a vague summary of “the Bible in general.”',
-    options: shuffle([answer, ...distractors], rand),
-    answer,
-    explain: `${refLabel(verse)} — “${snippet}”`,
+    prompt: `Read ${refLabel(verse)} carefully. What is this verse doing in the story?`,
+    passage: `“${snippet}”`,
+    options: shuffle(
+      [
+        'Recording something God wants noticed — a word, act, or response that shapes faith',
+        'Filling space with detail that has no claim on how we trust God',
+        'Proving that ordinary obedience never matters in Scripture',
+        'Showing that God stays silent and uninvolved in real lives',
+      ],
+      rand
+    ),
+    answer: 'Recording something God wants noticed — a word, act, or response that shapes faith',
+    explain: `${refLabel(verse)} belongs to today’s word from God — receive it as such.`,
   };
+}
+
+function teachKeyForSpeech(s) {
+  if (/let there be|let the (earth|waters)|let’s make|let us make|be fruitful/i.test(s.quote)) return 'creation-word';
+  if (/fear god for nothing|hedge/i.test(s.quote)) return 'job-test';
+  if (/rebelled against me|ox knows his owner/i.test(s.quote)) return 'isaiah-rebel';
+  if (/seek justice|wash yourselves|scarlet/i.test(s.quote)) return 'isaiah-repent';
+  if (/save .+ sins|immanuel/i.test(s.quote)) return 'jesus-save';
+  if (/leave your country|go to the land/i.test(s.quote)) return 'call-leave';
+  if (/I will bless|I will make of you/i.test(s.quote)) return 'promise-bless';
+  return `${s.verse.book}:${s.verse.chapter}:${s.verse.number}`;
 }
 
 /**
@@ -535,13 +801,25 @@ export function buildQuiz(readingId, parts, meta = {}) {
   const verses = flattenVerses(parts);
   if (!verses.length) return { questions: [], verseCount: 0 };
 
-  const rand = rngFrom(hashSeed(`${readingId}|passage-v4`));
+  const rand = rngFrom(hashSeed(`${readingId}|passage-v5`));
   const used = new Set();
   const speeches = extractSpeeches(verses);
   const claims = extractKeyClaims(verses);
+  const beats = extractReadingBeats(verses);
 
   const questions = [];
   const booksCovered = new Set();
+  const seenTeachKeys = new Set();
+  const seenKinds = new Map(); // kind -> count
+
+  const noteKind = (kind) => {
+    if (!kind) return true;
+    const n = seenKinds.get(kind) || 0;
+    // Allow at most one of each teaching template (keeps the quiz varied).
+    if (n >= 1) return false;
+    seenKinds.set(kind, n + 1);
+    return true;
+  };
 
   const byChapter = new Map();
   for (const s of speeches) {
@@ -550,25 +828,13 @@ export function buildQuiz(readingId, parts, meta = {}) {
     byChapter.get(key).push(s);
   }
 
-  // Prefer one strong, passage-anchored teaching question per chapter.
-  const seenTeachKeys = new Set();
+  // 1) Strong speech-teaching questions — prefer one per chapter.
   for (const [, list] of shuffle([...byChapter.entries()], rand)) {
     if (questions.length >= QUESTIONS_PER_QUIZ) break;
     const ranked = [...list].sort((a, b) => speechWeight(b) - speechWeight(a));
     const best = ranked.find((s) => speechWeight(s) >= 6) || ranked[0];
-    if (!best || speechWeight(best) < 6) continue;
-    // Avoid near-duplicate “Let there be…” creation questions.
-    const teachKey = /let there be light/i.test(best.quote)
-      ? 'creation-word'
-      : /fear god for nothing|hedge/i.test(best.quote)
-        ? 'job-test'
-        : /rebelled against me|ox knows his owner/i.test(best.quote)
-          ? 'isaiah-rebel'
-          : /seek justice|wash yourselves|scarlet/i.test(best.quote)
-            ? 'isaiah-repent'
-            : /save .+ sins|immanuel/i.test(best.quote)
-              ? 'jesus-save'
-              : `${best.verse.book}:${best.verse.chapter}:${best.verse.number}`;
+    if (!best || speechWeight(best) < 5) continue;
+    const teachKey = teachKeyForSpeech(best);
     if (seenTeachKeys.has(teachKey)) continue;
     const q = makeSpeechQuestion(best, rand, used);
     if (q) {
@@ -578,10 +844,10 @@ export function buildQuiz(readingId, parts, meta = {}) {
     }
   }
 
-  // Claims that introduce books not yet covered.
+  // 2) Teaching claims / narrative beats.
   for (const claim of shuffle(claims, rand)) {
     if (questions.length >= QUESTIONS_PER_QUIZ) break;
-    if (booksCovered.has(claim.verse.book) && questions.length >= 2) continue;
+    if (!noteKind(claim.kind)) continue;
     const q = makeClaimQuestion(claim, rand, used);
     if (q) {
       questions.push(q);
@@ -589,33 +855,28 @@ export function buildQuiz(readingId, parts, meta = {}) {
     }
   }
 
-  // Remaining speeches / claims to reach a full quiz.
-  for (const s of [...speeches].sort((a, b) => speechWeight(b) - speechWeight(a))) {
+  for (const beat of shuffle(beats, rand)) {
     if (questions.length >= QUESTIONS_PER_QUIZ) break;
-    if (speechWeight(s) < 4) continue;
-    const teachKey = /let there be light/i.test(s.quote)
-      ? 'creation-word'
-      : /fear god for nothing|hedge/i.test(s.quote)
-        ? 'job-test'
-        : /rebelled against me|ox knows his owner/i.test(s.quote)
-          ? 'isaiah-rebel'
-          : /seek justice|wash yourselves|scarlet/i.test(s.quote)
-            ? 'isaiah-repent'
-            : /save .+ sins|immanuel/i.test(s.quote)
-              ? 'jesus-save'
-              : null;
-    if (teachKey && seenTeachKeys.has(teachKey)) continue;
-    const q = makeSpeechQuestion(s, rand, used);
+    if (booksCovered.has(beat.verse.book) && questions.length >= 6) continue;
+    if (!noteKind(beat.kind)) continue;
+    const q = makeBeatQuestion(beat, verses, rand, used);
     if (q) {
       questions.push(q);
-      if (teachKey) seenTeachKeys.add(teachKey);
+      booksCovered.add(beat.verse.book);
     }
   }
 
-  for (const claim of shuffle(claims, rand)) {
+  // 3) More speeches / quotes.
+  for (const s of [...speeches].sort((a, b) => speechWeight(b) - speechWeight(a))) {
     if (questions.length >= QUESTIONS_PER_QUIZ) break;
-    const q = makeClaimQuestion(claim, rand, used);
-    if (q) questions.push(q);
+    if (speechWeight(s) < 4) continue;
+    const teachKey = teachKeyForSpeech(s);
+    if (seenTeachKeys.has(teachKey)) continue;
+    const q = makeSpeechQuestion(s, rand, used);
+    if (q) {
+      questions.push(q);
+      seenTeachKeys.add(teachKey);
+    }
   }
 
   while (questions.length < QUESTIONS_PER_QUIZ) {
@@ -624,49 +885,75 @@ export function buildQuiz(readingId, parts, meta = {}) {
     questions.push(q);
   }
 
-  // Verse-anchored fillers so single-chapter days still reach 10.
-  const versePool = shuffle(
-    verses.filter((v) => v.text.split(/\s+/).length >= 8),
-    rand
-  );
-  for (const v of versePool) {
+  // 4) Remaining beats (allow more event variety), then limited meaning fillers.
+  for (const beat of shuffle(beats, rand)) {
     if (questions.length >= QUESTIONS_PER_QUIZ) break;
-    const q = makeFillBlank(v, verses, rand, used);
-    if (q) questions.push(q);
-  }
-  for (const v of versePool) {
-    if (questions.length >= QUESTIONS_PER_QUIZ) break;
-    const q = makeVerseParaphrase(v, rand, used);
+    const q = makeBeatQuestion(beat, verses, rand, used);
     if (q) questions.push(q);
   }
 
-  // Last resort: still passage-tied (repeat-safe unique ids)
-  let rescue = 0;
-  while (questions.length < QUESTIONS_PER_QUIZ && verses.length) {
-    const v = verses[rescue % verses.length];
-    const id = `anchor-${refLabel(v)}-${rescue}`;
-    rescue += 1;
-    if (used.has(id)) {
-      if (rescue > verses.length * 3) break;
-      continue;
+  const versePool = shuffle(
+    verses.filter((v) => v.text.split(/\s+/).length >= 12),
+    rand
+  );
+  let meaningCount = 0;
+  for (const v of versePool) {
+    if (questions.length >= QUESTIONS_PER_QUIZ) break;
+    if (meaningCount >= 2) break;
+    const q = makeVerseMeaning(v, rand, used);
+    if (q) {
+      questions.push(q);
+      meaningCount += 1;
     }
+  }
+
+  // Last resort: one application question, then event snippets from unused verses.
+  if (questions.length < QUESTIONS_PER_QUIZ && verses[0]) {
+    const v = verses[Math.floor(verses.length / 3)] || verses[0];
+    const id = `anchor-${refLabel(v)}`;
+    if (!used.has(id)) {
+      used.add(id);
+      questions.push({
+        id,
+        type: 'passage',
+        prompt: `Holding ${refLabel(v)} with the rest of ${meta.labels || 'today’s reading'}, what is a faithful next step?`,
+        passage: `“${snip(v.text, 120)}”`,
+        options: shuffle(
+          [
+            'Ask what this shows about God and how you should respond',
+            'Skim for trivia and move on unchanged',
+            'Only keep the parts that already agree with you',
+            'Treat it as optional background noise',
+          ],
+          rand
+        ),
+        answer: 'Ask what this shows about God and how you should respond',
+        explain: 'Scripture is for knowing God and being shaped by Him — starting with today’s text.',
+      });
+    }
+  }
+
+  for (const v of versePool) {
+    if (questions.length >= QUESTIONS_PER_QUIZ) break;
+    const id = `snap-${refLabel(v)}`;
+    if (used.has(id)) continue;
     used.add(id);
+    const answer = snip(v.text, 110);
+    const distractors = shuffle(
+      versePool.filter((x) => x !== v).map((x) => snip(x.text, 110)),
+      rand
+    ).slice(0, 3);
+    while (distractors.length < 3) {
+      distractors.push(EVENT_DISTRACTORS[distractors.length % EVENT_DISTRACTORS.length]);
+    }
     questions.push({
       id,
       type: 'passage',
-      prompt: `After reading ${meta.labels || 'today’s chapters'}, which habit best fits receiving God’s word in ${refLabel(v)}?`,
-      passage: `“${snip(v.text, 120)}”`,
-      options: shuffle(
-        [
-          'Ask what this shows about God and how you should respond',
-          'Skim for trivia and move on unchanged',
-          'Only keep the parts that already agree with you',
-          'Treat it as optional background noise',
-        ],
-        rand
-      ),
-      answer: 'Ask what this shows about God and how you should respond',
-      explain: 'Scripture is for knowing God and being shaped by Him — starting with today’s text.',
+      prompt: `Which line is actually in ${refLabel(v)} from today’s reading?`,
+      passage: 'Stay close to the text you just read.',
+      options: shuffle([answer, ...distractors.slice(0, 3)], rand),
+      answer,
+      explain: `${refLabel(v)} — “${snip(v.text, 160)}”`,
     });
   }
 
