@@ -1,8 +1,11 @@
 import PassageText from './PassageText';
+import { useReaderPrefs } from '../hooks/useReaderPrefs';
 
 export default function ReadingRow({ reading, done, onToggle, expanded, onExpand }) {
+  const { fontSize } = useReaderPrefs();
+
   return (
-    <li className={`reading-row${done ? ' done' : ''}`}>
+    <li className={`reading-row${done ? ' done' : ''}${expanded ? ' open' : ''}`}>
       <div className="reading-main">
         <button
           type="button"
@@ -20,6 +23,7 @@ export default function ReadingRow({ reading, done, onToggle, expanded, onExpand
         <button type="button" className="reading-info" onClick={onExpand}>
           <span className="track-name">{reading.trackName}</span>
           <span className="reading-label">{reading.label}</span>
+          {!expanded && <span className="reading-hint">Tap to read</span>}
         </button>
 
         <button type="button" className="chevron" onClick={onExpand} aria-label={expanded ? 'Hide text' : 'Read'}>
@@ -29,7 +33,11 @@ export default function ReadingRow({ reading, done, onToggle, expanded, onExpand
         </button>
       </div>
 
-      {expanded && <PassageText chapters={reading.chapters} />}
+      {expanded && (
+        <div className="reading-expand">
+          <PassageText chapters={reading.chapters} fontSize={fontSize} />
+        </div>
+      )}
     </li>
   );
 }

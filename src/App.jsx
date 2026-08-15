@@ -4,6 +4,7 @@ import { buildPlanById, DEFAULT_PLAN_ID, getPlanMeta, groupIntoWeeks } from './d
 import { useProgress } from './hooks/useProgress';
 import { usePlanStart } from './hooks/usePlanStart';
 import { useAnnotations } from './hooks/useAnnotations';
+import { useReaderPrefs } from './hooks/useReaderPrefs';
 import { useData } from './context/DataProvider';
 import { AnnotationsProvider } from './context/annotations';
 import BottomNav from './components/BottomNav';
@@ -28,7 +29,7 @@ import { computeStreak } from './data/streaks';
 const TITLES = {
   today: 'Today',
   plan: 'Plan',
-  read: 'Read',
+  read: 'Bible',
   prayer: 'Prayer & Practice',
   memorize: 'Memorize',
   notes: 'Notes',
@@ -58,6 +59,8 @@ const NOTE_SECTIONS = [
 function App() {
   const { planId, setPlanId, dueDate, startDate, setPregnancyDates, restartPregnancyFromToday } =
     useData();
+  // Apply --reader-size early so Today expanded passages match Bible prefs.
+  useReaderPrefs();
   const plan = useMemo(
     () => buildPlanById(planId, { dueDate, startDate }),
     [planId, dueDate, startDate]
@@ -130,9 +133,11 @@ function App() {
     return { current_day: currentDay, streak: current, completed_days: completed };
   }, [plan, isDone, currentDay]);
 
+  const readingTab = tab === 'read';
+
   return (
     <AnnotationsProvider value={annotations}>
-      <div className="app">
+      <div className={`app${readingTab ? ' is-read-tab' : ''}`}>
         <BottomNav active={tab} onChange={setTab} planTitle={planMeta.title} />
 
         <div className="app-body">
@@ -144,7 +149,7 @@ function App() {
             </div>
           </header>
 
-          <main className="app-main">
+          <main className={`app-main${readingTab ? ' app-main-read' : ''}`}>
             <div className="view-pane" key={`${tab}-${planId}`}>
               {tab === 'today' && (
                 <TodayView

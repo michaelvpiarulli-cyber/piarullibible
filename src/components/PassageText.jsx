@@ -606,12 +606,17 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
   );
 }
 
-export default function PassageText({ chapters, focusVerse }) {
+export default function PassageText({ chapters, focusVerse, fontSize }) {
   const { highlights, notes, onSelectVerse } = useVerseAnnotations();
   const [parts, setParts] = useState([]);
   const [xrefs, setXrefs] = useState({});
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Prefer an explicit size; fall back to the CSS variable set by useReaderPrefs.
+  const sizeStyle = fontSize
+    ? { '--reader-size': `${fontSize}px`, '--reader-lh': `${Math.round(fontSize * 1.85)}px` }
+    : undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -663,7 +668,7 @@ export default function PassageText({ chapters, focusVerse }) {
   }, [focusVerse, parts, loading]);
 
   return (
-    <div className="reader">
+    <div className="reader" style={sizeStyle}>
       {parts.map((part) => (
         <ReaderChapter
           key={part.heading}

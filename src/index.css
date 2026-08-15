@@ -38,6 +38,10 @@
 
   --nav-height: 64px;
   --app-height: 100dvh;
+  --reader-size: 18px;
+  --reader-lh: 33px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -221,15 +225,27 @@ button {
   .btn-primary,
   .btn-secondary,
   .ink-tool,
-  .snippet-chip {
-    min-height: 40px;
+  .snippet-chip,
+  .book-chip,
+  .chapter-chip,
+  .pager-btn,
+  .font-btn,
+  .more-row {
+    min-height: 44px;
   }
 
   .sermon-star-btn,
   .theme-toggle,
-  .account-avatar {
-    width: 40px;
-    height: 40px;
+  .account-avatar,
+  .reader-chrome-icon,
+  .check {
+    width: 44px;
+    height: 44px;
+  }
+
+  .check {
+    width: 30px;
+    height: 30px;
   }
 }
 

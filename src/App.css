@@ -10,14 +10,14 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: var(--nav-height);
+  height: calc(var(--nav-height) + var(--safe-bottom));
   display: flex;
   background: var(--surface-blur);
   backdrop-filter: saturate(180%) blur(16px);
   -webkit-backdrop-filter: saturate(180%) blur(16px);
   border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
   box-shadow: 0 -8px 24px rgba(42, 42, 40, 0.04);
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: var(--safe-bottom);
   z-index: 30;
 }
 
@@ -28,6 +28,14 @@
 .nav-tabs {
   display: flex;
   flex: 1;
+}
+
+.nav-tabs-desktop {
+  display: none;
+}
+
+.nav-tabs-mobile {
+  display: flex;
 }
 
 .nav-tab {
@@ -86,7 +94,8 @@
   backdrop-filter: saturate(180%) blur(16px);
   -webkit-backdrop-filter: saturate(180%) blur(16px);
   border-bottom: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
-  padding: 14px 20px;
+  padding: 12px 16px;
+  padding-top: calc(12px + var(--safe-top));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -286,13 +295,28 @@
 }
 
 .app-body {
-  padding-bottom: calc(var(--nav-height) + 24px);
+  padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 20px);
 }
 
 .app-main {
-  padding: 20px;
+  padding: 16px;
   max-width: 760px;
   margin: 0 auto;
+}
+
+.app-main-read {
+  padding-top: 12px;
+}
+
+/* Immersive Bible reading on phones — drop the page title chrome. */
+@media (max-width: 767px) {
+  html.reading-mode .app-bar {
+    display: none;
+  }
+
+  html.reading-mode .app-main-read {
+    padding-top: calc(8px + var(--safe-top));
+  }
 }
 
 .view-pane {
@@ -823,6 +847,31 @@
   letter-spacing: -0.01em;
 }
 
+.reading-hint {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+
+.reading-row.open {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  box-shadow: 0 0 0 3px var(--accent-wash);
+}
+
+.reading-expand {
+  border-top: 1px solid var(--border);
+  margin: 0 4px 8px;
+  padding-top: 4px;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  border-radius: 0 0 12px 12px;
+}
+
+.reading-expand .reader {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
 .reading-row.done .reading-label {
   color: var(--text-dim);
 }
@@ -852,9 +901,9 @@
 /* ---------- reader ---------- */
 
 .reader {
-  padding: 4px 12px 18px;
-  max-height: 460px;
-  overflow-y: auto;
+  padding: 4px 4px 18px;
+  max-height: none;
+  overflow: visible;
 }
 
 .reader-chapter + .reader-chapter {
@@ -900,7 +949,7 @@
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface);
-  color: var(--text-muted);
+  color: var(--text-dim);
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s, background-color 0.15s;
 }
@@ -928,16 +977,22 @@
 
 .reader-body {
   margin: 0 auto;
-  max-width: 62ch;
-  font-size: 18px;
-  line-height: 36px;
+  max-width: 40rem;
+  font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Times New Roman', serif;
+  font-size: var(--reader-size, 18px);
+  line-height: var(--reader-lh, 33px);
   color: var(--text);
+  hyphens: auto;
+  -webkit-hyphens: auto;
 }
 
 .verse {
-  border-radius: 3px;
+  border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.15s;
+  /* Comfortable finger target without huge gaps between verses. */
+  padding: 0.08em 0.12em;
+  margin: 0 -0.12em;
 }
 
 .verse:hover {
@@ -950,11 +1005,13 @@
 }
 
 .verse-number {
-  font-size: 14px;
+  font-family: Karla, system-ui, sans-serif;
+  font-size: 0.72em;
+  font-weight: 700;
   color: var(--text-dim);
   vertical-align: super;
   line-height: 0;
-  margin-right: 3px;
+  margin-right: 0.22em;
 }
 
 .words-of-jesus {
@@ -1081,7 +1138,7 @@
 /* Ink + text share one box so expand/collapse keeps marks on the same words. */
 .reader-ink-layer {
   position: relative;
-  max-width: 62ch;
+  max-width: 40rem;
   margin-inline: auto;
 }
 
@@ -1141,8 +1198,8 @@
 }
 
 .chapter-page.study-page .reader-body {
-  font-size: 18px;
-  line-height: 36px;
+  font-size: var(--reader-size, 18px);
+  line-height: var(--reader-lh, 33px);
 }
 
 @media (min-width: 768px) {
@@ -2632,6 +2689,17 @@
     padding: 2px 10px 28px;
   }
 
+  .nav-tabs-mobile {
+    display: none;
+  }
+
+  .nav-tabs-desktop {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: none;
+  }
+
   .nav-tabs {
     flex-direction: column;
     gap: 3px;
@@ -2679,6 +2747,7 @@
 
   .app-bar {
     padding: 16px 24px;
+    padding-top: 16px;
   }
 
   .app-bar h1 {
@@ -2730,7 +2799,16 @@
   }
 
   .reader {
-    max-height: 60vh;
+    max-height: none;
+  }
+
+  .picker-sheet {
+    left: 50%;
+    bottom: 40px;
+    transform: translateX(-50%);
+    width: min(560px, calc(100vw - 48px));
+    border-radius: 20px;
+    animation: pop-in 0.16s ease;
   }
 
   /* Centred dialog rather than a phone sheet. */
@@ -3260,17 +3338,17 @@
   font-weight: 600;
 }
 
-/* Seven tabs is a lot for a phone bar — tighten labels so nothing clips. */
+/* Phone nav is 5 tabs now — room for readable labels. */
 @media (max-width: 767px) {
   .nav-tab {
-    font-size: 0.6rem;
-    gap: 2px;
-    padding: 0 1px;
+    font-size: 0.68rem;
+    gap: 3px;
+    padding: 0 2px;
   }
 
   .nav-tab svg {
-    width: 21px;
-    height: 21px;
+    width: 22px;
+    height: 22px;
   }
 }
 
@@ -4387,9 +4465,249 @@
   text-align: center;
 }
 
+.bible-search {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.bible-search input {
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 1rem;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-lift);
+}
+
+.bible-search input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-wash);
+}
+
+.bible-search .btn-primary {
+  flex-shrink: 0;
+  min-width: 64px;
+  padding-inline: 18px;
+}
+
+.continue-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  background:
+    linear-gradient(135deg, var(--accent-wash), transparent 55%),
+    var(--surface);
+  box-shadow: var(--shadow-lift);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.continue-card:active {
+  transform: scale(0.99);
+}
+
+.continue-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.continue-ref {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.reader-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -4px 0 14px;
+  padding: 8px 0;
+  background: linear-gradient(180deg, var(--bg) 55%, transparent);
+}
+
+html.reading-mode .reader-chrome {
+  top: var(--safe-top);
+  padding-top: 4px;
+}
+
+.reader-chrome-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+}
+
+.reader-chrome-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.reader-chrome-btn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset;
+}
+
+.reader-chrome-btn svg {
+  width: 16px;
+  height: 16px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.reader-chrome-ref {
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reader-chrome-meta {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  background: var(--surface-alt);
+  border-radius: 999px;
+  padding: 3px 7px;
+  flex-shrink: 0;
+}
+
+.font-controls {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.font-btn {
+  min-width: 40px;
+  padding: 8px 10px;
+  background: transparent;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text);
+  border-right: 1px solid var(--border);
+}
+
+.font-btn:last-child {
+  border-right: none;
+}
+
+.font-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.font-btn:hover:not(:disabled) {
+  background: var(--surface-alt);
+}
+
+.reader-pager .pager-btn {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8rem;
+}
+
+.picker-sheet {
+  position: fixed;
+  z-index: 55;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: min(88dvh, 720px);
+  overflow: auto;
+  background: var(--surface);
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  border-top: 1px solid var(--border);
+  padding: 10px 16px calc(20px + var(--safe-bottom));
+  box-shadow: 0 -12px 40px var(--shadow);
+  animation: slide-up 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  -webkit-overflow-scrolling: touch;
+}
+
+.picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.picker-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.picker-testaments {
+  margin-bottom: 14px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-wrap: nowrap;
+  padding-bottom: 2px;
+}
+
+.picker-testaments::-webkit-scrollbar {
+  display: none;
+}
+
+.picker-testaments .chip {
+  flex-shrink: 0;
+}
+
+.book-chip.current,
+.chapter-chip.current {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .book-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
   gap: 7px;
   margin-bottom: 8px;
 }
@@ -4397,12 +4715,13 @@
 .book-chip {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 11px 10px;
-  font-size: 0.85rem;
+  border-radius: 12px;
+  padding: 12px 10px;
+  font-size: 0.84rem;
   font-weight: 600;
   color: var(--text);
   text-align: left;
+  line-height: 1.25;
   transition: border-color 0.15s, background-color 0.15s;
 }
 
@@ -4414,14 +4733,15 @@
 .chapter-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
-  gap: 7px;
+  gap: 8px;
 }
 
 .chapter-chip {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 14px 0;
+  min-height: 48px;
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--text);
@@ -4461,8 +4781,8 @@
   text-align: left;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 11px;
-  padding: 11px 13px;
+  border-radius: 12px;
+  padding: 12px 14px;
   transition: border-color 0.15s;
 }
 
@@ -4490,6 +4810,159 @@
   overflow-y: visible;
   padding-left: 0;
   padding-right: 0;
+}
+
+/* ---------- more menu (mobile) ---------- */
+
+.more-scrim {
+  z-index: 45;
+}
+
+.more-sheet {
+  position: fixed;
+  z-index: 50;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--surface);
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  border-top: 1px solid var(--border);
+  padding: 10px 14px calc(18px + var(--safe-bottom));
+  box-shadow: 0 -12px 40px var(--shadow);
+  animation: slide-up 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.more-sheet-title {
+  margin: 0 0 10px;
+  padding: 0 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.more-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.more-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  padding: 12px 12px;
+  border-radius: 14px;
+  background: transparent;
+  transition: background-color 0.15s ease;
+}
+
+.more-row:hover,
+.more-row.active {
+  background: var(--accent-soft);
+}
+
+.more-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.more-row.active .more-icon {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.more-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.more-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.more-label {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.more-blurb {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+/* Section chips scroll horizontally on narrow phones */
+@media (max-width: 767px) {
+  .filter-row.section-switch {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-left: -4px;
+    margin-right: -4px;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  .filter-row.section-switch::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-row.section-switch .chip {
+    flex-shrink: 0;
+  }
+
+  .today-hero h2 {
+    font-size: 1.75rem;
+  }
+
+  .stat-grid {
+    gap: 8px;
+  }
+
+  .tile-num {
+    font-size: 1.25rem;
+  }
+
+  .day-pager {
+    gap: 6px;
+  }
+
+  .day-pager .pager-btn {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+
+  .verse-sheet {
+    max-height: min(90dvh, 680px);
+  }
+
+  .memorize-add {
+    flex-direction: column;
+  }
+
+  .memorize-add .btn-primary {
+    width: 100%;
+  }
 }
 
 /* ---------- examen ---------- */
