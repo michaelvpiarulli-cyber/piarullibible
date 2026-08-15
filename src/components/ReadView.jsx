@@ -305,6 +305,7 @@ export default function ReadView({ jumpTo }) {
               focusVerse?.book === book && focusVerse?.chapter === chapter ? focusVerse : null
             }
             fontSize={fontSize}
+            compactHead
           />
         </div>
 
@@ -315,7 +316,7 @@ export default function ReadView({ jumpTo }) {
             disabled={!prev}
             onClick={() => prev && openAt(prev.book, prev.chapter)}
           >
-            ← {prev ? `${prev.book} ${prev.chapter}` : 'Start'}
+            ← {prev ? (prev.book === book ? `Ch ${prev.chapter}` : prev.book) : 'Start'}
           </button>
           <button
             type="button"
@@ -323,7 +324,7 @@ export default function ReadView({ jumpTo }) {
             disabled={!next}
             onClick={() => next && openAt(next.book, next.chapter)}
           >
-            {next ? `${next.book} ${next.chapter}` : 'End'} →
+            {next ? (next.book === book ? `Ch ${next.chapter}` : next.book) : 'End'} →
           </button>
         </div>
 
@@ -381,9 +382,11 @@ export default function ReadView({ jumpTo }) {
           className="continue-card"
           onClick={() => openAt(lastRead.book, lastRead.chapter)}
         >
-          <span className="continue-label">Continue reading</span>
-          <span className="continue-ref">
-            {lastRead.book} {lastRead.chapter}
+          <span>
+            <span className="continue-label">Continue</span>
+            <span className="continue-ref">
+              {lastRead.book} {lastRead.chapter}
+            </span>
           </span>
         </button>
       )}

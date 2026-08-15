@@ -206,7 +206,7 @@ function VerseText({ segments }) {
   );
 }
 
-function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
+function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse, compactHead }) {
   const [showCommentary, setShowCommentary] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [drawing, setDrawing] = useState(false);
@@ -370,7 +370,7 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
     );
 
   return (
-    <article className="reader-chapter">
+    <article className={`reader-chapter${compactHead ? ' compact-head' : ''}`}>
       <div className="reader-chapter-head">
         <h4 className="reader-chapter-title">
           {part.heading}
@@ -606,7 +606,7 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
   );
 }
 
-export default function PassageText({ chapters, focusVerse, fontSize }) {
+export default function PassageText({ chapters, focusVerse, fontSize, compactHead = false }) {
   const { highlights, notes, onSelectVerse } = useVerseAnnotations();
   const [parts, setParts] = useState([]);
   const [xrefs, setXrefs] = useState({});
@@ -677,6 +677,7 @@ export default function PassageText({ chapters, focusVerse, fontSize }) {
           highlights={highlights}
           notes={notes}
           onSelectVerse={onSelectVerse}
+          compactHead={compactHead}
         />
       ))}
 

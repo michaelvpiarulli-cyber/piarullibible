@@ -30,7 +30,7 @@ const TITLES = {
   today: 'Today',
   plan: 'Plan',
   read: 'Bible',
-  prayer: 'Prayer & Practice',
+  prayer: 'Prayer',
   memorize: 'Memorize',
   notes: 'Notes',
   family: 'Family',
