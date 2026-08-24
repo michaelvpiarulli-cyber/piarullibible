@@ -1,5 +1,6 @@
 import { TRACKS } from '../data/books';
 import { PLANS } from '../data/plans';
+import { ROMANS_SECTIONS } from '../data/romansPlan';
 import { computeStreak } from '../data/streaks';
 import { formatPrettyDate, pregnancyWeekFromDueDate, daysLeftInPregnancy } from '../data/pregnancyDates';
 
@@ -41,36 +42,44 @@ export default function ProgressView({
 
   const streak = computeStreak(plan, isDone, currentDay, { trackBehind: !isPregnancy });
 
+  const sectionStats = (days) => {
+    const readings = days.flatMap((d) => d.readings);
+    const done = readings.filter((r) => isDone(r.id)).length;
+    const chapters = readings.reduce((n, r) => n + r.chapters.length, 0);
+    const chaptersDone = readings
+      .filter((r) => isDone(r.id))
+      .reduce((n, r) => n + r.chapters.length, 0);
+    return {
+      chapters,
+      chaptersDone,
+      pct: readings.length ? Math.round((done / readings.length) * 100) : 0,
+    };
+  };
+
   const perSection = isPregnancy
     ? TRIMESTERS.map((t) => {
         const days = plan.filter((d) => d.week >= t.weeks[0] && d.week <= t.weeks[1]);
-        const readings = days.flatMap((d) => d.readings);
-        const done = readings.filter((r) => isDone(r.id)).length;
-        const chapters = readings.reduce((n, r) => n + r.chapters.length, 0);
-        const chaptersDone = readings
-          .filter((r) => isDone(r.id))
-          .reduce((n, r) => n + r.chapters.length, 0);
-        return {
-          name: t.name,
-          chapters,
-          chaptersDone,
-          pct: readings.length ? Math.round((done / readings.length) * 100) : 0,
-        };
+        return { name: t.name, ...sectionStats(days) };
       }).filter((t) => t.chapters > 0)
-    : TRACK_LIST.map((name) => {
-        const readings = allReadings.filter((r) => r.trackName === name);
-        const done = readings.filter((r) => isDone(r.id)).length;
-        const chapters = readings.reduce((n, r) => n + r.chapters.length, 0);
-        const chaptersDone = readings
-          .filter((r) => isDone(r.id))
-          .reduce((n, r) => n + r.chapters.length, 0);
-        return {
-          name,
-          chapters,
-          chaptersDone,
-          pct: readings.length ? Math.round((done / readings.length) * 100) : 0,
-        };
-      });
+    : planId === 'romans'
+      ? ROMANS_SECTIONS.map((s, i) => {
+          const days = plan.filter((d) => d.week === i + 1);
+          return { name: s.name, ...sectionStats(days) };
+        }).filter((t) => t.chapters > 0)
+      : TRACK_LIST.map((name) => {
+          const readings = allReadings.filter((r) => r.trackName === name);
+          const done = readings.filter((r) => isDone(r.id)).length;
+          const chapters = readings.reduce((n, r) => n + r.chapters.length, 0);
+          const chaptersDone = readings
+            .filter((r) => isDone(r.id))
+            .reduce((n, r) => n + r.chapters.length, 0);
+          return {
+            name,
+            chapters,
+            chaptersDone,
+            pct: readings.length ? Math.round((done / readings.length) * 100) : 0,
+          };
+        });
 
   return (
     <div className="progress-view">

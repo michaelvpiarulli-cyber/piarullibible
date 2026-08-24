@@ -70,9 +70,10 @@ function App() {
   const totalReadings = useMemo(() => plan.reduce((n, d) => n + d.readings.length, 0), [plan]);
 
   const { isDone, toggle, doneCount } = useProgress();
-  const { setStartDate, currentDay, currentWeek, dayDate, weekDateRange } = usePlanStart(
+  const { setStartDate, currentDay, dayDate, weekDateRange } = usePlanStart(
     planMeta.days
   );
+  const currentWeek = plan[currentDay - 1]?.week ?? Math.ceil(currentDay / 7);
   const { highlights, notes, setHighlight, setNote } = useAnnotations();
   const [tab, setTab] = useState('today');
   const [noteSection, setNoteSection] = useState('sermons');
@@ -162,7 +163,7 @@ function App() {
                 <div className="week-list">
                   {weeks.map((weekData) => {
                     const range =
-                      planId === 'pregnancy' && weekData.days?.length
+                      planId !== 'bible-year' && weekData.days?.length
                         ? (() => {
                             const fmt = (dayNum) =>
                               dayDate(dayNum).toLocaleDateString(undefined, {

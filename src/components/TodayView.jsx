@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import ReadingRow from './ReadingRow';
 import DayQuiz from './DayQuiz';
-import { DAYS_PER_WEEK } from '../data/plans';
 import { prayerForDay } from '../data/prayers';
 import { pregnancyStageForDay } from '../data/pregnancyStages';
 import { pregnancyDayFromDueDate, pregnancyWeekFromDueDate } from '../data/pregnancyDates';
@@ -44,12 +43,11 @@ export default function TodayView({
       ? pregnancyWeekFromDueDate(dueDate, dayDate(selectedDay))
       : dayData.week;
   const week = pregnancyWeek;
-  const weekDays = isPregnancy
-    ? plan.filter((d) => {
-        if (!dueDate) return d.week === dayData.week;
-        return pregnancyWeekFromDueDate(dueDate, dayDate(d.day)) === pregnancyWeek;
-      })
-    : plan.slice((week - 1) * DAYS_PER_WEEK, week * DAYS_PER_WEEK);
+  // Filter by plan week so uneven themed weeks (Romans, pregnancy) stay intact.
+  const weekDays =
+    isPregnancy && dueDate
+      ? plan.filter((d) => pregnancyWeekFromDueDate(dueDate, dayDate(d.day)) === pregnancyWeek)
+      : plan.filter((d) => d.week === dayData.week);
 
   const total = dayData.readings.length;
   const doneCount = dayData.readings.filter((r) => isDone(r.id)).length;

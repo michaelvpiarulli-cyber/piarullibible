@@ -5,6 +5,12 @@ import {
   PREGNANCY_DAYS,
   PREGNANCY_WEEKS,
 } from './pregnancyPlan';
+import {
+  buildRomansPlan,
+  romansTotalChapters,
+  ROMANS_DAYS,
+  ROMANS_WEEKS,
+} from './romansPlan';
 import { pregnancyWeekFromDueDate } from './pregnancyDates';
 
 export { DAYS_PER_WEEK };
@@ -20,6 +26,16 @@ export const PLANS = [
     build: buildPlan,
     totalChapters: TOTAL_CHAPTERS,
     groupSections: 'tracks', // Progress “By section” uses Law/Wisdom/Prophets/NT
+  },
+  {
+    id: 'romans',
+    title: 'Romans',
+    blurb: 'Paul’s letter in 16 days — gospel, faith, new life, and living sacrifice.',
+    days: ROMANS_DAYS,
+    weeks: ROMANS_WEEKS,
+    build: buildRomansPlan,
+    totalChapters: romansTotalChapters(),
+    groupSections: 'romans',
   },
   {
     id: 'pregnancy',
@@ -75,7 +91,7 @@ export function buildPlanById(planId, opts = {}) {
   return meta.build();
 }
 
-/** Group any day list into week buckets (works for 52- or 40-week plans). */
+/** Group any day list into week buckets (works for year, Romans, or pregnancy plans). */
 export function groupIntoWeeks(days, daysPerWeek = DAYS_PER_WEEK) {
   if (!days?.length) return [];
   // Year plan keeps the original helper when shape matches.
@@ -83,28 +99,15 @@ export function groupIntoWeeks(days, daysPerWeek = DAYS_PER_WEEK) {
     return groupYearWeeks(days);
   }
 
-  // Pregnancy plan: group by pregnancy week number (may start mid-pregnancy).
-  if (days[0]?.pregnancyDay != null) {
-    const byWeek = new Map();
-    for (const d of days) {
-      if (!byWeek.has(d.week)) byWeek.set(d.week, []);
-      byWeek.get(d.week).push(d);
-    }
-    return [...byWeek.entries()].map(([week, weekDays]) => ({
-      week,
-      days: weekDays,
-      theme: weekDays[0]?.theme || null,
-    }));
+  // Themed plans (pregnancy, Romans): group by week number — weeks may be uneven.
+  const byWeek = new Map();
+  for (const d of days) {
+    if (!byWeek.has(d.week)) byWeek.set(d.week, []);
+    byWeek.get(d.week).push(d);
   }
-
-  const weeks = [];
-  const weekCount = Math.ceil(days.length / daysPerWeek);
-  for (let w = 0; w < weekCount; w++) {
-    weeks.push({
-      week: w + 1,
-      days: days.slice(w * daysPerWeek, (w + 1) * daysPerWeek),
-      theme: days[w * daysPerWeek]?.theme || null,
-    });
-  }
-  return weeks;
+  return [...byWeek.entries()].map(([week, weekDays]) => ({
+    week,
+    days: weekDays,
+    theme: weekDays[0]?.theme || null,
+  }));
 }
