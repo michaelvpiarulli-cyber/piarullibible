@@ -69,11 +69,11 @@ export default function Commentary({ book, chapter, lastVerse }) {
   }, [book, chapter, lastVerse]);
 
   if (state.status === 'loading') {
-    return <div className="commentary-status">Loading commentary…</div>;
+    return <div className="commentary-status passage-status loading">Loading commentary…</div>;
   }
 
   if (state.status === 'error') {
-    return <div className="commentary-status">{state.error}</div>;
+    return <div className="commentary-status passage-status passage-error">{state.error}</div>;
   }
 
   if (!state.sections.length && !state.introduction) {

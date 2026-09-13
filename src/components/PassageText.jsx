@@ -3,7 +3,9 @@ import { createPortal } from 'react-dom';
 import { colorValue, verseId } from '../hooks/useAnnotations';
 import { useVerseAnnotations } from '../context/annotations';
 import { BOOK_BY_CODE, HELLOAO_CODES, formatRef } from '../data/bookRefs';
-import Commentary from './Commentary';
+import StudyGuide from './StudyGuide';
+import StudySheet from './StudySheet';
+import ParallelPane from './ParallelPane';
 import DrawCanvas from './DrawCanvas';
 
 const INK_COLORS = [
@@ -206,8 +208,9 @@ function VerseText({ segments }) {
   );
 }
 
-function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
-  const [showCommentary, setShowCommentary] = useState(false);
+function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse, embedded = false }) {
+  const [showGuide, setShowGuide] = useState(false);
+  const [guideFocus, setGuideFocus] = useState(null); // { verse, text, tab }
   const [showNotes, setShowNotes] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [studyOpen, setStudyOpen] = useState(false);
@@ -220,6 +223,22 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
   const registerStudyApi = useCallback((api) => {
     studyDrawApi.current = api;
   }, []);
+
+  // Verse sheet (or elsewhere) can ask this chapter to open the Logos-style guide.
+  useEffect(() => {
+    const onStudy = (e) => {
+      const { book, chapter, verse, text, tab } = e.detail || {};
+      if (book !== part.book || Number(chapter) !== Number(part.chapter)) return;
+      setGuideFocus({
+        verse: verse ? Number(verse) : null,
+        text: text || '',
+        tab: tab || (verse ? 'words' : 'guide'),
+      });
+      setShowGuide(true);
+    };
+    window.addEventListener('bible-study', onStudy);
+    return () => window.removeEventListener('bible-study', onStudy);
+  }, [part.book, part.chapter]);
 
   // Notes for this chapter, in verse order, carrying verse text so tapping one
   // reopens the sheet with the right verse.
@@ -268,14 +287,12 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
       const color = colorValue(highlights[id]);
       const hasNote = Boolean(notes[id]);
       const refs = crossRefs[v.number] || [];
+      const domId = `v-${idPrefix}${part.book.replace(/\s+/g, '-')}-${part.chapter}-${v.number}`;
       return (
         <span
           key={`${idPrefix}${v.number}`}
-          id={
-            idPrefix
-              ? undefined
-              : `v-${part.book.replace(/\s+/g, '-')}-${part.chapter}-${v.number}`
-          }
+          id={domId}
+          data-verse={`${part.book}|${part.chapter}|${v.number}`}
           className={`verse${hasNote ? ' has-note' : ''}${refs.length ? ' has-xrefs' : ''}`}
           style={color ? { background: color } : undefined}
           onClick={() =>
@@ -370,36 +387,38 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
     );
 
   return (
-    <article className="reader-chapter">
+    <article className={`reader-chapter${embedded ? ' embedded' : ''}`}>
       <div className="reader-chapter-head">
         <h4 className="reader-chapter-title">
           {part.heading}
           <span className="reader-translation">{TRANSLATION_LABEL}</span>
         </h4>
-        <button
-          type="button"
-          className="study-expand-corner"
-          onClick={openStudy}
-          aria-label="Expand chapter for study notes"
-          title="Expand"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+        {!embedded && (
+          <button
+            type="button"
+            className="study-expand-corner"
+            onClick={openStudy}
+            aria-label="Expand chapter for study notes"
+            title="Expand"
           >
-            <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
-          </svg>
-        </button>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div className={`chapter-page${drawing && !studyOpen ? ' drawing' : ''}`}>
         <div className="reader-ink-layer">
-          <p className="reader-body">{renderVerses()}</p>
+          <p className="reader-body">{renderVerses(embedded ? 'immersive-' : '')}</p>
           {!studyOpen && (
             <DrawCanvas
               chapterKey={part.heading}
@@ -458,9 +477,17 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
 
         <button
           type="button"
-          className={`commentary-toggle${showCommentary ? ' active' : ''}`}
-          onClick={() => setShowCommentary(!showCommentary)}
-          aria-expanded={showCommentary}
+          className={`commentary-toggle${showGuide ? ' active' : ''}`}
+          onClick={() => {
+            if (showGuide) {
+              setShowGuide(false);
+              setGuideFocus(null);
+            } else {
+              setGuideFocus(null);
+              setShowGuide(true);
+            }
+          }}
+          aria-expanded={showGuide}
         >
           <svg
             viewBox="0 0 24 24"
@@ -474,7 +501,7 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
             <path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-1.5Z" />
             <path d="M8 7h7M8 11h7" />
           </svg>
-          {showCommentary ? 'Hide commentary' : 'Commentary'}
+          {showGuide ? 'Hide study' : 'Study'}
         </button>
       </div>
 
@@ -502,15 +529,43 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
         </div>
       )}
 
-      {showCommentary && (
-        <Commentary
-          book={part.book}
-          chapter={part.chapter}
-          lastVerse={part.verses[part.verses.length - 1]?.number ?? part.verses.length}
-        />
-      )}
+      {showGuide &&
+        (embedded ? (
+          <StudySheet
+            open
+            title="Passage Guide"
+            subtitle={`${part.book} ${part.chapter}${guideFocus?.verse ? `:${guideFocus.verse}` : ''}`}
+            onClose={() => {
+              setShowGuide(false);
+              setGuideFocus(null);
+            }}
+          >
+            <StudyGuide
+              book={part.book}
+              chapter={part.chapter}
+              lastVerse={part.verses[part.verses.length - 1]?.number ?? part.verses.length}
+              focusVerse={guideFocus?.verse || null}
+              verseText={guideFocus?.text || ''}
+              initialTab={guideFocus?.tab || 'guide'}
+            />
+          </StudySheet>
+        ) : (
+          <StudyGuide
+            book={part.book}
+            chapter={part.chapter}
+            lastVerse={part.verses[part.verses.length - 1]?.number ?? part.verses.length}
+            focusVerse={guideFocus?.verse || null}
+            verseText={guideFocus?.text || ''}
+            initialTab={guideFocus?.tab || 'guide'}
+            onClose={() => {
+              setShowGuide(false);
+              setGuideFocus(null);
+            }}
+          />
+        ))}
 
-      {studyOpen &&
+      {!embedded &&
+        studyOpen &&
         createPortal(
           <div className="study-overlay" role="dialog" aria-modal="true" aria-label={`${part.heading} study`}>
             <header className="study-overlay-bar">
@@ -606,12 +661,44 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
   );
 }
 
-export default function PassageText({ chapters, focusVerse }) {
+export default function PassageText({
+  chapters,
+  focusVerse,
+  startFullscreen = false,
+  onFullscreenClose,
+  title,
+}) {
   const { highlights, notes, onSelectVerse } = useVerseAnnotations();
   const [parts, setParts] = useState([]);
   const [xrefs, setXrefs] = useState({});
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Parent-driven fullscreen (Plan/Today opens) — avoid local state that can get stuck open.
+  const immersive = Boolean(startFullscreen);
+  const [parallelOpen, setParallelOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+
+  const closeImmersive = useCallback(() => {
+    setParallelOpen(false);
+    setGuideOpen(false);
+    onFullscreenClose?.();
+  }, [onFullscreenClose]);
+
+  useEffect(() => {
+    if (!immersive) return;
+    const root = document.documentElement;
+    root.classList.add('study-expanded');
+    root.classList.add('reading-immersive-open');
+    const onKey = (e) => {
+      if (e.key === 'Escape') closeImmersive();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      root.classList.remove('study-expanded');
+      root.classList.remove('reading-immersive-open');
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [immersive, closeImmersive]);
 
   useEffect(() => {
     let cancelled = false;
@@ -652,36 +739,133 @@ export default function PassageText({ chapters, focusVerse }) {
   useEffect(() => {
     if (!focusVerse?.book || !focusVerse?.chapter || !focusVerse?.verse) return;
     if (loading) return;
-    const id = `v-${focusVerse.book.replace(/\s+/g, '-')}-${focusVerse.chapter}-${focusVerse.verse}`;
-    const el = document.getElementById(id);
+    const bookSlug = focusVerse.book.replace(/\s+/g, '-');
+    const candidates = immersive
+      ? [`v-immersive-${bookSlug}-${focusVerse.chapter}-${focusVerse.verse}`]
+      : [`v-${bookSlug}-${focusVerse.chapter}-${focusVerse.verse}`];
+    const el = candidates.map((id) => document.getElementById(id)).find(Boolean);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       el.classList.add('verse-flash');
       const t = setTimeout(() => el.classList.remove('verse-flash'), 1600);
       return () => clearTimeout(t);
     }
-  }, [focusVerse, parts, loading]);
+  }, [focusVerse, parts, loading, immersive]);
 
-  return (
-    <div className="reader">
-      {parts.map((part) => (
-        <ReaderChapter
-          key={part.heading}
-          part={part}
-          crossRefs={xrefs[part.heading] || {}}
-          highlights={highlights}
-          notes={notes}
-          onSelectVerse={onSelectVerse}
-        />
-      ))}
-
+  const heading = title || parts[0]?.heading || 'Bible';
+  const status = (
+    <>
       {loading && !error && (
-        <div className="passage-status">
+        <div className="passage-status loading">
           Loading {parts.length ? `${parts.length + 1} of ${chapters.length}` : ''}…
         </div>
       )}
-
       {error && <div className="passage-status passage-error">{error}</div>}
+    </>
+  );
+
+  const chapterNodes = (embedded) =>
+    parts.map((part) => (
+      <ReaderChapter
+        key={`${embedded ? 'fs-' : ''}${part.heading}`}
+        part={part}
+        crossRefs={xrefs[part.heading] || {}}
+        highlights={highlights}
+        notes={notes}
+        onSelectVerse={onSelectVerse}
+        embedded={embedded}
+      />
+    ));
+
+  return (
+    <div className="reader">
+      {!immersive && (
+        <>
+          {chapterNodes(false)}
+          {status}
+        </>
+      )}
+
+      {immersive &&
+        createPortal(
+          <div
+            className={`study-overlay reading-immersive${parallelOpen ? ' has-parallel' : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label={heading}
+          >
+            <header className="study-overlay-bar immersive-toolbar">
+              <button
+                type="button"
+                className="immersive-back-icon"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  closeImmersive();
+                }}
+                aria-label="Back"
+              >
+                ←
+              </button>
+              <div className="study-overlay-heading">
+                <h2>
+                  {heading}
+                  <span className="reader-translation">{TRANSLATION_LABEL}</span>
+                </h2>
+              </div>
+              <div className="study-overlay-actions immersive-tools">
+                <button
+                  type="button"
+                  className={`tool-chip${guideOpen ? ' active' : ''}`}
+                  onClick={() => setGuideOpen((v) => !v)}
+                >
+                  Guide
+                </button>
+                <button
+                  type="button"
+                  className={`tool-chip${parallelOpen ? ' active' : ''}`}
+                  onClick={() => setParallelOpen((v) => !v)}
+                >
+                  Parallel
+                </button>
+              </div>
+            </header>
+            <div className={`study-overlay-body${parallelOpen ? ' parallel-split' : ''}`}>
+              <div className="reader immersive-reader">
+                {chapterNodes(true)}
+                {status}
+              </div>
+              {parallelOpen && parts[0] && (
+                <ParallelPane
+                  book={parts[0].book}
+                  chapter={parts[0].chapter}
+                  translationId="BSB"
+                  focusVerse={focusVerse?.verse || null}
+                />
+              )}
+            </div>
+            <StudySheet
+              open={guideOpen}
+              title="Passage Guide"
+              subtitle={heading}
+              onClose={() => setGuideOpen(false)}
+            >
+              {parts[0] && (
+                <StudyGuide
+                  book={parts[0].book}
+                  chapter={parts[0].chapter}
+                  lastVerse={
+                    parts[0].verses[parts[0].verses.length - 1]?.number ?? parts[0].verses.length
+                  }
+                  focusVerse={focusVerse?.verse || null}
+                  verseText=""
+                  initialTab="guide"
+                />
+              )}
+            </StudySheet>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

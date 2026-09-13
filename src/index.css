@@ -1,43 +1,70 @@
 :root {
-  /* Karla — the typeface Katin uses, paired with their uppercase, letter-spaced headings. */
-  font-family: Karla, -apple-system, system-ui, 'Segoe UI', Roboto, sans-serif;
+  /*
+   * YouVersion / Life.Church Bible App–inspired system:
+   * Inter for chrome, Source Serif 4 for scripture, signature brand red.
+   */
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color-scheme: light;
 
-  /* Katin-inspired: soft paper, charcoal ink, washed-navy accent. */
-  --bg: #f7f6f3;
-  --bg-deep: #efece6;
-  --surface: #fffcf8;
-  --surface-alt: #f0eee8;
-  --surface-hover: #e6e4dd;
-  --border: #ddd9d0;
-  --border-strong: #c9c4b8;
-  --text: #2a2a28;
-  --text-dim: #6f6e68;
-  --text-inverse: #f7f6f3;
-  --accent: #3e5782;
-  --accent-press: #32476b;
-  --accent-soft: #e8eef6;
-  --accent-wash: rgba(62, 87, 130, 0.12);
-  --success: #4a7c59;
-  --success-soft: rgba(74, 124, 89, 0.12);
-  --words-of-jesus: #b42318;
-  --gold: #b08d3e;
-  --gold-soft: rgba(176, 141, 62, 0.16);
+  --font-ui: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-reader: 'Source Serif 4', 'Iowan Old Style', Palatino, Georgia, serif;
 
-  --surface-blur: rgba(247, 246, 243, 0.82);
-  --check-border: #c4c0b6;
-  --today-tint: #eef1f7;
-  --scrim: rgba(42, 42, 40, 0.32);
-  --shadow: rgba(42, 42, 40, 0.12);
-  --shadow-lift: 0 10px 28px rgba(42, 42, 40, 0.08), 0 2px 6px rgba(42, 42, 40, 0.04);
+  /* Soft cool canvas — sleek Bible App glass + paper. */
+  --bg: #f7f7f8;
+  --bg-deep: #eef0f2;
+  --surface: #ffffff;
+  --surface-alt: #f3f4f6;
+  --surface-hover: #ebecef;
+  --border: #e8e8eb;
+  --border-strong: #d6d6db;
+  --text: #111114;
+  --text-dim: #6b6b76;
+  --text-inverse: #ffffff;
+
+  /* Signature YouVersion red — slightly richer for chrome. */
+  --accent: #d01230;
+  --accent-press: #a80e26;
+  --accent-soft: #ffe9ed;
+  --accent-wash: rgba(208, 18, 48, 0.14);
+
+  --success: #0d9488;
+  --success-soft: rgba(13, 148, 136, 0.12);
+  --danger: #d01230;
+  --danger-soft: rgba(208, 18, 48, 0.12);
+  --words-of-jesus: #d01230;
+  --gold: #b45309;
+  --gold-soft: rgba(180, 83, 9, 0.14);
+  --teal: #0d9488;
+  --teal-soft: rgba(13, 148, 136, 0.12);
+
+  --surface-blur: rgba(255, 255, 255, 0.78);
+  --check-border: #d6d6db;
+  --today-tint: #ffe9ed;
+  --scrim: rgba(17, 17, 20, 0.42);
+  --shadow: rgba(17, 17, 20, 0.08);
+  --shadow-lift: 0 10px 30px rgba(17, 17, 20, 0.07), 0 1px 2px rgba(17, 17, 20, 0.04);
+  --shadow-float: 0 18px 40px rgba(17, 17, 20, 0.1), 0 2px 6px rgba(17, 17, 20, 0.05);
+  --inset-highlight: rgba(255, 255, 255, 0.65);
   --radius-sm: 10px;
   --radius-md: 14px;
-  --radius-lg: 18px;
+  --radius-lg: 20px;
+  --radius: var(--radius-md);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+
+  /* Compatibility aliases used across App.css */
+  --text-muted: var(--text-dim);
+  --text-soft: var(--text-dim);
+  --surface-2: var(--surface-alt);
+  --font-body: var(--font-ui);
+  --paper-rule: color-mix(in srgb, var(--border) 70%, transparent);
 
   --nav-height: 64px;
   --app-height: 100dvh;
+  --reader-size: 1.125rem;
+  --reader-leading: 1.75;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -49,36 +76,45 @@
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  /* Night version of the same palette — navy-tinted rather than neutral grey. */
-  --bg: #12151a;
-  --bg-deep: #0e1116;
-  --surface: #1a1f27;
-  --surface-alt: #232933;
-  --surface-hover: #2c3340;
-  --border: #343b47;
-  --border-strong: #454d5c;
-  --text: #ecece8;
-  --text-dim: #9a9ea6;
-  --text-inverse: #12151a;
-  --accent: #8fa8d4;
-  --accent-press: #a8bde0;
-  --accent-soft: rgba(143, 168, 212, 0.14);
-  --accent-wash: rgba(143, 168, 212, 0.16);
-  --success: #7fb08c;
-  --success-soft: rgba(127, 176, 140, 0.16);
-  --words-of-jesus: #f07167;
-  --gold: #d4b46a;
-  --gold-soft: rgba(212, 180, 106, 0.18);
+  --bg: #0c0c0e;
+  --bg-deep: #000000;
+  --surface: #18181b;
+  --surface-alt: #27272a;
+  --surface-hover: #3f3f46;
+  --border: #3f3f46;
+  --border-strong: #52525b;
+  --text: #fafafa;
+  --text-dim: #a1a1aa;
+  --text-inverse: #18181b;
 
-  --surface-blur: rgba(18, 21, 26, 0.84);
-  --check-border: #464c57;
-  --today-tint: #1f2634;
-  --scrim: rgba(0, 0, 0, 0.55);
-  --shadow: rgba(0, 0, 0, 0.45);
-  --shadow-lift: 0 12px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
+  --accent: #ff5a5f;
+  --accent-press: #ff7a7e;
+  --accent-soft: rgba(255, 90, 95, 0.16);
+  --accent-wash: rgba(255, 90, 95, 0.18);
+
+  --success: #2dd4bf;
+  --success-soft: rgba(45, 212, 191, 0.16);
+  --danger: #ff5a5f;
+  --danger-soft: rgba(255, 90, 95, 0.16);
+  --words-of-jesus: #ff7a7e;
+  --gold: #fbbf24;
+  --gold-soft: rgba(251, 191, 36, 0.16);
+  --teal: #2dd4bf;
+  --teal-soft: rgba(45, 212, 191, 0.14);
+
+  --surface-blur: rgba(18, 18, 20, 0.78);
+  --check-border: #52525b;
+  --today-tint: #2a1518;
+  --scrim: rgba(0, 0, 0, 0.62);
+  --shadow: rgba(0, 0, 0, 0.5);
+  --shadow-lift: 0 14px 36px rgba(0, 0, 0, 0.42), 0 2px 8px rgba(0, 0, 0, 0.28);
+  --shadow-float: 0 22px 48px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+  --inset-highlight: rgba(255, 255, 255, 0.06);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
-/* Pregnancy plan — soft rose over the same paper / night surfaces. */
+/* Pregnancy plan — soft rose while keeping the Bible App structure. */
 :root[data-plan='pregnancy'] {
   --bg: #faf4f6;
   --bg-deep: #f3e8ec;
@@ -92,9 +128,10 @@
   --accent-soft: #f8e6ec;
   --accent-wash: rgba(196, 92, 122, 0.14);
   --today-tint: #f8e8ee;
-  --surface-blur: rgba(250, 244, 246, 0.84);
+  --surface-blur: rgba(250, 244, 246, 0.88);
   --gold: #b8876a;
   --gold-soft: rgba(184, 135, 106, 0.16);
+  --words-of-jesus: #c45c7a;
 }
 
 :root[data-plan='pregnancy'][data-theme='dark'] {
@@ -110,9 +147,10 @@
   --accent-soft: rgba(232, 160, 180, 0.16);
   --accent-wash: rgba(232, 160, 180, 0.18);
   --today-tint: #2a1c22;
-  --surface-blur: rgba(26, 18, 22, 0.86);
+  --surface-blur: rgba(26, 18, 22, 0.88);
   --gold: #d4a88a;
   --gold-soft: rgba(212, 168, 138, 0.18);
+  --words-of-jesus: #f0b8c6;
 }
 
 * {
@@ -130,30 +168,30 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   background-color: var(--bg);
-  /* Soft paper wash — atmosphere without a flat slab of color. */
   background-image:
-    radial-gradient(120% 80% at 0% 0%, var(--accent-wash), transparent 55%),
-    radial-gradient(90% 70% at 100% 0%, rgba(176, 141, 62, 0.07), transparent 50%),
+    radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 55%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
   background-attachment: fixed;
   color: var(--text);
   overscroll-behavior-y: none;
+  font-family: var(--font-ui);
+  letter-spacing: -0.011em;
 }
 
-/* Fine grain so the paper feels tactile, not sterile. */
+/* Very light grain so dark mode doesn’t feel plastic — barely there. */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 9999;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.018;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   mix-blend-mode: multiply;
 }
 
 :root[data-theme='dark'] body::before {
-  opacity: 0.05;
+  opacity: 0.04;
   mix-blend-mode: soft-light;
 }
 
@@ -221,21 +259,42 @@ button {
   .btn-primary,
   .btn-secondary,
   .ink-tool,
-  .snippet-chip {
+  .snippet-chip,
+  .pager-btn,
+  .habit-day {
     min-height: 40px;
   }
 
+  .check {
+    width: 32px;
+    height: 32px;
+  }
+
+  .sheet-close,
   .sermon-star-btn,
   .theme-toggle,
   .account-avatar {
     width: 40px;
     height: 40px;
   }
+
+  .ink-swatch,
+  .swatch {
+    width: 36px;
+    height: 36px;
+  }
 }
 
 button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 @media (prefers-reduced-motion: reduce) {

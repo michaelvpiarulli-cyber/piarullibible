@@ -1,6 +1,6 @@
 import DayRow from './DayRow';
 
-export default function WeekCard({ weekData, currentDay, dateRange, dayDate, isDone, toggle }) {
+export default function WeekCard({ weekData, currentDay, dateRange, dayDate, isDone, toggle, onOpenReading }) {
   const readings = weekData.days.flatMap((d) => d.readings);
   const doneCount = readings.filter((r) => isDone(r.id)).length;
   const complete = doneCount === readings.length;
@@ -31,6 +31,7 @@ export default function WeekCard({ weekData, currentDay, dateRange, dayDate, isD
             isToday={dayData.day === currentDay}
             isDone={isDone}
             toggle={toggle}
+            onOpenReading={onOpenReading}
           />
         ))}
       </ul>

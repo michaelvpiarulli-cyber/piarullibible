@@ -158,6 +158,13 @@ export default function JournalView({ currentDay }) {
               </li>
             ))}
           </ul>
+
+          {visible.length === 0 && (
+            <div className="empty-state">
+              <p className="empty-title">Nothing in this filter</p>
+              <p className="empty-sub">Try another chip, or add a new entry above.</p>
+            </div>
+          )}
         </>
       )}
 

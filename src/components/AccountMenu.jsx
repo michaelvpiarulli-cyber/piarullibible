@@ -20,7 +20,17 @@ export default function AccountMenu() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(null); // { type: 'error' | 'info', text }
 
-  if (!available || loading) return null;
+  if (!available) return null;
+
+  if (loading) {
+    return (
+      <div className="account">
+        <button type="button" className="account-avatar loading" aria-label="Loading account" disabled>
+          …
+        </button>
+      </div>
+    );
+  }
 
   const submit = async (e) => {
     e.preventDefault();
@@ -63,7 +73,7 @@ export default function AccountMenu() {
         {open && (
           <>
             <div className="account-scrim" onClick={() => setOpen(false)} />
-            <div className="account-popover" role="dialog">
+            <div className="account-popover" role="dialog" aria-modal="true" aria-label="Account">
               <span className="account-email">{email}</span>
               {SYNC_LABEL[syncState] && (
                 <span className={`sync-line ${syncState}`}>{SYNC_LABEL[syncState]}</span>
@@ -87,8 +97,8 @@ export default function AccountMenu() {
       {open && (
         <>
           <div className="account-scrim" onClick={() => setOpen(false)} />
-          <div className="account-popover wide" role="dialog">
-            <p className="account-form-title">
+          <div className="account-popover wide" role="dialog" aria-modal="true" aria-labelledby="account-form-title">
+            <p className="account-form-title" id="account-form-title">
               {mode === 'signup' ? 'Create an account' : 'Sign in to sync'}
             </p>
             <p className="account-form-sub">

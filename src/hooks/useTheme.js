@@ -7,8 +7,9 @@ const systemPrefersDark = () =>
 
 function themeColorFor(dark) {
   const pregnancy = document.documentElement.getAttribute('data-plan') === 'pregnancy';
-  if (pregnancy) return dark ? '#1a1216' : '#faf4f6';
-  return dark ? '#15181d' : '#fbfbfb';
+  if (pregnancy) return dark ? '#1a1216' : '#c45c7a';
+  // Match YouVersion-style browser chrome: brand red in light, near-black in dark.
+  return dark ? '#0c0c0e' : '#c8102e';
 }
 
 function apply(pref) {

@@ -1,0 +1,25 @@
+{
+  "name": "Piarulli Bible",
+  "short_name": "Piarulli",
+  "description": "Bible reading plan with Logos-style study tools",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f4f4f5",
+  "theme_color": "#c8102e",
+  "categories": ["books", "education", "lifestyle"],
+  "icons": [
+    {
+      "src": "/apple-touch-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

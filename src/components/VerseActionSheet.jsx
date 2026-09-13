@@ -56,7 +56,7 @@ export default function VerseActionSheet({
   return (
     <>
       <div className="sheet-scrim" onClick={onClose} />
-      <div className="verse-sheet" role="dialog" aria-label={`Actions for ${verse.id}`}>
+      <div className="verse-sheet" role="dialog" aria-modal="true" aria-label={`Actions for ${verse.id}`}>
         <div className="sheet-grabber" />
 
         <div className="sheet-head">
@@ -133,6 +133,35 @@ export default function VerseActionSheet({
             Add note
           </button>
         )}
+
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={() => {
+            // "John 3:16" → book / chapter / verse for the Passage Guide
+            const m = String(verse.id || '').match(/^(.+?)\s+(\d+):(\d+)$/);
+            if (m) {
+              window.dispatchEvent(
+                new CustomEvent('bible-study', {
+                  detail: {
+                    book: m[1],
+                    chapter: Number(m[2]),
+                    verse: Number(m[3]),
+                    text: verse.text || '',
+                    tab: 'words',
+                  },
+                })
+              );
+            }
+            onClose();
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-1.5Z" />
+            <path d="M8 7h7M8 11h7M8 15h5" />
+          </svg>
+          Study this verse
+        </button>
 
         {refs.length > 0 && (
           <div className="xref-section">
