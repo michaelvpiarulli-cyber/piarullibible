@@ -174,7 +174,7 @@ export default function ReadView({ jumpTo }) {
   // --- browsing / searching -------------------------------------------------
   return (
     <div className="read-view">
-      <form className="memorize-add" onSubmit={runSearch}>
+      <form className="read-search" onSubmit={runSearch}>
         <input
           type="search"
           value={query}
@@ -199,7 +199,10 @@ export default function ReadView({ jumpTo }) {
           </div>
 
           {results.hits.length === 0 ? (
-            <p className="empty-sub">No matches in the 66 books.</p>
+            <div className="empty-state">
+              <p className="empty-title">No matches</p>
+              <p className="empty-sub">Nothing in the 66 books matched that search.</p>
+            </div>
           ) : (
             <ul className="result-list">
               {results.hits.map((h) => (

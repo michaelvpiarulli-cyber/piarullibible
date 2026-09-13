@@ -157,10 +157,16 @@ export default function RuleView() {
       )}
 
       {habits.length === 0 && (
-        <p className="empty-sub rule-intro">
-          A rule of life is the set of practices you return to — not a burden, a trellis. Start with
-          two or three.
-        </p>
+        <div className="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 3v18M5 8h14M7 12h10M9 16h6" />
+          </svg>
+          <p className="empty-title">Shape a rule of life</p>
+          <p className="empty-sub">
+            A rule of life is the set of practices you return to — not a burden, a trellis. Start with
+            two or three.
+          </p>
+        </div>
       )}
 
       {adding || habits.length === 0 ? (

@@ -676,7 +676,7 @@ export default function PassageText({ chapters, focusVerse }) {
       ))}
 
       {loading && !error && (
-        <div className="passage-status">
+        <div className="passage-status loading">
           Loading {parts.length ? `${parts.length + 1} of ${chapters.length}` : ''}…
         </div>
       )}

@@ -56,7 +56,7 @@ export default function VerseActionSheet({
   return (
     <>
       <div className="sheet-scrim" onClick={onClose} />
-      <div className="verse-sheet" role="dialog" aria-label={`Actions for ${verse.id}`}>
+      <div className="verse-sheet" role="dialog" aria-modal="true" aria-label={`Actions for ${verse.id}`}>
         <div className="sheet-grabber" />
 
         <div className="sheet-head">

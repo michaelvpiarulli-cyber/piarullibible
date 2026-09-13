@@ -204,7 +204,7 @@ export default function DayQuiz({ day, readings }) {
         <div className="quiz-head">
           <span className="quiz-eyebrow">After today’s chapters</span>
           <h4 className="quiz-title">Daily reading quiz</h4>
-          <p className="quiz-blurb">
+          <p className={`quiz-blurb${loading ? ' is-loading' : ''}`}>
             {loading
               ? `Preparing questions from ${labels}…`
               : error
@@ -218,7 +218,7 @@ export default function DayQuiz({ day, readings }) {
         </div>
         <button
           type="button"
-          className="btn-primary quiz-start"
+          className={`btn-primary quiz-start${loading ? ' loading' : ''}`}
           onClick={begin}
           disabled={!ready}
         >

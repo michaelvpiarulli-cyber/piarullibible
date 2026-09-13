@@ -3,8 +3,8 @@ import { colorValue } from '../hooks/useAnnotations';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
-  { id: 'notes', label: 'Notes' },
-  { id: 'highlights', label: 'Highlights' },
+  { id: 'notes', label: 'With notes' },
+  { id: 'highlights', label: 'Highlighted' },
 ];
 
 /** "Genesis 1:1" -> sortable [book, chapter, verse] */

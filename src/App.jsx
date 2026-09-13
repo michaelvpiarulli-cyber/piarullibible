@@ -52,7 +52,7 @@ const PROGRESS_SECTIONS = [
 /* The Notes tab holds two related workspaces. */
 const NOTE_SECTIONS = [
   { id: 'sermons', label: 'Sermon Notes' },
-  { id: 'highlights', label: 'Highlights' },
+  { id: 'highlights', label: 'Verse Marks' },
 ];
 
 function App() {
@@ -138,7 +138,10 @@ function App() {
 
         <div className="app-body">
           <header className="app-bar">
-            <h1>{TITLES[tab]}</h1>
+            <div className="app-bar-brand">
+              <span className="brand-lockup">Piarulli</span>
+              <h1>{TITLES[tab]}</h1>
+            </div>
             <div className="app-bar-actions">
               <ThemeToggle />
               <AccountMenu />

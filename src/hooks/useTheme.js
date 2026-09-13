@@ -8,7 +8,7 @@ const systemPrefersDark = () =>
 function themeColorFor(dark) {
   const pregnancy = document.documentElement.getAttribute('data-plan') === 'pregnancy';
   if (pregnancy) return dark ? '#1a1216' : '#faf4f6';
-  return dark ? '#15181d' : '#fbfbfb';
+  return dark ? '#12151a' : '#f7f6f3';
 }
 
 function apply(pref) {

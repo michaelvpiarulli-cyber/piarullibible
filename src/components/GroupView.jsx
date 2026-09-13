@@ -13,7 +13,18 @@ export default function GroupView({ myStats, totalDays = 364 }) {
   const [msg, setMsg] = useState(null);
 
   if (!available) {
-    return <div className="empty-state"><p className="empty-title">Sync isn’t configured</p></div>;
+    return (
+      <div className="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="9" cy="8" r="3.2" />
+          <path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 6.5a3 3 0 0 1 0 5.8M15.5 20a6.5 6.5 0 0 0-1.8-4.5" />
+        </svg>
+        <p className="empty-title">Sync isn’t configured</p>
+        <p className="empty-sub">
+          Add Supabase credentials to enable family groups and cheer each other on.
+        </p>
+      </div>
+    );
   }
 
   if (!user) {
@@ -94,7 +105,16 @@ export default function GroupView({ myStats, totalDays = 364 }) {
       ))}
 
       {mode === 'none' ? (
-        <div className="group-actions">
+        <div className={`group-actions${groups.length === 0 ? ' has-lead' : ''}`}>
+          {groups.length === 0 && (
+            <div className="group-actions-lead">
+              <p className="empty-title">Start a family group</p>
+              <p className="empty-sub">
+                Create a group or join with a code to share reading streaks — progress only, never
+                private notes.
+              </p>
+            </div>
+          )}
           <button type="button" className="btn-primary" onClick={() => setMode('create')}>
             Create a group
           </button>

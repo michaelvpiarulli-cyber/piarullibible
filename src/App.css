@@ -10,14 +10,15 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: var(--nav-height);
+  /* Content height stays --nav-height; safe-area pads below without shrinking tabs. */
+  height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
   display: flex;
   background: var(--surface-blur);
   backdrop-filter: saturate(180%) blur(16px);
   -webkit-backdrop-filter: saturate(180%) blur(16px);
   border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-  box-shadow: 0 -8px 24px rgba(42, 42, 40, 0.04);
-  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -8px 24px color-mix(in srgb, var(--shadow) 35%, transparent);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   z-index: 30;
 }
 
@@ -33,6 +34,7 @@
 .nav-tab {
   position: relative;
   flex: 1;
+  min-width: 0;
   background: none;
   display: flex;
   flex-direction: column;
@@ -43,6 +45,18 @@
   font-size: 0.68rem;
   font-weight: 500;
   transition: color 0.2s ease, background-color 0.2s ease, transform 0.15s ease;
+}
+
+.nav-tab span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 1px;
+}
+
+.nav-tab .nav-label-short {
+  display: none;
 }
 
 .nav-tab svg {
@@ -87,6 +101,7 @@
   -webkit-backdrop-filter: saturate(180%) blur(16px);
   border-bottom: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
   padding: 14px 20px;
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -98,6 +113,30 @@
   font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-bar-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-bar-brand .brand-lockup {
+  display: none;
+  font-size: 0.78rem;
+  line-height: 1;
+  padding: 3px 8px 4px;
+  border-radius: 3px;
+  box-shadow: none;
+}
+
+.app-bar-brand h1 {
+  font-size: 1.2rem;
 }
 
 .app-bar-actions {
@@ -160,12 +199,20 @@
   height: 34px;
   border-radius: 50%;
   background: linear-gradient(145deg, var(--accent), var(--accent-press));
-  color: #fff;
+  color: var(--text-inverse);
   font-size: 0.9rem;
   font-weight: 700;
   display: grid;
   place-items: center;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--surface) 80%, transparent), 0 0 0 3px var(--accent-wash);
+}
+
+.account-avatar.loading {
+  opacity: 0.45;
+  pointer-events: none;
+  background: var(--surface-alt);
+  color: var(--text-dim);
+  box-shadow: none;
 }
 
 .account-scrim {
@@ -218,7 +265,7 @@
 }
 
 .sync-line.error {
-  color: var(--accent);
+  color: var(--danger);
 }
 
 .account-popover .btn-text {
@@ -226,15 +273,13 @@
   padding-left: 0;
 }
 
-.account-form-title,
-.account-sent-title {
+.account-form-title {
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
 }
 
-.account-form-sub,
-.account-sent-sub {
+.account-form-sub {
   margin: 0;
   font-size: 0.82rem;
   line-height: 1.5;
@@ -259,12 +304,12 @@
 
 .account-form input:focus {
   outline: none;
-  border-color: var(--text);
+  border-color: var(--accent);
 }
 
 .account-error {
   font-size: 0.78rem;
-  color: var(--accent);
+  color: var(--danger);
 }
 
 .account-info {
@@ -286,7 +331,7 @@
 }
 
 .app-body {
-  padding-bottom: calc(var(--nav-height) + 24px);
+  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 24px);
 }
 
 .app-main {
@@ -313,10 +358,14 @@
 /* ---------- week strip (mini week view) ---------- */
 
 .week-strip {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  display: flex;
   gap: 6px;
   margin-bottom: 24px;
+}
+
+.week-strip .strip-day {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .strip-day {
@@ -389,7 +438,7 @@
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface) 90%, transparent);
   color: var(--text);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+  box-shadow: 0 1px 0 var(--inset-highlight) inset;
 }
 
 .streak-pill svg {
@@ -404,7 +453,7 @@
 .streak-pill.behind {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--text-inverse);
   cursor: pointer;
 }
 
@@ -580,6 +629,11 @@
   font-size: 0.9rem;
   font-weight: 500;
   line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .day-meta {
@@ -611,6 +665,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 22px;
   padding-top: 18px;
@@ -765,8 +820,8 @@
 
 .check {
   flex-shrink: 0;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   border: 1.5px solid var(--check-border);
   background: transparent;
@@ -779,7 +834,7 @@
 .check svg {
   width: 14px;
   height: 14px;
-  color: #fff;
+  color: var(--text-inverse);
   opacity: 0;
   transition: opacity 0.15s;
 }
@@ -1387,33 +1442,30 @@
 }
 
 .passage-status {
-  padding: 8px 12px 18px;
+  padding: 14px 16px;
+  margin: 4px 0 12px;
   font-size: 0.9rem;
   color: var(--text-dim);
+  border: 1px dashed color-mix(in srgb, var(--border) 90%, var(--accent));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
+  text-align: center;
+}
+
+.passage-status.loading {
+  animation: status-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes status-pulse {
+  50% { opacity: 0.55; }
 }
 
 .passage-error {
-  color: var(--text);
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--border) 70%, var(--danger));
 }
 
 /* ---------- reading quiz ---------- */
-
-.quiz-badge {
-  display: inline-block;
-  margin-top: 4px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-radius: 999px;
-  padding: 2px 8px;
-}
-
-.quiz-badge.perfect {
-  color: var(--success);
-  background: var(--success-soft);
-}
 
 .reading-quiz {
   margin: 4px 8px 14px;
@@ -1564,8 +1616,8 @@
 }
 
 .quiz-option.wrong {
-  border-color: color-mix(in srgb, var(--words-of-jesus) 55%, var(--border));
-  background: color-mix(in srgb, var(--words-of-jesus) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--border));
+  background: var(--danger-soft);
 }
 
 .quiz-option.faded {
@@ -1595,7 +1647,7 @@
 }
 
 .quiz-feedback .miss {
-  color: var(--words-of-jesus);
+  color: var(--danger);
 }
 
 .quiz-explain {
@@ -1685,17 +1737,6 @@
   font-family: Georgia, 'Iowan Old Style', Palatino, 'Times New Roman', serif;
   font-size: 0.95rem;
   line-height: 1.55;
-  color: var(--text);
-}
-
-.quiz-status {
-  font-size: 0.85rem;
-  color: var(--text-dim);
-  text-align: center;
-  padding: 4px 0;
-}
-
-.quiz-status.quiz-error {
   color: var(--text);
 }
 
@@ -2023,6 +2064,7 @@
 
 .filter-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 18px;
 }
@@ -2222,7 +2264,7 @@
 .member.me .member-avatar {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--text-inverse);
 }
 
 .member-body {
@@ -2272,6 +2314,24 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.group-actions.has-lead {
+  border: 1px dashed color-mix(in srgb, var(--border) 90%, var(--accent));
+  border-radius: var(--radius-lg);
+  padding: 22px 18px;
+  background:
+    radial-gradient(80% 60% at 50% 0%, var(--accent-wash), transparent 70%),
+    color-mix(in srgb, var(--surface) 70%, transparent);
+}
+
+.group-actions-lead {
+  margin: 0 0 6px;
+  text-align: center;
+}
+
+.group-actions-lead .empty-title {
+  margin-bottom: 6px;
 }
 
 .group-actions .btn-primary {
@@ -2370,14 +2430,15 @@
 }
 
 .sheet-close {
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: var(--surface-alt);
   display: grid;
   place-items: center;
   padding: 0;
   color: var(--text);
+  flex-shrink: 0;
 }
 
 .sheet-close svg {
@@ -2499,7 +2560,7 @@
 
 .note-editor textarea:focus {
   outline: none;
-  border-color: var(--text);
+  border-color: var(--accent);
 }
 
 .note-actions {
@@ -2511,18 +2572,18 @@
 
 .btn-primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--text-inverse);
   border-radius: 999px;
   padding: 10px 20px;
   font-size: 0.9rem;
   font-weight: 600;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 6px 14px var(--accent-wash);
+  box-shadow: 0 1px 0 var(--inset-highlight) inset, 0 6px 14px var(--accent-wash);
   transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .btn-primary:hover {
   background: var(--accent-press);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 8px 18px var(--accent-wash);
+  box-shadow: 0 1px 0 var(--inset-highlight) inset, 0 8px 18px var(--accent-wash);
 }
 
 .btn-primary:active {
@@ -2569,7 +2630,6 @@
   transform: scale(0.98);
 }
 
-.btn-block,
 .group-actions .btn-secondary,
 .verse-sheet .btn-secondary {
   width: 100%;
@@ -2593,7 +2653,12 @@
 }
 
 .btn-text.danger {
-  color: var(--accent);
+  color: var(--danger);
+}
+
+.btn-text.danger:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
 }
 
 /* ---------- tablet + desktop (iPad portrait is ~768–834) ---------- */
@@ -2779,12 +2844,11 @@
  */
 .app-bar h1,
 .today-hero h2,
-.week-card-head h3,
+.week-card-header h3,
 .group-card-head h3,
 .stat-big,
 .empty-title,
-.account-form-title,
-.account-sent-title {
+.account-form-title {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 700;
@@ -2818,7 +2882,7 @@
   border-radius: 4px;
   border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
   display: inline-block;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset;
+  box-shadow: 0 1px 0 var(--inset-highlight) inset;
 }
 
 .brand-sub {
@@ -3193,7 +3257,7 @@
 }
 
 .drill-text.diff .miss {
-  color: var(--accent);
+  color: var(--danger);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -3233,9 +3297,9 @@
 }
 
 .word-tile.wrong {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #fff;
+  border-color: var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger);
   animation: tile-shake 0.35s;
 }
 
@@ -3260,17 +3324,29 @@
   font-weight: 600;
 }
 
-/* Seven tabs is a lot for a phone bar — tighten labels so nothing clips. */
+/* Eight tabs on a phone bar — shorter labels + tighter type so nothing clips. */
 @media (max-width: 767px) {
   .nav-tab {
-    font-size: 0.6rem;
+    font-size: 0.58rem;
     gap: 2px;
     padding: 0 1px;
   }
 
   .nav-tab svg {
-    width: 21px;
-    height: 21px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .nav-tab .nav-label-full {
+    display: none;
+  }
+
+  .nav-tab .nav-label-short {
+    display: inline;
+  }
+
+  .app-bar-brand .brand-lockup {
+    display: block;
   }
 }
 
@@ -4376,8 +4452,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 18px;
+  flex-wrap: wrap;
 }
 
 .read-where {
@@ -4385,6 +4462,53 @@
   font-weight: 700;
   letter-spacing: 0.01em;
   text-align: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.read-bar .pager-btn {
+  flex-shrink: 0;
+}
+
+@media (max-width: 420px) {
+  .read-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .read-where {
+    grid-column: 1 / -1;
+    order: -1;
+    text-align: left;
+    white-space: normal;
+  }
+}
+
+.read-search {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.read-search input {
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 11px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.read-search input:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .book-grid {
@@ -4659,7 +4783,8 @@
 }
 
 .habit-day {
-  padding: 7px 0;
+  padding: 10px 0;
+  min-height: 36px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -4672,7 +4797,7 @@
 .habit-day.on {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--text-inverse);
 }
 
 .habit-day.today {
@@ -4720,6 +4845,16 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.rule-add-btn {
+  width: 100%;
+  margin-top: 14px;
+  text-align: center;
+}
+
+.quiz-blurb.is-loading {
+  animation: status-pulse 1.4s ease-in-out infinite;
 }
 
 /* ---------- year in review ---------- */
