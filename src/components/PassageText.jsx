@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { colorValue, verseId } from '../hooks/useAnnotations';
 import { useVerseAnnotations } from '../context/annotations';
 import { BOOK_BY_CODE, HELLOAO_CODES, formatRef } from '../data/bookRefs';
-import Commentary from './Commentary';
+import StudyGuide from './StudyGuide';
 import DrawCanvas from './DrawCanvas';
 
 const INK_COLORS = [
@@ -207,7 +207,8 @@ function VerseText({ segments }) {
 }
 
 function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
-  const [showCommentary, setShowCommentary] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const [guideFocus, setGuideFocus] = useState(null); // { verse, text, tab }
   const [showNotes, setShowNotes] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [studyOpen, setStudyOpen] = useState(false);
@@ -220,6 +221,22 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
   const registerStudyApi = useCallback((api) => {
     studyDrawApi.current = api;
   }, []);
+
+  // Verse sheet (or elsewhere) can ask this chapter to open the Logos-style guide.
+  useEffect(() => {
+    const onStudy = (e) => {
+      const { book, chapter, verse, text, tab } = e.detail || {};
+      if (book !== part.book || Number(chapter) !== Number(part.chapter)) return;
+      setGuideFocus({
+        verse: verse ? Number(verse) : null,
+        text: text || '',
+        tab: tab || (verse ? 'words' : 'guide'),
+      });
+      setShowGuide(true);
+    };
+    window.addEventListener('bible-study', onStudy);
+    return () => window.removeEventListener('bible-study', onStudy);
+  }, [part.book, part.chapter]);
 
   // Notes for this chapter, in verse order, carrying verse text so tapping one
   // reopens the sheet with the right verse.
@@ -458,9 +475,17 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
 
         <button
           type="button"
-          className={`commentary-toggle${showCommentary ? ' active' : ''}`}
-          onClick={() => setShowCommentary(!showCommentary)}
-          aria-expanded={showCommentary}
+          className={`commentary-toggle${showGuide ? ' active' : ''}`}
+          onClick={() => {
+            if (showGuide) {
+              setShowGuide(false);
+              setGuideFocus(null);
+            } else {
+              setGuideFocus(null);
+              setShowGuide(true);
+            }
+          }}
+          aria-expanded={showGuide}
         >
           <svg
             viewBox="0 0 24 24"
@@ -474,7 +499,7 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
             <path d="M4 19.5V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-1.5Z" />
             <path d="M8 7h7M8 11h7" />
           </svg>
-          {showCommentary ? 'Hide commentary' : 'Commentary'}
+          {showGuide ? 'Hide study' : 'Study'}
         </button>
       </div>
 
@@ -502,11 +527,18 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
         </div>
       )}
 
-      {showCommentary && (
-        <Commentary
+      {showGuide && (
+        <StudyGuide
           book={part.book}
           chapter={part.chapter}
           lastVerse={part.verses[part.verses.length - 1]?.number ?? part.verses.length}
+          focusVerse={guideFocus?.verse || null}
+          verseText={guideFocus?.text || ''}
+          initialTab={guideFocus?.tab || 'guide'}
+          onClose={() => {
+            setShowGuide(false);
+            setGuideFocus(null);
+          }}
         />
       )}
 
