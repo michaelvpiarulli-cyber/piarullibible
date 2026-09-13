@@ -14,10 +14,10 @@
   height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
   display: flex;
   background: var(--surface-blur);
-  backdrop-filter: saturate(180%) blur(16px);
-  -webkit-backdrop-filter: saturate(180%) blur(16px);
-  border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
-  box-shadow: 0 -8px 24px color-mix(in srgb, var(--shadow) 35%, transparent);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  border-top: 1px solid var(--border);
+  box-shadow: none;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   z-index: 30;
 }
@@ -67,22 +67,23 @@
 
 .nav-tab.active {
   color: var(--accent);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .nav-tab.active svg {
-  transform: translateY(-1px);
+  transform: none;
+  stroke-width: 2;
 }
 
 .nav-tab.active::before {
   content: '';
   position: absolute;
-  top: 4px;
+  top: 6px;
   left: 50%;
   transform: translateX(-50%);
-  width: 18px;
-  height: 3px;
-  border-radius: 999px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
   background: var(--accent);
 }
 
@@ -128,11 +129,13 @@
 
 .app-bar-brand .brand-lockup {
   display: none;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   line-height: 1;
-  padding: 3px 8px 4px;
-  border-radius: 3px;
-  box-shadow: none;
+  padding: 6px 9px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px var(--accent-wash);
+  color: #fff;
+  background: var(--accent);
 }
 
 .app-bar-brand h1 {
@@ -414,8 +417,8 @@
 }
 
 .strip-day.selected {
-  background: var(--surface-alt);
-  border-color: var(--text);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
 }
 
 /* ---------- streak / catch-up row ---------- */
@@ -475,12 +478,12 @@
 
 .eyebrow {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  text-transform: none;
+  letter-spacing: -0.01em;
   color: var(--accent);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .today-hero h2 {
@@ -549,6 +552,8 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 4px 6px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow) 25%, transparent);
 }
 
 .reading-list.nested {
@@ -712,17 +717,17 @@
 
 .prayer-label {
   display: block;
-  font-size: 0.68rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  text-transform: none;
+  letter-spacing: -0.01em;
   color: var(--accent);
 }
 
 .prayer-text {
   margin: 14px auto 16px;
   max-width: 44ch;
-  font-family: Georgia, 'Iowan Old Style', Palatino, 'Times New Roman', serif;
+  font-family: var(--font-reader);
   font-size: 1.1rem;
   font-style: italic;
   line-height: 1.72;
@@ -930,10 +935,10 @@
 .reader-chapter-title {
   margin: 0;
   text-align: center;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  text-transform: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -983,14 +988,16 @@
 
 .reader-body {
   margin: 0 auto;
-  max-width: 62ch;
-  font-size: 18px;
-  line-height: 36px;
+  max-width: 36rem;
+  font-family: var(--font-reader);
+  font-size: var(--reader-size);
+  line-height: var(--reader-leading);
   color: var(--text);
+  font-weight: 400;
 }
 
 .verse {
-  border-radius: 3px;
+  border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.15s;
 }
@@ -1446,7 +1453,7 @@
   margin: 4px 0 12px;
   font-size: 0.9rem;
   color: var(--text-dim);
-  border: 1px dashed color-mix(in srgb, var(--border) 90%, var(--accent));
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--surface) 75%, transparent);
   text-align: center;
@@ -1558,7 +1565,7 @@
   border-radius: 12px;
   background: var(--surface-alt);
   border: 1px solid var(--border);
-  font-family: Georgia, 'Iowan Old Style', Palatino, 'Times New Roman', serif;
+  font-family: var(--font-reader);
   font-size: 0.98rem;
   line-height: 1.55;
   color: var(--text);
@@ -1695,7 +1702,7 @@
   border-radius: 14px;
   background: var(--surface-alt);
   color: var(--text);
-  font-family: Georgia, 'Iowan Old Style', Palatino, 'Times New Roman', serif;
+  font-family: var(--font-reader);
   font-size: 1rem;
   line-height: 1.55;
   resize: vertical;
@@ -1734,7 +1741,7 @@
 
 .quiz-reflection-saved p {
   margin: 0;
-  font-family: Georgia, 'Iowan Old Style', Palatino, 'Times New Roman', serif;
+  font-family: var(--font-reader);
   font-size: 0.95rem;
   line-height: 1.55;
   color: var(--text);
@@ -1752,7 +1759,8 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 16px 14px 6px;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  background: var(--surface);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow) 20%, transparent);
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
@@ -1786,14 +1794,14 @@
 }
 
 .today-pill {
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-inverse);
+  text-transform: none;
+  letter-spacing: -0.01em;
+  color: #fff;
   background: var(--accent);
   border-radius: 999px;
-  padding: 3px 8px;
+  padding: 4px 9px;
 }
 
 .today-pill.sm {
@@ -2095,10 +2103,10 @@
 }
 
 .chip.active {
-  background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-  color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent-wash);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 12px var(--accent-wash);
 }
 
 .note-list {
@@ -2158,13 +2166,12 @@
 
 .empty-state {
   text-align: center;
-  padding: 64px 28px;
+  padding: 56px 28px;
   color: var(--text-dim);
-  border: 1px dashed color-mix(in srgb, var(--border) 90%, var(--accent));
+  border: none;
   border-radius: var(--radius-lg);
-  background:
-    radial-gradient(80% 60% at 50% 0%, var(--accent-wash), transparent 70%),
-    color-mix(in srgb, var(--surface) 70%, transparent);
+  background: var(--surface);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow) 20%, transparent);
 }
 
 .empty-state svg {
@@ -2317,7 +2324,7 @@
 }
 
 .group-actions.has-lead {
-  border: 1px dashed color-mix(in srgb, var(--border) 90%, var(--accent));
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 22px 18px;
   background:
@@ -2574,16 +2581,17 @@
   background: var(--accent);
   color: var(--text-inverse);
   border-radius: 999px;
-  padding: 10px 20px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  box-shadow: 0 1px 0 var(--inset-highlight) inset, 0 6px 14px var(--accent-wash);
+  padding: 11px 22px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  box-shadow: 0 8px 18px var(--accent-wash);
   transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .btn-primary:hover {
   background: var(--accent-press);
-  box-shadow: 0 1px 0 var(--inset-highlight) inset, 0 8px 18px var(--accent-wash);
+  box-shadow: 0 10px 22px var(--accent-wash);
 }
 
 .btn-primary:active {
@@ -2837,10 +2845,10 @@
   filter: invert(1) hue-rotate(180deg);
 }
 
-/* ---------- Katin-style headings ---------- */
+/* ---------- YouVersion-style headings ---------- */
 /*
- * Katin sets headings uppercase, bold, with wide letter-spacing. Applied to the
- * app's display type; scripture and prayers keep their reading typography.
+ * Bible App chrome uses clean Inter titles — sentence case, tight tracking,
+ * no kraft-letterspaced display. Scripture keeps Source Serif 4.
  */
 .app-bar h1,
 .today-hero h2,
@@ -2849,47 +2857,47 @@
 .stat-big,
 .empty-title,
 .account-form-title {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  text-transform: none;
+  letter-spacing: -0.02em;
   font-weight: 700;
 }
 
 .today-hero h2,
 .stat-big {
-  letter-spacing: 0.04em; /* large sizes need less */
+  letter-spacing: -0.03em;
 }
 
 .reading-label,
 .member-name,
 .note-ref {
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
+  font-weight: 600;
 }
 
 /* ---------- brand lockup ---------- */
 /*
- * Echoes the surf-label convention: a script wordmark set in a light block,
- * with a small tracked-out descriptor beneath.
+ * YouVersion-like wordmark: bold sans in a soft red pill, not a script label.
  */
 .brand-lockup {
-  font-family: Kalam, 'Brush Script MT', cursive;
-  font-weight: 700;
-  font-size: 1.55rem;
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-size: 1.05rem;
   line-height: 1;
-  color: var(--accent);
-  background:
-    linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--surface-alt) 70%, var(--gold-soft)));
-  padding: 8px 15px 10px;
-  border-radius: 4px;
-  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+  letter-spacing: -0.03em;
+  color: #fff;
+  background: var(--accent);
+  padding: 9px 12px 10px;
+  border-radius: 10px;
+  border: none;
   display: inline-block;
-  box-shadow: 0 1px 0 var(--inset-highlight) inset;
+  box-shadow: 0 6px 16px var(--accent-wash);
 }
 
 .brand-sub {
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.01em;
   color: var(--text-dim);
   padding-left: 2px;
 }
@@ -3155,7 +3163,7 @@
 .drill-text {
   margin: 0 auto 18px;
   max-width: 46ch;
-  font-family: Georgia, 'Iowan Old Style', Palatino, serif;
+  font-family: var(--font-reader);
   font-size: 1.08rem;
   line-height: 1.85;
 }
@@ -3228,7 +3236,7 @@
 
 .drill-input {
   width: 100%;
-  font-family: Georgia, 'Iowan Old Style', Palatino, serif;
+  font-family: var(--font-reader);
   font-size: 1rem;
   line-height: 1.7;
   padding: 14px;
@@ -4386,7 +4394,7 @@
   box-shadow:
     0 0 0 4px var(--surface),
     0 1px 0 color-mix(in srgb, var(--border) 65%, transparent);
-  font-family: Georgia, 'Iowan Old Style', Palatino, 'Times New Roman', serif;
+  font-family: var(--font-reader);
   font-size: 1rem;
   line-height: 1.45;
   color: var(--text);
@@ -4445,7 +4453,7 @@
 /* Type mode: margin gutter + clean paper — no rules through the letters. */
 .sermon-form textarea.sermon-paper-textarea,
 .notes-expand-textarea.sermon-paper-textarea {
-  font-family: Georgia, 'Iowan Old Style', Palatino, 'Times New Roman', serif;
+  font-family: var(--font-reader);
   font-size: 1rem;
   line-height: 1.65;
   padding: 22px 24px 28px 40px;
@@ -4847,7 +4855,7 @@
 
 .examen-card textarea {
   width: 100%;
-  font-family: Georgia, 'Iowan Old Style', Palatino, serif;
+  font-family: var(--font-reader);
   font-size: 1rem;
   line-height: 1.7;
   padding: 13px;
@@ -5135,7 +5143,7 @@
 .year-footer {
   margin: 28px 0 0;
   text-align: center;
-  font-family: Georgia, 'Iowan Old Style', Palatino, serif;
+  font-family: var(--font-reader);
   font-style: italic;
   font-size: 0.95rem;
   color: var(--text-dim);
