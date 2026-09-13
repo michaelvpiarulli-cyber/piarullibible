@@ -1790,7 +1790,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #fff;
+  color: var(--text-inverse);
   background: var(--accent);
   border-radius: 999px;
   padding: 3px 8px;
@@ -2286,7 +2286,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #fff;
+  color: var(--text-inverse);
   background: var(--accent);
   border-radius: 999px;
   padding: 2px 6px;
@@ -3444,6 +3444,92 @@
   border-color: var(--accent);
 }
 
+.sermon-import-paste {
+  flex-shrink: 0;
+}
+
+.sermon-import-upload {
+  width: 100%;
+}
+
+.sermon-import-preview {
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 70%, var(--surface)), var(--surface));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sermon-import-preview-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.sermon-import-preview-meta {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.sermon-import-stats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.sermon-import-stats li {
+  text-align: center;
+  padding: 10px 6px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 80%, var(--bg));
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sermon-import-stats strong {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.1;
+}
+
+.sermon-import-stats span {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.sermon-import-preview-note {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+.sermon-import-preview-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sermon-import-preview-actions .btn-primary {
+  flex: 1;
+  min-width: 140px;
+}
+
 .sermon-import-or {
   display: flex;
   align-items: center;
@@ -4471,6 +4557,108 @@
 
 .read-bar .pager-btn {
   flex-shrink: 0;
+}
+
+
+/* Phone: stack sermon toolbar + import controls; keep chips swipeable. */
+@media (max-width: 640px) {
+  .sermon-top {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .sermon-top .btn-primary {
+    grid-column: 1 / -1;
+  }
+
+  .sermon-top .sermon-search {
+    grid-column: 1 / -1;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .sermon-import {
+    padding: 16px;
+    margin: 0 0 16px;
+  }
+
+  .sermon-import-row {
+    flex-direction: column;
+  }
+
+  .sermon-import-row input {
+    min-width: 0;
+    width: 100%;
+    font-size: 16px; /* keep iOS from zooming on focus */
+  }
+
+  .sermon-import-row .btn-primary,
+  .sermon-import-row .btn-secondary,
+  .sermon-import-paste {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .sermon-import-preview-actions {
+    flex-direction: column-reverse;
+  }
+
+  .sermon-import-preview-actions .btn-primary,
+  .sermon-import-preview-actions .btn-secondary {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .sermon-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .sermon-filters,
+  .filter-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-inline: -4px;
+    padding-inline: 4px;
+    padding-bottom: 4px;
+  }
+
+  .sermon-filters::-webkit-scrollbar,
+  .filter-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sermon-filters .chip,
+  .filter-row .chip {
+    flex-shrink: 0;
+  }
+
+  .app-main {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .app-bar h1 {
+    font-size: 1.15rem;
+  }
+
+  /* Avoid double-scroll traps on phone readers */
+  .passage-panel {
+    max-height: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .nav-tab {
+    font-size: 0.55rem;
+  }
+
+  .nav-tab svg {
+    width: 19px;
+    height: 19px;
+  }
 }
 
 @media (max-width: 420px) {

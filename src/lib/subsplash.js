@@ -4,10 +4,14 @@
  * Public notes load from:
  *   GET /api/subsplash/pages/view?hid=<docId>
  * which proxies to notes.subsplash.com (see vite.config.js / vercel.json).
+ *
+ * Share links look like:
+ *   https://notes.subsplash.com/fill-in/view?doc=PP6UyBnxv5
  */
 
-const HID_RE = /(?:[?&](?:doc|page|hid)=|\/(?:view|notes)\/)([A-Za-z0-9_-]{5,})/;
-const CITE_RE = /<cite>\s*-{0,3}\s*([^<]+?)\s*<\/cite>/gi;
+const HID_RE =
+  /(?:[?&](?:doc|page|hid)=|\/(?:fill-in\/)?(?:view|notes)\/|\/d\/)([A-Za-z0-9_-]{5,})/i;
+const CITE_CAPTURE_RE = /<cite>\s*-{0,3}\s*([^<]+?)\s*<\/cite>/gi;
 const FILL_RE = /__([^_\n]+?)__/g;
 
 /** Marker line inserted between outline blocks — room to write. */
@@ -17,11 +21,15 @@ export const WRITE_GAP = '···· ···· ····';
 export function extractSubsplashHid(input) {
   const raw = (input || '').trim();
   if (!raw) return null;
-  if (/^[A-Za-z0-9_-]{5,20}$/.test(raw) && !/\s/.test(raw)) return raw;
+  if (/^[A-Za-z0-9_-]{5,24}$/.test(raw) && !/\s/.test(raw)) return raw;
 
   try {
     const url = new URL(raw);
-    const fromQuery = url.searchParams.get('doc') || url.searchParams.get('page') || url.searchParams.get('hid');
+    const fromQuery =
+      url.searchParams.get('doc') ||
+      url.searchParams.get('page') ||
+      url.searchParams.get('hid') ||
+      url.searchParams.get('id');
     if (fromQuery) return fromQuery;
   } catch {
     /* not a full URL — fall through to regex */
@@ -40,7 +48,7 @@ export function splitOutlineBlocks(text) {
 
   // Break before numbered / lettered points and markdown-ish headings that survived.
   const withBreaks = raw
-    .replace(/\n(?=(?:\d+[).]\s|[A-Z][).]\s|[-•]\s))/g, '\n\n')
+    .replace(/\n(?=(?:\d+[).]\s|[A-Z][).]\s|[-•*]\s|#{1,3}\s))/g, '\n\n')
     .replace(/\n{3,}/g, '\n\n');
 
   return withBreaks
@@ -98,41 +106,76 @@ export function estimatePaperPages(sections) {
   return Math.max(2, Math.min(8, Math.max(bySections, byLines)));
 }
 
+function cleanCiteRef(ref) {
+  return String(ref || '')
+    .replace(/^[-–—\s]+/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function blankFor(word) {
+  const len = Math.max(6, Math.min(18, String(word || '').trim().length + 2));
+  return '_'.repeat(len);
+}
+
 /**
  * Turn Subsplash markdown-ish content into a paper outline:
  * fill-ins become blanks, {note} becomes a write gap, cites become refs,
  * and sections are spaced so you can write between them.
+ *
+ * @param {string} content
+ * @param {{ title?: string }} [opts] — strip a leading title line when it matches the page title
  */
-export function formatSubsplashContent(content) {
+export function formatSubsplashContent(content, opts = {}) {
   const answers = [];
   let text = String(content || '');
 
   text = text.replace(FILL_RE, (_, word) => {
     const clean = word.trim();
     if (clean) answers.push(clean);
-    return '______';
+    return blankFor(clean);
   });
 
   text = text
-    .replace(CITE_RE, (_, ref) => `(${ref.trim()})`)
+    .replace(CITE_CAPTURE_RE, (_, ref) => `(${cleanCiteRef(ref)})`)
     // Explicit Subsplash note slots → our write-gap marker.
     .replace(/\{note\}/gi, `\n\n${WRITE_GAP}\n\n`)
     .replace(/<\/?[^>]+>/g, '') // stray HTML
-    .replace(/^>\s?/gm, '')
+    .replace(/^>\s*/gm, '')
     .replace(/^#{1,6}\s*/gm, '')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
     .replace(/[ \t]+\n/g, '\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/^[ \t]+/gm, '')
     .trim();
+
+  // Don't repeat the sermon title inside the outline body.
+  if (opts.title) {
+    const title = opts.title.trim();
+    if (title) {
+      const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      text = text.replace(new RegExp(`^${escaped}\\s*\\n+`, 'i'), '').trim();
+    }
+  }
+
+  // Keep a scripture quote on its own block when the next teaching point follows.
+  text = text.replace(/(\([^()\n]{3,80}\))\n(?!\n)/g, '$1\n\n');
 
   const blocks = splitOutlineBlocks(text);
   const outline = [];
   const answerBlocks = [];
 
+  const pushGap = () => {
+    if (outline.length && outline[outline.length - 1] !== WRITE_GAP) {
+      outline.push(WRITE_GAP);
+    }
+  };
+
   for (const block of blocks) {
     if (block === WRITE_GAP || /^[·.\s]+$/.test(block)) {
-      // Keep intentional gaps from {note}; avoid stacking duplicates later.
-      if (outline.length && outline[outline.length - 1] !== WRITE_GAP) {
-        outline.push(WRITE_GAP);
-      }
+      // Keep intentional gaps from {note}; avoid stacking duplicates.
+      pushGap();
       continue;
     }
     if (/^answer key\b/i.test(block)) {
@@ -141,7 +184,7 @@ export function formatSubsplashContent(content) {
     }
     outline.push(block);
     // Default breathing room after every outline block.
-    outline.push(WRITE_GAP);
+    pushGap();
   }
 
   // Trim trailing gap before answer key / end.
@@ -158,24 +201,52 @@ export function formatSubsplashContent(content) {
       : answerBlocks.join('\n\n');
   }
 
-  return paper.replace(/\n{4,}/g, '\n\n\n').trim();
+  // Soften runaway blank lines without touching write-gap spacing.
+  paper = paper.replace(/\n{5,}/g, '\n\n\n\n').trim();
+
+  return paper;
 }
 
 /** First scripture citation in the note, if any. */
 export function extractPassage(content) {
-  const m = CITE_RE.exec(String(content || ''));
-  CITE_RE.lastIndex = 0;
-  return m?.[1]?.trim() || '';
+  const m = CITE_CAPTURE_RE.exec(String(content || ''));
+  CITE_CAPTURE_RE.lastIndex = 0;
+  return cleanCiteRef(m?.[1] || '');
+}
+
+/** Count fill-in blanks in raw Subsplash content. */
+export function countBlanks(content) {
+  const matches = String(content || '').match(FILL_RE);
+  FILL_RE.lastIndex = 0;
+  return matches?.length || 0;
+}
+
+/** Compact preview stats for the import UI. */
+export function summarizeImport(fields, rawContent = '') {
+  const sections = parsePaperSections(fields.notes || '');
+  const outline = sections.filter((s) => s.kind !== 'answers');
+  return {
+    title: fields.title || 'Untitled notes',
+    speaker: fields.speaker || '',
+    passage: fields.passage || '',
+    date: fields.date || '',
+    series: fields.series || '',
+    blanks: countBlanks(rawContent),
+    sections: outline.length,
+    pages: fields.inkPages || estimatePaperPages(sections),
+    sourceUrl: fields.sourceUrl || '',
+  };
 }
 
 /** Map a Subsplash page JSON payload into our sermon form fields. */
 export function pageToSermonFields(page) {
   const content = page?.content || '';
   const publish = page?.publish || page?.created || '';
-  const notes = formatSubsplashContent(content);
+  const title = page?.title || '';
+  const notes = formatSubsplashContent(content, { title });
   const sections = parsePaperSections(notes);
   return {
-    title: page?.title || '',
+    title,
     speaker: page?.author || '',
     date: publish ? String(publish).slice(0, 10) : new Date().toISOString().slice(0, 10),
     passage: extractPassage(content),
@@ -202,13 +273,30 @@ export async function fetchSubsplashPage(hid) {
   const res = await fetch(`/api/subsplash/pages/view?hid=${encodeURIComponent(id)}&filter=${filter}`);
   if (!res.ok) {
     if (res.status === 404) throw new Error('Note not found — is it published and public?');
+    if (res.status === 401 || res.status === 403) {
+      throw new Error('That note isn’t public. Ask your church for the shared Fill-In link.');
+    }
     throw new Error(`Couldn’t load Subsplash note (${res.status}).`);
   }
 
   const data = await res.json();
   if (data?.error) throw new Error(data.error.message || 'Subsplash returned an error.');
   if (!data?.page) throw new Error('Unexpected response from Subsplash.');
+  if (data.page.public === false) {
+    throw new Error('That note isn’t public. Ask your church for the shared Fill-In link.');
+  }
   return data.page;
+}
+
+/** Fetch + map in one step (handy for the import preview flow). */
+export async function importSubsplashNote(input) {
+  const page = await fetchSubsplashPage(input);
+  const fields = pageToSermonFields(page);
+  return {
+    page,
+    fields,
+    preview: summarizeImport(fields, page.content || ''),
+  };
 }
 
 /** Best-effort parse of pasted / uploaded plain text into sermon fields. */
@@ -223,23 +311,30 @@ export function textToSermonFields(text, { filename } = {}) {
     nonempty.find((l) => !/^https?:/i.test(l) && l.length < 80) ||
     (filename ? filename.replace(/\.[^.]+$/, '') : 'Imported notes');
 
-  let passage = '';
-  for (const line of nonempty) {
-    const cite = line.match(/[-–—]{1,3}\s*([1-3]?\s*[A-Za-z].+\d+:\d+)/);
-    if (cite) {
-      passage = cite[1].trim();
-      break;
-    }
-    const bare = line.match(
-      /\b((?:[1-3]\s)?[A-Z][a-z]+(?:\s[A-Z][a-z]+)?)\s+(\d+)[:.](\d+)/
-    );
-    if (bare && /genesis|exodus|psalm|matthew|mark|luke|john|romans|corinthians|revelation/i.test(bare[1])) {
-      passage = `${bare[1]} ${bare[2]}:${bare[3]}`;
-      break;
+  let passage = extractPassage(text);
+  if (!passage) {
+    for (const line of nonempty) {
+      const cite = line.match(/[-–—]{1,3}\s*([1-3]?\s*[A-Za-z].+\d+:\d+)/);
+      if (cite) {
+        passage = cleanCiteRef(cite[1]);
+        break;
+      }
+      const bare = line.match(
+        /\b((?:[1-3]\s)?[A-Z][a-z]+(?:\s[A-Z][a-z]+)?)\s+(\d+)[:.](\d+)/
+      );
+      if (
+        bare &&
+        /genesis|exodus|leviticus|numbers|deuteronomy|psalm|proverbs|matthew|mark|luke|john|acts|romans|corinthians|galatians|ephesians|philippians|colossians|thessalonians|timothy|titus|hebrews|james|peter|jude|revelation/i.test(
+          bare[1]
+        )
+      ) {
+        passage = `${bare[1]} ${bare[2]}:${bare[3]}`;
+        break;
+      }
     }
   }
 
-  const notes = formatSubsplashContent(text);
+  const notes = formatSubsplashContent(text, { title });
   const sections = parsePaperSections(notes);
 
   return {

@@ -5,9 +5,9 @@ import { useVerseAnnotations } from '../context/annotations';
 import { parsePassage } from '../data/bookRefs';
 import {
   extractSubsplashHid,
-  fetchSubsplashPage,
-  pageToSermonFields,
+  importSubsplashNote,
   textToSermonFields,
+  summarizeImport,
 } from '../lib/subsplash';
 import SketchPad from './ink/SketchPad';
 import InkPreview from './ink/InkPreview';
@@ -99,6 +99,7 @@ export default function SermonView() {
   const [importUrl, setImportUrl] = useState('');
   const [importBusy, setImportBusy] = useState(false);
   const [importError, setImportError] = useState(null);
+  const [importPreview, setImportPreview] = useState(null); // { fields, preview }
   const [newFolderName, setNewFolderName] = useState('');
   const [makingFolder, setMakingFolder] = useState(false);
   const fileRef = useRef(null);
@@ -171,6 +172,7 @@ export default function SermonView() {
     setImporting(false);
     setImportUrl('');
     setImportError(null);
+    setImportPreview(null);
   };
 
   const seriesList = useMemo(() => {
@@ -227,32 +229,58 @@ export default function SermonView() {
     return id;
   };
 
+  const resetImport = () => {
+    setImportError(null);
+    setImportPreview(null);
+  };
+
+  const pasteImportUrl = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text?.trim()) return;
+      setImportUrl(text.trim());
+      setImportError(null);
+      setImportPreview(null);
+    } catch {
+      setImportError('Couldn’t read the clipboard — paste the link into the field.');
+    }
+  };
+
   const importFromSubsplash = async (e) => {
     e?.preventDefault?.();
     const hid = extractSubsplashHid(importUrl);
     if (!hid) {
-      setImportError('Paste a Subsplash notes link (notes.subsplash.com/…?doc=…).');
+      setImportError('Paste a Subsplash Fill-In Notes link (notes.subsplash.com/…?doc=…).');
+      setImportPreview(null);
       return;
     }
     setImportBusy(true);
     setImportError(null);
     try {
-      const page = await fetchSubsplashPage(hid);
-      applyImport(pageToSermonFields(page));
+      const { fields, preview } = await importSubsplashNote(hid);
+      setImportPreview({ fields, preview });
     } catch (err) {
+      setImportPreview(null);
       setImportError(err.message || 'Import failed.');
     }
     setImportBusy(false);
+  };
+
+  const confirmImport = () => {
+    if (!importPreview?.fields) return;
+    applyImport(importPreview.fields);
   };
 
   const importFromFile = async (file) => {
     if (!file) return;
     setImportBusy(true);
     setImportError(null);
+    setImportPreview(null);
     try {
       const text = await file.text();
       if (!text.trim()) throw new Error('That file looks empty.');
-      applyImport(textToSermonFields(text, { filename: file.name }));
+      const fields = textToSermonFields(text, { filename: file.name });
+      setImportPreview({ fields, preview: summarizeImport(fields, text) });
     } catch (err) {
       setImportError(err.message || 'Couldn’t read that file.');
     }
@@ -667,6 +695,7 @@ export default function SermonView() {
                 setImporting(!importing);
                 setMakingFolder(false);
                 setImportError(null);
+                setImportPreview(null);
               }}
             >
               Import Subsplash
@@ -715,24 +744,89 @@ export default function SermonView() {
 
           {importing && (
             <div className="sermon-import">
-              <p className="sermon-import-title">Import your pastor’s Subsplash notes</p>
+              <p className="sermon-import-title">Import Subsplash Fill-In Notes</p>
               <p className="sermon-import-sub">
-                Paste the Fill-In Notes link from your church app, or upload a .txt / .md export.
-                We’ll fill title, speaker, passage, and the outline (blanks included).
+                Paste the share link from your church app. We’ll pull the title, speaker, passage,
+                and outline — blanks become write-in lines, ready for Pencil notes.
               </p>
 
               <form className="sermon-import-row" onSubmit={importFromSubsplash}>
                 <input
                   type="url"
+                  inputMode="url"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                   value={importUrl}
-                  onChange={(e) => setImportUrl(e.target.value)}
+                  onChange={(e) => {
+                    setImportUrl(e.target.value);
+                    setImportPreview(null);
+                    setImportError(null);
+                  }}
                   placeholder="https://notes.subsplash.com/fill-in/view?doc=…"
                   autoFocus
+                  aria-label="Subsplash notes link"
                 />
+                <button
+                  type="button"
+                  className="btn-secondary sermon-import-paste"
+                  onClick={pasteImportUrl}
+                  disabled={importBusy}
+                >
+                  Paste
+                </button>
                 <button type="submit" className="btn-primary" disabled={importBusy || !importUrl.trim()}>
-                  {importBusy ? 'Building…' : 'Build notes'}
+                  {importBusy ? 'Fetching…' : importPreview ? 'Refresh' : 'Preview'}
                 </button>
               </form>
+
+              {importPreview && (
+                <div className="sermon-import-preview" role="status">
+                  <div className="sermon-import-preview-head">
+                    <p className="sermon-import-preview-title">{importPreview.preview.title}</p>
+                    <p className="sermon-import-preview-meta">
+                      {[
+                        importPreview.preview.speaker,
+                        importPreview.preview.passage,
+                        importPreview.preview.date &&
+                          new Date(`${importPreview.preview.date}T00:00:00`).toLocaleDateString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          }),
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </p>
+                  </div>
+                  <ul className="sermon-import-stats">
+                    <li>
+                      <strong>{importPreview.preview.sections}</strong>
+                      <span>sections</span>
+                    </li>
+                    <li>
+                      <strong>{importPreview.preview.blanks}</strong>
+                      <span>blanks</span>
+                    </li>
+                    <li>
+                      <strong>{importPreview.preview.pages}</strong>
+                      <span>pages</span>
+                    </li>
+                  </ul>
+                  <p className="sermon-import-preview-note">
+                    Opens as lined paper with room to write between points. Answer key stays at the
+                    end for after the sermon.
+                  </p>
+                  <div className="sermon-import-preview-actions">
+                    <button type="button" className="btn-secondary" onClick={resetImport} disabled={importBusy}>
+                      Clear
+                    </button>
+                    <button type="button" className="btn-primary" onClick={confirmImport}>
+                      Open as notes
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="sermon-import-or">
                 <span>or</span>
@@ -751,7 +845,7 @@ export default function SermonView() {
               />
               <button
                 type="button"
-                className="btn-secondary"
+                className="btn-secondary sermon-import-upload"
                 disabled={importBusy}
                 onClick={() => fileRef.current?.click()}
               >
