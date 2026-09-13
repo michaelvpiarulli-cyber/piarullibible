@@ -651,26 +651,25 @@ export default function PassageText({
   const [xrefs, setXrefs] = useState({});
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [immersive, setImmersive] = useState(Boolean(startFullscreen));
-
-  useEffect(() => {
-    if (startFullscreen) setImmersive(true);
-  }, [startFullscreen, chapters]);
+  // Parent-driven fullscreen (Plan/Today opens) — avoid local state that can get stuck open.
+  const immersive = Boolean(startFullscreen);
 
   const closeImmersive = useCallback(() => {
-    setImmersive(false);
     onFullscreenClose?.();
   }, [onFullscreenClose]);
 
   useEffect(() => {
     if (!immersive) return;
-    document.documentElement.classList.add('study-expanded');
+    const root = document.documentElement;
+    root.classList.add('study-expanded');
+    root.classList.add('reading-immersive-open');
     const onKey = (e) => {
       if (e.key === 'Escape') closeImmersive();
     };
     window.addEventListener('keydown', onKey);
     return () => {
-      document.documentElement.classList.remove('study-expanded');
+      root.classList.remove('study-expanded');
+      root.classList.remove('reading-immersive-open');
       window.removeEventListener('keydown', onKey);
     };
   }, [immersive, closeImmersive]);
@@ -777,8 +776,16 @@ export default function PassageText({
                 </h2>
               </div>
               <div className="study-overlay-actions">
-                <button type="button" className="btn-secondary" onClick={closeImmersive}>
-                  Back
+                <button
+                  type="button"
+                  className="btn-secondary immersive-back"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeImmersive();
+                  }}
+                >
+                  ← Back
                 </button>
               </div>
             </header>

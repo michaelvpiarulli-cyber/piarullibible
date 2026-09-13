@@ -4290,6 +4290,19 @@
   font-size: 1.1rem;
 }
 
+.reading-immersive .immersive-back {
+  position: relative;
+  z-index: 5;
+  flex-shrink: 0;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+html.reading-immersive-open .study-overlay.reading-immersive {
+  pointer-events: auto;
+}
+
+
 .notes-overlay .ink-bar {
   position: sticky;
   top: 0;
