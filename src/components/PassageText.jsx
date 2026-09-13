@@ -4,6 +4,8 @@ import { colorValue, verseId } from '../hooks/useAnnotations';
 import { useVerseAnnotations } from '../context/annotations';
 import { BOOK_BY_CODE, HELLOAO_CODES, formatRef } from '../data/bookRefs';
 import StudyGuide from './StudyGuide';
+import StudySheet from './StudySheet';
+import ParallelPane from './ParallelPane';
 import DrawCanvas from './DrawCanvas';
 
 const INK_COLORS = [
@@ -527,20 +529,40 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse, embe
         </div>
       )}
 
-      {showGuide && (
-        <StudyGuide
-          book={part.book}
-          chapter={part.chapter}
-          lastVerse={part.verses[part.verses.length - 1]?.number ?? part.verses.length}
-          focusVerse={guideFocus?.verse || null}
-          verseText={guideFocus?.text || ''}
-          initialTab={guideFocus?.tab || 'guide'}
-          onClose={() => {
-            setShowGuide(false);
-            setGuideFocus(null);
-          }}
-        />
-      )}
+      {showGuide &&
+        (embedded ? (
+          <StudySheet
+            open
+            title="Passage Guide"
+            subtitle={`${part.book} ${part.chapter}${guideFocus?.verse ? `:${guideFocus.verse}` : ''}`}
+            onClose={() => {
+              setShowGuide(false);
+              setGuideFocus(null);
+            }}
+          >
+            <StudyGuide
+              book={part.book}
+              chapter={part.chapter}
+              lastVerse={part.verses[part.verses.length - 1]?.number ?? part.verses.length}
+              focusVerse={guideFocus?.verse || null}
+              verseText={guideFocus?.text || ''}
+              initialTab={guideFocus?.tab || 'guide'}
+            />
+          </StudySheet>
+        ) : (
+          <StudyGuide
+            book={part.book}
+            chapter={part.chapter}
+            lastVerse={part.verses[part.verses.length - 1]?.number ?? part.verses.length}
+            focusVerse={guideFocus?.verse || null}
+            verseText={guideFocus?.text || ''}
+            initialTab={guideFocus?.tab || 'guide'}
+            onClose={() => {
+              setShowGuide(false);
+              setGuideFocus(null);
+            }}
+          />
+        ))}
 
       {!embedded &&
         studyOpen &&
@@ -653,8 +675,12 @@ export default function PassageText({
   const [loading, setLoading] = useState(true);
   // Parent-driven fullscreen (Plan/Today opens) — avoid local state that can get stuck open.
   const immersive = Boolean(startFullscreen);
+  const [parallelOpen, setParallelOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const closeImmersive = useCallback(() => {
+    setParallelOpen(false);
+    setGuideOpen(false);
     onFullscreenClose?.();
   }, [onFullscreenClose]);
 
@@ -763,38 +789,80 @@ export default function PassageText({
       {immersive &&
         createPortal(
           <div
-            className="study-overlay reading-immersive"
+            className={`study-overlay reading-immersive${parallelOpen ? ' has-parallel' : ''}`}
             role="dialog"
             aria-modal="true"
             aria-label={heading}
           >
-            <header className="study-overlay-bar">
+            <header className="study-overlay-bar immersive-toolbar">
+              <button
+                type="button"
+                className="immersive-back-icon"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  closeImmersive();
+                }}
+                aria-label="Back"
+              >
+                ←
+              </button>
               <div className="study-overlay-heading">
                 <h2>
                   {heading}
                   <span className="reader-translation">{TRANSLATION_LABEL}</span>
                 </h2>
               </div>
-              <div className="study-overlay-actions">
+              <div className="study-overlay-actions immersive-tools">
                 <button
                   type="button"
-                  className="btn-secondary immersive-back"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    closeImmersive();
-                  }}
+                  className={`tool-chip${guideOpen ? ' active' : ''}`}
+                  onClick={() => setGuideOpen((v) => !v)}
                 >
-                  ← Back
+                  Guide
+                </button>
+                <button
+                  type="button"
+                  className={`tool-chip${parallelOpen ? ' active' : ''}`}
+                  onClick={() => setParallelOpen((v) => !v)}
+                >
+                  Parallel
                 </button>
               </div>
             </header>
-            <div className="study-overlay-body">
+            <div className={`study-overlay-body${parallelOpen ? ' parallel-split' : ''}`}>
               <div className="reader immersive-reader">
                 {chapterNodes(true)}
                 {status}
               </div>
+              {parallelOpen && parts[0] && (
+                <ParallelPane
+                  book={parts[0].book}
+                  chapter={parts[0].chapter}
+                  translationId="BSB"
+                  focusVerse={focusVerse?.verse || null}
+                />
+              )}
             </div>
+            <StudySheet
+              open={guideOpen}
+              title="Passage Guide"
+              subtitle={heading}
+              onClose={() => setGuideOpen(false)}
+            >
+              {parts[0] && (
+                <StudyGuide
+                  book={parts[0].book}
+                  chapter={parts[0].chapter}
+                  lastVerse={
+                    parts[0].verses[parts[0].verses.length - 1]?.number ?? parts[0].verses.length
+                  }
+                  focusVerse={focusVerse?.verse || null}
+                  verseText=""
+                  initialTab="guide"
+                />
+              )}
+            </StudySheet>
           </div>,
           document.body
         )}

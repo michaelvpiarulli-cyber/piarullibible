@@ -63,6 +63,47 @@ export async function fetchTranslationVerse(translationId, book, chapter, verse)
   return verseTextFromChapter(data, verse);
 }
 
+/** Full chapter verses for continuous parallel reading. */
+export async function fetchTranslationChapter(translationId, book, chapter) {
+  const code = codeFor(book);
+  const data = await fetchJson(`${BASE}/${translationId}/${code}/${chapter}.json`);
+  const verses = (data.chapter?.content || [])
+    .filter((item) => item.type === 'verse')
+    .map((v) => ({
+      number: v.number,
+      text: flattenVerseContent(v.content),
+    }));
+  return {
+    translationId,
+    book,
+    chapter,
+    heading: `${book} ${chapter}`,
+    verses,
+  };
+}
+
+/**
+ * Rough concordance: search WEB for a Strong’s gloss / lemma keyword.
+ * Returns [{ book, chapter, verse, text }].
+ */
+export async function searchConcordance(query, limit = 40) {
+  const q = String(query || '').trim();
+  if (q.length < 2) return [];
+  const url = `https://bolls.life/v2/find/WEB?search=${encodeURIComponent(q)}&limit=${limit}&page=1`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Concordance search failed');
+  const data = await res.json();
+  return (data.results || []).map((h) => ({
+    bookId: h.book,
+    chapter: h.chapter,
+    verse: h.verse,
+    text: String(h.text || '')
+      .replace(/<[^>]+>/g, '')
+      .replace(/[⌃⌄]/g, '')
+      .trim(),
+  }));
+}
+
 export async function fetchParallelVerses(
   book,
   chapter,

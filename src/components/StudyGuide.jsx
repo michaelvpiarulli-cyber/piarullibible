@@ -9,8 +9,10 @@ import {
   fetchPlace,
   fetchTranslationVerse,
   fetchVerseWordMap,
+  searchConcordance,
 } from '../lib/studyData';
 import { lookupStrongs, normalizeStrongs } from '../lib/strongs';
+import { BOOKS } from '../data/books';
 
 const TABS = [
   { id: 'guide', label: 'Guide' },
@@ -18,6 +20,8 @@ const TABS = [
   { id: 'words', label: 'Words' },
   { id: 'commentary', label: 'Commentary' },
 ];
+
+const BOOK_BY_BOLLS = new Map(BOOKS.map((b, i) => [i + 1, b.name]));
 
 function Status({ children, error = false }) {
   return <div className={`study-status${error ? ' error' : ''}`}>{children}</div>;
@@ -271,6 +275,8 @@ function WordsTab({ book, chapter, focusVerse, verseText }) {
   const [selected, setSelected] = useState(null);
   const [entry, setEntry] = useState(null);
   const [entryLoading, setEntryLoading] = useState(false);
+  const [hits, setHits] = useState(null);
+  const [hitsLoading, setHitsLoading] = useState(false);
 
   // Prefer the verse text from the reader; otherwise pull WEB for this verse.
   useEffect(() => {
@@ -319,9 +325,21 @@ function WordsTab({ book, chapter, focusVerse, verseText }) {
     setSelected(key);
     setEntryLoading(true);
     setEntry(null);
+    setHits(null);
     try {
       const found = await lookupStrongs(key);
       setEntry(found || { id: key, definition: 'No lexicon entry found.' });
+      // Concordance: search WEB for the primary KJV gloss / transliteration.
+      const gloss = (found?.kjv || found?.translit || found?.lemma || '')
+        .split(/[,;]/)[0]
+        ?.trim();
+      if (gloss && gloss.length > 2) {
+        setHitsLoading(true);
+        searchConcordance(gloss, 30)
+          .then((rows) => setHits(rows))
+          .catch(() => setHits([]))
+          .finally(() => setHitsLoading(false));
+      }
     } catch (e) {
       setEntry({ id: key, definition: e.message || 'Lookup failed' });
     } finally {
@@ -379,6 +397,45 @@ function WordsTab({ book, chapter, focusVerse, verseText }) {
           )}
           {entry.derivation && <p className="study-detail-meta">{entry.derivation}</p>}
           <p className="study-credit">Strong’s Exhaustive Concordance · Open Scriptures (CC BY-SA)</p>
+
+          <div className="study-concordance">
+            <h5 className="study-section-label">Concordance</h5>
+            {hitsLoading && <Status>Searching occurrences…</Status>}
+            {!hitsLoading && hits && hits.length === 0 && (
+              <p className="study-empty">No WEB hits for this gloss.</p>
+            )}
+            {!hitsLoading && hits?.length > 0 && (
+              <ul className="study-concordance-list">
+                {hits.slice(0, 20).map((h) => {
+                  const bookName = BOOK_BY_BOLLS.get(h.bookId) || `Book ${h.bookId}`;
+                  return (
+                    <li key={`${h.bookId}-${h.chapter}-${h.verse}`}>
+                      <button
+                        type="button"
+                        className="study-concordance-hit"
+                        onClick={() => {
+                          window.dispatchEvent(
+                            new CustomEvent('bible-open-passage', {
+                              detail: {
+                                book: bookName,
+                                chapter: h.chapter,
+                                verse: h.verse,
+                              },
+                            })
+                          );
+                        }}
+                      >
+                        <span className="study-concordance-ref">
+                          {bookName} {h.chapter}:{h.verse}
+                        </span>
+                        <span className="study-concordance-text">{h.text}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </article>
       )}
     </div>
