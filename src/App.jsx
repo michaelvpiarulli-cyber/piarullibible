@@ -116,6 +116,31 @@ function App() {
     setTab('read');
   }, []);
 
+  const openReading = useCallback(
+    (reading, returnTab = 'plan') => {
+      const first = reading?.chapters?.[0];
+      if (!first) return;
+      openPassage({
+        book: first.book,
+        chapter: first.chapter,
+        chapters: reading.chapters,
+        label: reading.label,
+        fullscreen: true,
+        returnTab,
+      });
+    },
+    [openPassage]
+  );
+
+  const handleFullscreenClose = useCallback(() => {
+    setReadJump((jump) => {
+      const back = jump?.returnTab || 'plan';
+      // Defer tab change so we don't update during PassageText unmount cleanup.
+      queueMicrotask(() => setTab(back));
+      return null;
+    });
+  }, []);
+
   const annotations = useMemo(
     () => ({ highlights, notes, onSelectVerse: setSelectedVerse, onOpenPassage: openPassage }),
     [highlights, notes, openPassage]
@@ -159,6 +184,7 @@ function App() {
                   dayDate={dayDate}
                   isDone={isDone}
                   toggle={toggle}
+                  onOpenReading={(reading) => openReading(reading, 'today')}
                 />
               )}
 
@@ -187,13 +213,16 @@ function App() {
                         dayDate={dayDate}
                         isDone={isDone}
                         toggle={toggle}
+                        onOpenReading={(reading) => openReading(reading, 'plan')}
                       />
                     );
                   })}
                 </div>
               )}
 
-              {tab === 'read' && <ReadView jumpTo={readJump} />}
+              {tab === 'read' && (
+                <ReadView jumpTo={readJump} onFullscreenClose={handleFullscreenClose} />
+              )}
 
               {tab === 'prayer' && (
                 <>

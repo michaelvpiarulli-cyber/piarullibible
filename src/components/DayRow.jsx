@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import ReadingRow from './ReadingRow';
 
-export default function DayRow({ dayData, date, isToday, isDone, toggle }) {
+export default function DayRow({ dayData, date, isToday, isDone, toggle, onOpenReading }) {
   const [open, setOpen] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
 
@@ -44,6 +44,7 @@ export default function DayRow({ dayData, date, isToday, isDone, toggle }) {
               onToggle={() => toggle(reading.id)}
               expanded={expandedId === reading.id}
               onExpand={() => setExpandedId(expandedId === reading.id ? null : reading.id)}
+              onOpenReading={onOpenReading}
             />
           ))}
         </ul>

@@ -206,7 +206,7 @@ function VerseText({ segments }) {
   );
 }
 
-function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
+function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse, embedded = false }) {
   const [showGuide, setShowGuide] = useState(false);
   const [guideFocus, setGuideFocus] = useState(null); // { verse, text, tab }
   const [showNotes, setShowNotes] = useState(false);
@@ -285,14 +285,12 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
       const color = colorValue(highlights[id]);
       const hasNote = Boolean(notes[id]);
       const refs = crossRefs[v.number] || [];
+      const domId = `v-${idPrefix}${part.book.replace(/\s+/g, '-')}-${part.chapter}-${v.number}`;
       return (
         <span
           key={`${idPrefix}${v.number}`}
-          id={
-            idPrefix
-              ? undefined
-              : `v-${part.book.replace(/\s+/g, '-')}-${part.chapter}-${v.number}`
-          }
+          id={domId}
+          data-verse={`${part.book}|${part.chapter}|${v.number}`}
           className={`verse${hasNote ? ' has-note' : ''}${refs.length ? ' has-xrefs' : ''}`}
           style={color ? { background: color } : undefined}
           onClick={() =>
@@ -387,36 +385,38 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
     );
 
   return (
-    <article className="reader-chapter">
+    <article className={`reader-chapter${embedded ? ' embedded' : ''}`}>
       <div className="reader-chapter-head">
         <h4 className="reader-chapter-title">
           {part.heading}
           <span className="reader-translation">{TRANSLATION_LABEL}</span>
         </h4>
-        <button
-          type="button"
-          className="study-expand-corner"
-          onClick={openStudy}
-          aria-label="Expand chapter for study notes"
-          title="Expand"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+        {!embedded && (
+          <button
+            type="button"
+            className="study-expand-corner"
+            onClick={openStudy}
+            aria-label="Expand chapter for study notes"
+            title="Expand"
           >
-            <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
-          </svg>
-        </button>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div className={`chapter-page${drawing && !studyOpen ? ' drawing' : ''}`}>
         <div className="reader-ink-layer">
-          <p className="reader-body">{renderVerses()}</p>
+          <p className="reader-body">{renderVerses(embedded ? 'immersive-' : '')}</p>
           {!studyOpen && (
             <DrawCanvas
               chapterKey={part.heading}
@@ -542,7 +542,8 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
         />
       )}
 
-      {studyOpen &&
+      {!embedded &&
+        studyOpen &&
         createPortal(
           <div className="study-overlay" role="dialog" aria-modal="true" aria-label={`${part.heading} study`}>
             <header className="study-overlay-bar">
@@ -638,12 +639,41 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse }) {
   );
 }
 
-export default function PassageText({ chapters, focusVerse }) {
+export default function PassageText({
+  chapters,
+  focusVerse,
+  startFullscreen = false,
+  onFullscreenClose,
+  title,
+}) {
   const { highlights, notes, onSelectVerse } = useVerseAnnotations();
   const [parts, setParts] = useState([]);
   const [xrefs, setXrefs] = useState({});
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [immersive, setImmersive] = useState(Boolean(startFullscreen));
+
+  useEffect(() => {
+    if (startFullscreen) setImmersive(true);
+  }, [startFullscreen, chapters]);
+
+  const closeImmersive = useCallback(() => {
+    setImmersive(false);
+    onFullscreenClose?.();
+  }, [onFullscreenClose]);
+
+  useEffect(() => {
+    if (!immersive) return;
+    document.documentElement.classList.add('study-expanded');
+    const onKey = (e) => {
+      if (e.key === 'Escape') closeImmersive();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.documentElement.classList.remove('study-expanded');
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [immersive, closeImmersive]);
 
   useEffect(() => {
     let cancelled = false;
@@ -684,36 +714,83 @@ export default function PassageText({ chapters, focusVerse }) {
   useEffect(() => {
     if (!focusVerse?.book || !focusVerse?.chapter || !focusVerse?.verse) return;
     if (loading) return;
-    const id = `v-${focusVerse.book.replace(/\s+/g, '-')}-${focusVerse.chapter}-${focusVerse.verse}`;
-    const el = document.getElementById(id);
+    const bookSlug = focusVerse.book.replace(/\s+/g, '-');
+    const candidates = immersive
+      ? [`v-immersive-${bookSlug}-${focusVerse.chapter}-${focusVerse.verse}`]
+      : [`v-${bookSlug}-${focusVerse.chapter}-${focusVerse.verse}`];
+    const el = candidates.map((id) => document.getElementById(id)).find(Boolean);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       el.classList.add('verse-flash');
       const t = setTimeout(() => el.classList.remove('verse-flash'), 1600);
       return () => clearTimeout(t);
     }
-  }, [focusVerse, parts, loading]);
+  }, [focusVerse, parts, loading, immersive]);
 
-  return (
-    <div className="reader">
-      {parts.map((part) => (
-        <ReaderChapter
-          key={part.heading}
-          part={part}
-          crossRefs={xrefs[part.heading] || {}}
-          highlights={highlights}
-          notes={notes}
-          onSelectVerse={onSelectVerse}
-        />
-      ))}
-
+  const heading = title || parts[0]?.heading || 'Bible';
+  const status = (
+    <>
       {loading && !error && (
         <div className="passage-status loading">
           Loading {parts.length ? `${parts.length + 1} of ${chapters.length}` : ''}…
         </div>
       )}
-
       {error && <div className="passage-status passage-error">{error}</div>}
+    </>
+  );
+
+  const chapterNodes = (embedded) =>
+    parts.map((part) => (
+      <ReaderChapter
+        key={`${embedded ? 'fs-' : ''}${part.heading}`}
+        part={part}
+        crossRefs={xrefs[part.heading] || {}}
+        highlights={highlights}
+        notes={notes}
+        onSelectVerse={onSelectVerse}
+        embedded={embedded}
+      />
+    ));
+
+  return (
+    <div className="reader">
+      {!immersive && (
+        <>
+          {chapterNodes(false)}
+          {status}
+        </>
+      )}
+
+      {immersive &&
+        createPortal(
+          <div
+            className="study-overlay reading-immersive"
+            role="dialog"
+            aria-modal="true"
+            aria-label={heading}
+          >
+            <header className="study-overlay-bar">
+              <div className="study-overlay-heading">
+                <h2>
+                  {heading}
+                  <span className="reader-translation">{TRANSLATION_LABEL}</span>
+                </h2>
+              </div>
+              <div className="study-overlay-actions">
+                <button type="button" className="btn-secondary" onClick={closeImmersive}>
+                  Back
+                </button>
+              </div>
+            </header>
+            <div className="study-overlay-body">
+              <div className="reader immersive-reader">
+                {chapterNodes(true)}
+                {status}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

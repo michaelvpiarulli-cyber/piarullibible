@@ -11,10 +11,13 @@ const NAME_BY_ID = new Map(BOOKS.map((b) => [bollsBookId(b.name), b.name]));
 
 const clean = (s) => (s || '').replace(/<[^>]+>/g, '').replace(/[⌃⌄]/g, '').trim();
 
-export default function ReadView({ jumpTo }) {
+export default function ReadView({ jumpTo, onFullscreenClose }) {
   const [book, setBook] = useState(null);
   const [chapter, setChapter] = useState(null);
   const [focusVerse, setFocusVerse] = useState(null);
+  const [readingChapters, setReadingChapters] = useState(null);
+  const [readingLabel, setReadingLabel] = useState(null);
+  const [startFullscreen, setStartFullscreen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState(null);
   const [searching, setSearching] = useState(false);
@@ -44,6 +47,10 @@ export default function ReadView({ jumpTo }) {
     setFocusVerse(jumpTo);
     setResults(null);
     setQuery('');
+    if (jumpTo.chapters?.length) setReadingChapters(jumpTo.chapters);
+    else setReadingChapters(null);
+    setReadingLabel(jumpTo.label || null);
+    setStartFullscreen(Boolean(jumpTo.fullscreen));
   }, [jumpTo]);
 
   useEffect(() => {
@@ -52,12 +59,13 @@ export default function ReadView({ jumpTo }) {
     }
   }, [book, chapter]);
 
-  const chapters = useMemo(
-    () => (book && chapter ? [{ book, chapter }] : null),
-    [book, chapter]
-  );
+  const chapters = useMemo(() => {
+    if (readingChapters?.length) return readingChapters;
+    return book && chapter ? [{ book, chapter }] : null;
+  }, [book, chapter, readingChapters]);
 
   const bookMeta = BOOKS.find((b) => b.name === book);
+  const immersive = startFullscreen && Boolean(onFullscreenClose);
 
   const runSearch = async (e) => {
     e.preventDefault();
@@ -90,32 +98,46 @@ export default function ReadView({ jumpTo }) {
   const openAt = (b, c) => {
     setBook(b);
     setChapter(c);
+    setReadingChapters(null);
+    setReadingLabel(null);
+    setStartFullscreen(false);
     setResults(null);
     setQuery('');
   };
 
+  const handleFullscreenClose = () => {
+    setStartFullscreen(false);
+    setReadingChapters(null);
+    setReadingLabel(null);
+    onFullscreenClose?.();
+  };
+
   // --- reading a chapter ----------------------------------------------------
-  if (book && chapter) {
+  if (book && chapter && chapters) {
     return (
-      <div className="read-view">
-        <div className="read-bar">
-          <button type="button" className="pager-btn" onClick={() => setChapter(null)}>
-            ← {book}
-          </button>
-          <span className="read-where">
-            {book} {chapter} · {TRANSLATION_LABEL}
-          </span>
-          <button
-            type="button"
-            className="pager-btn"
-            onClick={() => {
-              setBook(null);
-              setChapter(null);
-            }}
-          >
-            All books
-          </button>
-        </div>
+      <div className={`read-view${immersive ? ' read-immersive' : ''}`}>
+        {!immersive && (
+          <div className="read-bar">
+            <button type="button" className="pager-btn" onClick={() => setChapter(null)}>
+              ← {book}
+            </button>
+            <span className="read-where">
+              {readingLabel || `${book} ${chapter}`} · {TRANSLATION_LABEL}
+            </span>
+            <button
+              type="button"
+              className="pager-btn"
+              onClick={() => {
+                setBook(null);
+                setChapter(null);
+                setReadingChapters(null);
+                setReadingLabel(null);
+              }}
+            >
+              All books
+            </button>
+          </div>
+        )}
 
         <div className="read-flow">
           <PassageText
@@ -123,27 +145,32 @@ export default function ReadView({ jumpTo }) {
             focusVerse={
               focusVerse?.book === book && focusVerse?.chapter === chapter ? focusVerse : null
             }
+            startFullscreen={immersive}
+            onFullscreenClose={immersive ? handleFullscreenClose : undefined}
+            title={readingLabel}
           />
         </div>
 
-        <div className="day-pager">
-          <button
-            type="button"
-            className="pager-btn"
-            disabled={chapter <= 1}
-            onClick={() => setChapter(chapter - 1)}
-          >
-            ← Previous
-          </button>
-          <button
-            type="button"
-            className="pager-btn"
-            disabled={chapter >= (bookMeta?.chapters || 1)}
-            onClick={() => setChapter(chapter + 1)}
-          >
-            Next →
-          </button>
-        </div>
+        {!immersive && !readingChapters && (
+          <div className="day-pager">
+            <button
+              type="button"
+              className="pager-btn"
+              disabled={chapter <= 1}
+              onClick={() => setChapter(chapter - 1)}
+            >
+              ← Previous
+            </button>
+            <button
+              type="button"
+              className="pager-btn"
+              disabled={chapter >= (bookMeta?.chapters || 1)}
+              onClick={() => setChapter(chapter + 1)}
+            >
+              Next →
+            </button>
+          </div>
+        )}
       </div>
     );
   }

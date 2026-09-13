@@ -14,6 +14,7 @@ export default function TodayView({
   dayDate,
   isDone,
   toggle,
+  onOpenReading,
 }) {
   const [selectedDay, setSelectedDay] = useState(currentDay);
   const [expandedId, setExpandedId] = useState(null);
@@ -162,6 +163,7 @@ export default function TodayView({
             onToggle={() => toggle(reading.id)}
             expanded={expandedId === reading.id}
             onExpand={() => setExpandedId(expandedId === reading.id ? null : reading.id)}
+            onOpenReading={onOpenReading}
           />
         ))}
       </ul>
