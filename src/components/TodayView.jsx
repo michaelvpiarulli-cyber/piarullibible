@@ -53,6 +53,8 @@ export default function TodayView({
   const total = dayData.readings.length;
   const doneCount = dayData.readings.filter((r) => isDone(r.id)).length;
   const complete = doneCount === total;
+  const nextReading =
+    dayData.readings.find((r) => !isDone(r.id)) || dayData.readings[0] || null;
 
   const date = dayDate(selectedDay);
   const isToday = selectedDay === currentDay;
@@ -152,6 +154,22 @@ export default function TodayView({
                 )} chapters`}
           </span>
         </div>
+
+        {nextReading && onOpenReading && (
+          <button
+            type="button"
+            className="continue-cta"
+            onClick={() => onOpenReading(nextReading)}
+          >
+            <span className="continue-cta-kicker">
+              {complete ? 'Review' : doneCount === 0 ? 'Start reading' : 'Continue'}
+            </span>
+            <span className="continue-cta-label">{nextReading.label}</span>
+            <span className="continue-cta-arrow" aria-hidden="true">
+              →
+            </span>
+          </button>
+        )}
       </div>
 
       <ul className="reading-list card-list">

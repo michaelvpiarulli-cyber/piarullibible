@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { colorValue, verseId } from '../hooks/useAnnotations';
 import { useVerseAnnotations } from '../context/annotations';
 import { BOOK_BY_CODE, HELLOAO_CODES, formatRef } from '../data/bookRefs';
+import { useReaderPrefs, READER_TRANSLATIONS } from '../hooks/useReaderPrefs';
 import StudyGuide from './StudyGuide';
 import StudySheet from './StudySheet';
 import ParallelPane from './ParallelPane';
@@ -15,12 +16,13 @@ const INK_COLORS = [
   { id: 'green', value: '#2e9e5b', label: 'Green' },
 ];
 
-/** World English Bible — modern-English public-domain revision of the ASV. */
+/** Default / memorize id — bible-api.com uses lowercase "web". */
 export const TRANSLATION = 'web';
+/** Fallback label when prefs haven't loaded yet. */
 export const TRANSLATION_LABEL = 'WEB';
 
-/** helloao.org id for WEB — includes wordsOfJesus markup for red-letter text. */
-const HELLOAO_TRANSLATION = 'ENGWEBP';
+/** Default helloao.org id — WEB includes wordsOfJesus markup for red-letter text. */
+export const DEFAULT_HELLOAO_TRANSLATION = 'ENGWEBP';
 
 /** Cap how many cross-refs we surface per verse (dataset can have 30+). */
 const MAX_CROSS_REFS = 10;
@@ -81,17 +83,17 @@ async function fetchJson(url) {
   throw lastErr;
 }
 
-/** Fetch a chapter (WEB) — shared with the reading quiz so both hit the same cache. */
-export async function fetchChapter(book, chapter) {
+/** Fetch a chapter — shared with the reading quiz so both hit the same cache. */
+export async function fetchChapter(book, chapter, translationId = DEFAULT_HELLOAO_TRANSLATION) {
   const reference = `${book} ${chapter}`;
-  const cacheKey = `${HELLOAO_TRANSLATION}|${reference}`;
+  const cacheKey = `${translationId}|${reference}`;
   if (textCache.has(cacheKey)) return textCache.get(cacheKey);
 
   const code = HELLOAO_CODES[book];
   if (!code) throw new Error(`Unknown book: ${book}`);
 
   const data = await fetchJson(
-    `https://bible.helloao.org/api/${HELLOAO_TRANSLATION}/${code}/${chapter}.json`
+    `https://bible.helloao.org/api/${translationId}/${code}/${chapter}.json`
   );
 
   const verses = (data.chapter?.content || [])
@@ -208,7 +210,15 @@ function VerseText({ segments }) {
   );
 }
 
-function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse, embedded = false }) {
+function ReaderChapter({
+  part,
+  crossRefs,
+  highlights,
+  notes,
+  onSelectVerse,
+  embedded = false,
+  translationLabel = TRANSLATION_LABEL,
+}) {
   const [showGuide, setShowGuide] = useState(false);
   const [guideFocus, setGuideFocus] = useState(null); // { verse, text, tab }
   const [showNotes, setShowNotes] = useState(false);
@@ -391,7 +401,7 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse, embe
       <div className="reader-chapter-head">
         <h4 className="reader-chapter-title">
           {part.heading}
-          <span className="reader-translation">{TRANSLATION_LABEL}</span>
+          <span className="reader-translation">{translationLabel}</span>
         </h4>
         {!embedded && (
           <button
@@ -572,7 +582,7 @@ function ReaderChapter({ part, crossRefs, highlights, notes, onSelectVerse, embe
               <div className="study-overlay-heading">
                 <h2>
                   {part.heading}
-                  <span className="reader-translation">{TRANSLATION_LABEL}</span>
+                  <span className="reader-translation">{translationLabel}</span>
                 </h2>
               </div>
 
@@ -667,8 +677,19 @@ export default function PassageText({
   startFullscreen = false,
   onFullscreenClose,
   title,
+  readingId = null,
+  readingDone = false,
+  onToggleReading = null,
 }) {
   const { highlights, notes, onSelectVerse } = useVerseAnnotations();
+  const {
+    translationId,
+    translationLabel,
+    setTranslationId,
+    bumpFont,
+    canShrink,
+    canGrow,
+  } = useReaderPrefs();
   const [parts, setParts] = useState([]);
   const [xrefs, setXrefs] = useState({});
   const [error, setError] = useState(null);
@@ -677,10 +698,12 @@ export default function PassageText({
   const immersive = Boolean(startFullscreen);
   const [parallelOpen, setParallelOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
 
   const closeImmersive = useCallback(() => {
     setParallelOpen(false);
     setGuideOpen(false);
+    setToolsOpen(false);
     onFullscreenClose?.();
   }, [onFullscreenClose]);
 
@@ -690,7 +713,10 @@ export default function PassageText({
     root.classList.add('study-expanded');
     root.classList.add('reading-immersive-open');
     const onKey = (e) => {
-      if (e.key === 'Escape') closeImmersive();
+      if (e.key === 'Escape') {
+        if (toolsOpen) setToolsOpen(false);
+        else closeImmersive();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => {
@@ -698,7 +724,7 @@ export default function PassageText({
       root.classList.remove('reading-immersive-open');
       window.removeEventListener('keydown', onKey);
     };
-  }, [immersive, closeImmersive]);
+  }, [immersive, closeImmersive, toolsOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -713,7 +739,7 @@ export default function PassageText({
       for (const c of chapters) {
         try {
           const [part, refs] = await Promise.all([
-            fetchChapter(c.book, c.chapter),
+            fetchChapter(c.book, c.chapter, translationId),
             fetchCrossRefs(c.book, c.chapter),
           ]);
           if (cancelled) return;
@@ -723,7 +749,11 @@ export default function PassageText({
           setXrefs({ ...xrefMap });
         } catch (err) {
           if (cancelled) return;
-          setError(err.message?.startsWith("Couldn't") ? err.message : `Couldn't load ${c.book} ${c.chapter}`);
+          setError(
+            err.message?.startsWith("Couldn't")
+              ? err.message
+              : `Couldn't load ${c.book} ${c.chapter}`
+          );
           break;
         }
       }
@@ -733,7 +763,7 @@ export default function PassageText({
     return () => {
       cancelled = true;
     };
-  }, [chapters]);
+  }, [chapters, translationId]);
 
   // Scroll a jumped-to verse into view once its chapter has loaded.
   useEffect(() => {
@@ -767,15 +797,23 @@ export default function PassageText({
   const chapterNodes = (embedded) =>
     parts.map((part) => (
       <ReaderChapter
-        key={`${embedded ? 'fs-' : ''}${part.heading}`}
+        key={`${embedded ? 'fs-' : ''}${part.heading}-${translationId}`}
         part={part}
         crossRefs={xrefs[part.heading] || {}}
         highlights={highlights}
         notes={notes}
         onSelectVerse={onSelectVerse}
         embedded={embedded}
+        translationLabel={translationLabel}
       />
     ));
+
+  const parallelDefault =
+    translationId === 'BSB'
+      ? 'eng_kjv'
+      : translationId === 'ENGWEBP'
+        ? 'BSB'
+        : 'BSB';
 
   return (
     <div className="reader">
@@ -810,23 +848,35 @@ export default function PassageText({
               <div className="study-overlay-heading">
                 <h2>
                   {heading}
-                  <span className="reader-translation">{TRANSLATION_LABEL}</span>
+                  <button
+                    type="button"
+                    className="reader-translation reader-translation-btn"
+                    onClick={() => setToolsOpen(true)}
+                    aria-label={`Translation ${translationLabel}. Change reading options.`}
+                  >
+                    {translationLabel}
+                  </button>
                 </h2>
               </div>
               <div className="study-overlay-actions immersive-tools">
+                {readingId && onToggleReading && (
+                  <button
+                    type="button"
+                    className={`tool-chip done-chip${readingDone ? ' active' : ''}`}
+                    onClick={() => onToggleReading(readingId)}
+                    aria-pressed={readingDone}
+                  >
+                    {readingDone ? 'Done' : 'Mark done'}
+                  </button>
+                )}
                 <button
                   type="button"
-                  className={`tool-chip${guideOpen ? ' active' : ''}`}
-                  onClick={() => setGuideOpen((v) => !v)}
+                  className={`tool-chip${toolsOpen || guideOpen || parallelOpen ? ' active' : ''}`}
+                  onClick={() => setToolsOpen((v) => !v)}
+                  aria-expanded={toolsOpen}
+                  aria-label="Reading options"
                 >
-                  Guide
-                </button>
-                <button
-                  type="button"
-                  className={`tool-chip${parallelOpen ? ' active' : ''}`}
-                  onClick={() => setParallelOpen((v) => !v)}
-                >
-                  Parallel
+                  ···
                 </button>
               </div>
             </header>
@@ -839,11 +889,97 @@ export default function PassageText({
                 <ParallelPane
                   book={parts[0].book}
                   chapter={parts[0].chapter}
-                  translationId="BSB"
+                  translationId={parallelDefault}
+                  excludeId={translationId}
                   focusVerse={focusVerse?.verse || null}
                 />
               )}
             </div>
+
+            {toolsOpen && (
+              <div className="reader-tools-sheet-root">
+                <button
+                  type="button"
+                  className="reader-tools-scrim"
+                  aria-label="Dismiss"
+                  onClick={() => setToolsOpen(false)}
+                />
+                <div className="reader-tools-sheet" role="dialog" aria-label="Reading options">
+                  <div className="more-sheet-grabber" />
+                  <h3 className="more-sheet-title">Reading options</h3>
+
+                  <div className="reader-tools-block">
+                    <span className="reader-tools-label">Text size</span>
+                    <div className="reader-tools-row">
+                      <button
+                        type="button"
+                        className="tool-chip"
+                        disabled={!canShrink}
+                        onClick={() => bumpFont(-1)}
+                        aria-label="Smaller text"
+                      >
+                        A−
+                      </button>
+                      <button
+                        type="button"
+                        className="tool-chip"
+                        disabled={!canGrow}
+                        onClick={() => bumpFont(1)}
+                        aria-label="Larger text"
+                      >
+                        A+
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="reader-tools-block">
+                    <span className="reader-tools-label">Bible translation</span>
+                    <div className="reader-tools-grid">
+                      {READER_TRANSLATIONS.map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          className={`tool-chip${translationId === t.id ? ' active' : ''}`}
+                          onClick={() => setTranslationId(t.id)}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="reader-tools-hint">
+                      {READER_TRANSLATIONS.find((t) => t.id === translationId)?.name}
+                    </p>
+                  </div>
+
+                  <div className="reader-tools-block">
+                    <span className="reader-tools-label">Study</span>
+                    <div className="reader-tools-row">
+                      <button
+                        type="button"
+                        className={`tool-chip${guideOpen ? ' active' : ''}`}
+                        onClick={() => {
+                          setGuideOpen(true);
+                          setToolsOpen(false);
+                        }}
+                      >
+                        Passage Guide
+                      </button>
+                      <button
+                        type="button"
+                        className={`tool-chip${parallelOpen ? ' active' : ''}`}
+                        onClick={() => {
+                          setParallelOpen((v) => !v);
+                          setToolsOpen(false);
+                        }}
+                      >
+                        {parallelOpen ? 'Hide parallel' : 'Parallel'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <StudySheet
               open={guideOpen}
               title="Passage Guide"

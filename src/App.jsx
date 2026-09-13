@@ -125,6 +125,7 @@ function App() {
         chapter: first.chapter,
         chapters: reading.chapters,
         label: reading.label,
+        readingId: reading.id,
         fullscreen: true,
         returnTab,
       });
@@ -221,7 +222,12 @@ function App() {
               )}
 
               {tab === 'read' && (
-                <ReadView jumpTo={readJump} onFullscreenClose={handleFullscreenClose} />
+                <ReadView
+                  jumpTo={readJump}
+                  onFullscreenClose={handleFullscreenClose}
+                  isDone={isDone}
+                  toggle={toggle}
+                />
               )}
 
               {tab === 'prayer' && (
