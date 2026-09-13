@@ -13,11 +13,11 @@
   /* Content height stays --nav-height; safe-area pads below without shrinking tabs. */
   height: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
   display: flex;
-  background: var(--surface-blur);
-  backdrop-filter: saturate(180%) blur(18px);
-  -webkit-backdrop-filter: saturate(180%) blur(18px);
-  border-top: 1px solid var(--border);
-  box-shadow: none;
+  background: color-mix(in srgb, var(--surface-blur) 92%, transparent);
+  backdrop-filter: saturate(200%) blur(22px);
+  -webkit-backdrop-filter: saturate(200%) blur(22px);
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  box-shadow: 0 -8px 32px color-mix(in srgb, var(--shadow) 35%, transparent);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   z-index: 30;
 }
@@ -78,13 +78,14 @@
 .nav-tab.active::before {
   content: '';
   position: absolute;
-  top: 6px;
+  top: 7px;
   left: 50%;
   transform: translateX(-50%);
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 .nav-tab:hover {
@@ -97,10 +98,10 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--surface-blur);
-  backdrop-filter: saturate(180%) blur(16px);
-  -webkit-backdrop-filter: saturate(180%) blur(16px);
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  background: color-mix(in srgb, var(--surface-blur) 94%, transparent);
+  backdrop-filter: saturate(200%) blur(20px);
+  -webkit-backdrop-filter: saturate(200%) blur(20px);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
   padding: 14px 20px;
   padding-top: calc(14px + env(safe-area-inset-top, 0px));
   display: flex;
@@ -111,9 +112,9 @@
 
 .app-bar h1 {
   margin: 0;
-  font-size: 1.35rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 1.42rem;
+  font-weight: 750;
+  letter-spacing: -0.035em;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -472,26 +473,32 @@
 /* ---------- today ---------- */
 
 .today-hero {
-  margin-bottom: 26px;
-  padding: 4px 0 2px;
+  margin-bottom: 28px;
+  padding: 18px 18px 16px;
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 55%),
+    linear-gradient(165deg, var(--surface) 0%, color-mix(in srgb, var(--surface) 88%, var(--accent-soft)) 100%);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  box-shadow: var(--shadow-lift);
 }
 
 .eyebrow {
   display: block;
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: -0.01em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--accent);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .today-hero h2 {
   margin: 0;
-  font-size: 2.1rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
+  font-size: clamp(1.85rem, 5vw, 2.35rem);
+  font-weight: 780;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
 }
 
 .today-dates {
@@ -516,22 +523,23 @@
 
 .progress-bar-outer {
   width: 100%;
-  height: 8px;
+  height: 6px;
   border-radius: 999px;
-  background: var(--surface-alt);
+  background: color-mix(in srgb, var(--surface-alt) 80%, var(--border));
   overflow: hidden;
-  box-shadow: inset 0 1px 2px rgba(42, 42, 40, 0.06);
+  box-shadow: inset 0 1px 1px rgba(17, 17, 20, 0.05);
 }
 
 .progress-bar-outer.thin {
-  height: 6px;
+  height: 4px;
 }
 
 .progress-bar-inner {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 70%, var(--accent-press)));
-  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #ff6b7a));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 35%, transparent);
+  transition: width 0.55s var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 /* ---------- reading rows ---------- */
@@ -549,11 +557,20 @@
 }
 
 .card-list .reading-row {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 4px 6px;
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  border-radius: var(--radius-lg);
+  padding: 6px 8px;
   background: var(--surface);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow) 25%, transparent);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow) 40%, transparent);
+  transition:
+    border-color 0.2s var(--ease-out, ease),
+    box-shadow 0.2s var(--ease-out, ease),
+    transform 0.2s var(--ease-out, ease);
+}
+
+.card-list .reading-row:hover {
+  border-color: color-mix(in srgb, var(--accent) 25%, var(--border));
+  box-shadow: var(--shadow-lift);
 }
 
 .reading-list.nested {
@@ -5597,4 +5614,395 @@
 
 .muted {
   color: var(--text-dim);
+}
+
+/* ============================================================
+   Sleek polish pass — premium Bible App chrome
+   ============================================================ */
+
+.app-main {
+  padding: 22px 18px 28px;
+}
+
+.view-pane {
+  animation: view-enter 0.38s var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+@keyframes view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Brand lockup — soft red pill */
+.brand-lockup {
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-size: 0.78rem;
+  letter-spacing: -0.02em;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #ff5a6a));
+  padding: 7px 11px 8px;
+  border-radius: 10px;
+  border: none;
+  box-shadow:
+    0 6px 16px var(--accent-wash),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+/* Streak pills */
+.streak-pill {
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.84rem;
+  font-weight: 650;
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow) 30%, transparent);
+}
+
+.streak-pill.behind {
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 75%, #ff5a6a));
+  border-color: transparent;
+  box-shadow: 0 8px 18px var(--accent-wash);
+}
+
+/* Week strip */
+.strip-day {
+  border-radius: 14px;
+  transition:
+    background-color 0.18s var(--ease-out, ease),
+    border-color 0.18s var(--ease-out, ease),
+    transform 0.15s var(--ease-spring, ease);
+}
+
+.strip-day.selected {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.strip-day:active {
+  transform: scale(0.96);
+}
+
+/* Week cards */
+.week-card {
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow) 25%, transparent);
+  transition:
+    border-color 0.2s var(--ease-out, ease),
+    box-shadow 0.2s var(--ease-out, ease),
+    transform 0.2s var(--ease-out, ease);
+}
+
+.week-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+  box-shadow: var(--shadow-lift);
+}
+
+.week-card.current {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent),
+    var(--shadow-lift);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 55%, var(--surface)), var(--surface));
+}
+
+.today-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #ff5a6a));
+  border-radius: 999px;
+  padding: 4px 9px;
+  box-shadow: 0 4px 10px var(--accent-wash);
+}
+
+/* Checks */
+.check {
+  width: 30px;
+  height: 30px;
+  border-width: 1.6px;
+  transition:
+    background-color 0.18s var(--ease-out, ease),
+    border-color 0.18s var(--ease-out, ease),
+    transform 0.18s var(--ease-spring, ease),
+    box-shadow 0.18s ease;
+}
+
+.check.checked {
+  background: linear-gradient(145deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #ff5a6a));
+  border-color: transparent;
+  box-shadow: 0 4px 12px var(--accent-wash);
+  transform: scale(1.02);
+}
+
+/* Chips + buttons */
+.chip {
+  border-radius: 999px;
+  padding: 8px 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--border) 90%, transparent);
+  box-shadow: 0 1px 1px color-mix(in srgb, var(--shadow) 20%, transparent);
+}
+
+.chip.active {
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 72%, #ff5a6a));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 6px 16px var(--accent-wash);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 72%, #ff5a6a));
+  color: #fff;
+  border-radius: 999px;
+  padding: 12px 22px;
+  font-weight: 750;
+  letter-spacing: -0.015em;
+  box-shadow:
+    0 10px 22px var(--accent-wash),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition:
+    transform 0.15s var(--ease-spring, ease),
+    box-shadow 0.2s ease,
+    filter 0.15s ease;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.04);
+  box-shadow: 0 12px 26px var(--accent-wash);
+}
+
+.btn-primary:active {
+  transform: translateY(1px) scale(0.985);
+}
+
+.btn-secondary {
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--border) 90%, transparent);
+  box-shadow: 0 1px 1px color-mix(in srgb, var(--shadow) 18%, transparent);
+}
+
+/* Reader */
+.reader-chapter-title {
+  font-size: 1.1rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  text-transform: none;
+}
+
+.reader-body {
+  font-family: var(--font-reader);
+  font-size: var(--reader-size);
+  line-height: var(--reader-leading);
+  letter-spacing: -0.005em;
+}
+
+.verse {
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.verse:hover {
+  background: color-mix(in srgb, var(--accent-soft) 45%, transparent);
+}
+
+/* Verse sheet */
+.verse-sheet {
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, var(--accent-soft)), var(--surface));
+  box-shadow: 0 -16px 48px color-mix(in srgb, var(--shadow) 55%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.sheet-grabber {
+  width: 42px;
+  height: 5px;
+  background: color-mix(in srgb, var(--border-strong) 70%, transparent);
+}
+
+/* Study guide — Logos panel, YouVersion chrome */
+.study-guide {
+  margin-top: 16px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+  box-shadow: var(--shadow-float, var(--shadow-lift));
+  animation: study-rise 0.35s var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+@keyframes study-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.study-guide-head {
+  padding: 18px 18px 12px;
+  background:
+    radial-gradient(90% 120% at 0% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
+    var(--surface);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+}
+
+.study-guide-title {
+  font-size: 1.12rem;
+  font-weight: 780;
+  letter-spacing: -0.03em;
+}
+
+.study-guide-sub {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.study-guide-close {
+  width: 38px;
+  height: 38px;
+  background: color-mix(in srgb, var(--surface-alt) 90%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  transition: background-color 0.15s ease, transform 0.15s var(--ease-spring, ease);
+}
+
+.study-guide-close:active {
+  transform: scale(0.94);
+}
+
+.study-tabs {
+  padding: 8px 12px 0;
+  gap: 2px;
+  background: color-mix(in srgb, var(--surface-alt) 55%, var(--surface));
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.study-tab {
+  padding: 10px 14px 11px;
+  font-size: 0.86rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  border-radius: 10px 10px 0 0;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.study-tab.active {
+  color: var(--accent);
+  background: var(--surface);
+  border-bottom-color: var(--accent);
+  box-shadow: 0 -1px 0 var(--surface);
+}
+
+.study-guide-panel {
+  padding: 16px 18px 20px;
+}
+
+.study-chip {
+  border-radius: 999px;
+  padding: 8px 13px;
+  font-weight: 650;
+  background: color-mix(in srgb, var(--surface-alt) 70%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s var(--ease-spring, ease),
+    box-shadow 0.15s ease;
+}
+
+.study-chip:active {
+  transform: scale(0.96);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.study-compare-card,
+.study-strongs-card {
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  background: color-mix(in srgb, var(--surface-alt) 45%, var(--surface));
+  box-shadow: 0 1px 1px color-mix(in srgb, var(--shadow) 15%, transparent);
+}
+
+.study-word {
+  border-radius: 10px;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    transform 0.15s var(--ease-spring, ease);
+}
+
+.study-word.active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--accent-wash);
+}
+
+.study-pill.active {
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 72%, #ff5a6a));
+  border-color: transparent;
+  box-shadow: 0 4px 12px var(--accent-wash);
+}
+
+.commentary-toggle {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  background: var(--surface);
+  box-shadow: 0 1px 1px color-mix(in srgb, var(--shadow) 18%, transparent);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s var(--ease-spring, ease);
+}
+
+.commentary-toggle.active {
+  background: color-mix(in srgb, var(--accent-soft) 80%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.commentary-toggle:active {
+  transform: scale(0.97);
+}
+
+.empty-state {
+  border: none;
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(80% 60% at 50% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
+    var(--surface);
+  box-shadow: var(--shadow-lift);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view-pane,
+  .study-guide {
+    animation: none;
+  }
 }
