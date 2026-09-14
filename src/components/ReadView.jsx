@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BOOKS } from '../data/books';
 import { bollsBookId } from '../data/bookRefs';
-import PassageText, { TRANSLATION_LABEL } from './PassageText';
+import PassageText from './PassageText';
 import LibraryPanel from './LibraryPanel';
+import { useReaderPrefs } from '../hooks/useReaderPrefs';
 
 const OT = BOOKS.slice(0, 39);
 const NT = BOOKS.slice(39);
@@ -12,12 +13,14 @@ const NAME_BY_ID = new Map(BOOKS.map((b) => [bollsBookId(b.name), b.name]));
 
 const clean = (s) => (s || '').replace(/<[^>]+>/g, '').replace(/[⌃⌄]/g, '').trim();
 
-export default function ReadView({ jumpTo, onFullscreenClose }) {
+export default function ReadView({ jumpTo, onFullscreenClose, isDone, toggle }) {
+  const { translationLabel, setTranslationId } = useReaderPrefs();
   const [book, setBook] = useState(null);
   const [chapter, setChapter] = useState(null);
   const [focusVerse, setFocusVerse] = useState(null);
   const [readingChapters, setReadingChapters] = useState(null);
   const [readingLabel, setReadingLabel] = useState(null);
+  const [readingId, setReadingId] = useState(null);
   const [startFullscreen, setStartFullscreen] = useState(false);
   const [mode, setMode] = useState('browse'); // browse | library
   const [query, setQuery] = useState('');
@@ -49,6 +52,7 @@ export default function ReadView({ jumpTo, onFullscreenClose }) {
     if (jumpTo.chapters?.length) setReadingChapters(jumpTo.chapters);
     else setReadingChapters(null);
     setReadingLabel(jumpTo.label || null);
+    setReadingId(jumpTo.readingId || null);
     setStartFullscreen(Boolean(jumpTo.fullscreen));
   }, [jumpTo]);
 
@@ -63,6 +67,7 @@ export default function ReadView({ jumpTo, onFullscreenClose }) {
       setFocusVerse(verse ? { book: b, chapter: c, verse } : { book: b, chapter: c });
       setReadingChapters(null);
       setReadingLabel(null);
+      setReadingId(null);
       setStartFullscreen(true);
     };
     window.addEventListener('bible-open-passage', onOpen);
@@ -117,6 +122,7 @@ export default function ReadView({ jumpTo, onFullscreenClose }) {
     setChapter(c);
     setReadingChapters(null);
     setReadingLabel(null);
+    setReadingId(null);
     setStartFullscreen(false);
     setResults(null);
     setQuery('');
@@ -127,8 +133,16 @@ export default function ReadView({ jumpTo, onFullscreenClose }) {
     setStartFullscreen(false);
     setReadingChapters(null);
     setReadingLabel(null);
+    setReadingId(null);
     onFullscreenClose?.();
   };
+
+  const handleToggleReading = useCallback(
+    (id) => {
+      if (id && toggle) toggle(id);
+    },
+    [toggle]
+  );
 
   if (book && chapter && chapters) {
     return (
@@ -139,7 +153,7 @@ export default function ReadView({ jumpTo, onFullscreenClose }) {
               ← {book}
             </button>
             <span className="read-where">
-              {readingLabel || `${book} ${chapter}`} · {TRANSLATION_LABEL}
+              {readingLabel || `${book} ${chapter}`} · {translationLabel}
             </span>
             <button
               type="button"
@@ -149,6 +163,7 @@ export default function ReadView({ jumpTo, onFullscreenClose }) {
                 setChapter(null);
                 setReadingChapters(null);
                 setReadingLabel(null);
+                setReadingId(null);
               }}
             >
               All books
@@ -165,6 +180,9 @@ export default function ReadView({ jumpTo, onFullscreenClose }) {
             startFullscreen={immersive}
             onFullscreenClose={immersive ? handleFullscreenClose : undefined}
             title={readingLabel}
+            readingId={readingId}
+            readingDone={readingId ? Boolean(isDone?.(readingId)) : false}
+            onToggleReading={readingId ? handleToggleReading : null}
           />
         </div>
 
@@ -234,9 +252,10 @@ export default function ReadView({ jumpTo, onFullscreenClose }) {
 
       {mode === 'library' ? (
         <LibraryPanel
+          onSelectTranslation={setTranslationId}
           onOpenRead={() => setMode('browse')}
           onOpenStudy={() => {
-            // Open Genesis 1 fullscreen with study — Logos “open resource” feel.
+            // Open Genesis 1 with study — Logos “open resource” feel.
             setBook('Genesis');
             setChapter(1);
             setStartFullscreen(false);

@@ -1,4 +1,5 @@
-import { COMMENTARIES, COMPARE_TRANSLATIONS } from '../lib/studyData';
+import { COMMENTARIES } from '../lib/studyData';
+import { READER_TRANSLATIONS } from '../hooks/useReaderPrefs';
 
 const LEXICONS = [
   {
@@ -16,22 +17,29 @@ const LEXICONS = [
 /**
  * Logos-style resource library — free public-domain tools available in-app.
  */
-export default function LibraryPanel({ onOpenRead, onOpenStudy }) {
+export default function LibraryPanel({ onSelectTranslation, onOpenRead, onOpenStudy }) {
   return (
     <div className="library-panel">
       <header className="library-hero">
         <h2>Library</h2>
-        <p>Bibles, commentaries, and lexicons — Logos-style study without the paywall.</p>
+        <p>Pick a Bible, then open commentaries and lexicons while you read.</p>
       </header>
 
       <section className="library-section">
         <h3>Bibles</h3>
         <ul className="library-list">
-          {COMPARE_TRANSLATIONS.map((t) => (
+          {READER_TRANSLATIONS.map((t) => (
             <li key={t.id}>
-              <button type="button" className="library-card" onClick={() => onOpenRead?.()}>
+              <button
+                type="button"
+                className="library-card"
+                onClick={() => {
+                  onSelectTranslation?.(t.id);
+                  onOpenRead?.();
+                }}
+              >
                 <span className="library-card-title">{t.label}</span>
-                <span className="library-card-meta">English · Public domain / free</span>
+                <span className="library-card-meta">{t.name} · Free</span>
               </button>
             </li>
           ))}

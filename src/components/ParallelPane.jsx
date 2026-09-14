@@ -2,12 +2,22 @@ import { useEffect, useState } from 'react';
 import { COMPARE_TRANSLATIONS, fetchTranslationChapter } from '../lib/studyData';
 
 /**
- * Logos-style continuous parallel pane for one translation beside WEB.
+ * Logos-style continuous parallel pane for one translation beside the primary text.
  */
-export default function ParallelPane({ book, chapter, translationId = 'BSB', focusVerse = null }) {
+export default function ParallelPane({
+  book,
+  chapter,
+  translationId = 'BSB',
+  excludeId = 'ENGWEBP',
+  focusVerse = null,
+}) {
   const [part, setPart] = useState(null);
   const [error, setError] = useState(null);
   const [id, setId] = useState(translationId);
+
+  useEffect(() => {
+    setId(translationId);
+  }, [translationId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,6 +42,7 @@ export default function ParallelPane({ book, chapter, translationId = 'BSB', foc
   }, [focusVerse, part, id]);
 
   const label = COMPARE_TRANSLATIONS.find((t) => t.id === id)?.label || id;
+  const options = COMPARE_TRANSLATIONS.filter((t) => t.id !== excludeId);
 
   return (
     <aside className="parallel-pane">
@@ -39,7 +50,7 @@ export default function ParallelPane({ book, chapter, translationId = 'BSB', foc
         <label className="parallel-picker">
           <span className="sr-only">Parallel translation</span>
           <select value={id} onChange={(e) => setId(e.target.value)}>
-            {COMPARE_TRANSLATIONS.filter((t) => t.id !== 'ENGWEBP').map((t) => (
+            {options.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.label}
               </option>
