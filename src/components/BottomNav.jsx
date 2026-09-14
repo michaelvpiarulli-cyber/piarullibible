@@ -49,6 +49,17 @@ const MORE = [
     ),
   },
   {
+    id: 'lifegroup',
+    label: 'Lifegroup',
+    blurb: 'Epic of Eden discussion',
+    icon: (
+      <>
+        <path d="M4 19.5V6.2c0-.7.4-1.3 1-1.6L12 2l7 2.6c.6.3 1 .9 1 1.6v13.3" />
+        <path d="M12 2v17.5M8 10h2M8 13h2M14 10h2M14 13h2" />
+      </>
+    ),
+  },
+  {
     id: 'family',
     label: 'Family',
     blurb: 'Shared progress',
