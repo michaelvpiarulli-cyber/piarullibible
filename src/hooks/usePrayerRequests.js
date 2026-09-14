@@ -275,22 +275,23 @@ export function usePrayerRequests(groupId) {
 
   const visibleRequests = useMemo(() => {
     // Remote already filtered by RLS. Local: filter by gender / couple code.
+    // Do not let a shared local authorId bypass guys/girls privacy when the
+    // on-device profile switches circles.
     if (remoteReady) return requests;
     return requests.filter((r) => {
       if (r.circle === 'group') return true;
-      if (r.circle === 'guys') return profile.gender === 'guy' || r.authorId === (user?.id || 'local');
-      if (r.circle === 'girls') return profile.gender === 'girl' || r.authorId === (user?.id || 'local');
+      if (r.circle === 'guys') return profile.gender === 'guy';
+      if (r.circle === 'girls') return profile.gender === 'girl';
       if (r.circle === 'wife') {
-        return (
-          r.authorId === (user?.id || 'local') ||
-          (profile.spousePairCode &&
+        return Boolean(
+          profile.spousePairCode &&
             r.spousePairCode &&
-            r.spousePairCode === profile.spousePairCode)
+            r.spousePairCode === profile.spousePairCode
         );
       }
       return false;
     });
-  }, [requests, remoteReady, profile, user]);
+  }, [requests, remoteReady, profile]);
 
   return {
     available,
