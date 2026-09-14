@@ -1,8 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
-import { LIFEGROUP_STUDIES, getStudyById } from '../data/lifegroupStudies';
+import {
+  LIFEGROUP_STUDIES,
+  getStudiesInOrder,
+  getStudyById,
+  getCurrentStudy,
+} from '../data/lifegroupStudies';
 import { parsePassage } from '../data/bookRefs';
+import PrayerRequestsPanel from './PrayerRequestsPanel';
 
 const NOTES_KEY = 'bible-plan-lifegroup-notes';
+const STUDY_KEY = 'bible-plan-lifegroup-study';
+const SECTION_KEY = 'bible-plan-lifegroup-section';
+
+const SECTIONS = [
+  { id: 'study', label: 'Study' },
+  { id: 'prayer', label: 'Prayer requests' },
+];
 
 function loadNotes() {
   try {
@@ -11,6 +24,16 @@ function loadNotes() {
   } catch {
     return {};
   }
+}
+
+function initialStudyId() {
+  try {
+    const saved = localStorage.getItem(STUDY_KEY);
+    if (saved && getStudyById(saved)) return saved;
+  } catch {
+    /* ignore */
+  }
+  return getCurrentStudy()?.id || LIFEGROUP_STUDIES[0]?.id || null;
 }
 
 /** Turn a study ref into a Read jump target (multi-chapter ranges expanded). */
@@ -28,23 +51,66 @@ function jumpFromRef(ref) {
   };
 }
 
+function initialSection() {
+  try {
+    const saved = localStorage.getItem(SECTION_KEY);
+    if (saved && SECTIONS.some((s) => s.id === saved)) return saved;
+  } catch {
+    /* ignore */
+  }
+  return 'study';
+}
+
 /**
- * Lifegroup discussion guides — open questions for shared study.
+ * Lifegroup discussion guides + shared prayer request circles.
  */
-export default function LifegroupView({ onOpenPassage }) {
-  const [studyId, setStudyId] = useState(LIFEGROUP_STUDIES[0]?.id || null);
+export default function LifegroupView({ onOpenPassage, myStats }) {
+  const [section, setSection] = useState(initialSection);
+  const [studyId, setStudyId] = useState(initialStudyId);
   const [openId, setOpenId] = useState(null);
   const [notes, setNotes] = useState(loadNotes);
 
   const study = useMemo(() => getStudyById(studyId), [studyId]);
+  const current = getCurrentStudy();
+  const studiesOrdered = useMemo(() => getStudiesInOrder(), []);
 
   useEffect(() => {
     localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
   }, [notes]);
 
   useEffect(() => {
+    if (studyId) localStorage.setItem(STUDY_KEY, studyId);
+  }, [studyId]);
+
+  useEffect(() => {
+    localStorage.setItem(SECTION_KEY, section);
+  }, [section]);
+
+  useEffect(() => {
     setOpenId(null);
   }, [studyId]);
+
+  if (section === 'prayer') {
+    return (
+      <div className="lifegroup-view">
+        <div className="filter-row section-switch" role="tablist" aria-label="Lifegroup section">
+          {SECTIONS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              role="tab"
+              aria-selected={section === s.id}
+              className={`chip${section === s.id ? ' active' : ''}`}
+              onClick={() => setSection(s.id)}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+        <PrayerRequestsPanel myStats={myStats} />
+      </div>
+    );
+  }
 
   if (!study) {
     return (
@@ -56,6 +122,14 @@ export default function LifegroupView({ onOpenPassage }) {
   }
 
   const studyNotes = notes[study.id] || {};
+  const isThisWeek = study.id === current?.id;
+  const weekLabel = isThisWeek
+    ? 'This week'
+    : current && study.chapter < current.chapter
+      ? 'Earlier'
+      : current && study.chapter > current.chapter
+        ? 'Upcoming'
+        : 'Study';
 
   const setAnswer = (questionId, value) => {
     setNotes((prev) => ({
@@ -74,24 +148,48 @@ export default function LifegroupView({ onOpenPassage }) {
 
   return (
     <div className="lifegroup-view">
-      {LIFEGROUP_STUDIES.length > 1 && (
-        <div className="filter-row section-switch">
-          {LIFEGROUP_STUDIES.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              className={`chip${studyId === s.id ? ' active' : ''}`}
-              onClick={() => setStudyId(s.id)}
-            >
-              Ch. {s.chapter}
-            </button>
-          ))}
+      <div className="filter-row section-switch" role="tablist" aria-label="Lifegroup section">
+        {SECTIONS.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            role="tab"
+            aria-selected={section === s.id}
+            className={`chip${section === s.id ? ' active' : ''}`}
+            onClick={() => setSection(s.id)}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {studiesOrdered.length > 1 && (
+        <div className="lifegroup-week-bar">
+          <p className="lifegroup-week-label">Epic of Eden · Chapters</p>
+          <div className="filter-row section-switch lifegroup-weeks" role="tablist" aria-label="Study chapter">
+            {studiesOrdered.map((s) => {
+              const active = studyId === s.id;
+              const thisWeek = s.id === current?.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  className={`chip${active ? ' active' : ''}${thisWeek ? ' this-week' : ''}`}
+                  onClick={() => setStudyId(s.id)}
+                >
+                  {thisWeek ? `This week · ${s.chapter}` : `${s.chapter}`}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
       <header className="lifegroup-hero">
         <span className="eyebrow">
-          {study.series} · Chapter {study.chapter}
+          {weekLabel} · {study.series} · Chapter {study.chapter}
         </span>
         <h2>{study.title}</h2>
         <p className="lifegroup-blurb">{study.blurb}</p>
