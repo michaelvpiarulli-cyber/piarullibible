@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LIFEGROUP_STUDIES, getStudyById } from '../data/lifegroupStudies';
+import { parsePassage } from '../data/bookRefs';
 
 const NOTES_KEY = 'bible-plan-lifegroup-notes';
 
@@ -12,10 +13,25 @@ function loadNotes() {
   }
 }
 
+/** Turn a study ref into a Read jump target (multi-chapter ranges expanded). */
+function jumpFromRef(ref) {
+  const parsed = parsePassage(ref);
+  if (!parsed) return null;
+  return {
+    book: parsed.book,
+    chapter: parsed.chapter,
+    verse: parsed.verse,
+    chapters: parsed.chapters || [{ book: parsed.book, chapter: parsed.chapter }],
+    label: ref,
+    fullscreen: true,
+    returnTab: 'lifegroup',
+  };
+}
+
 /**
  * Lifegroup discussion guides — open questions for shared study.
  */
-export default function LifegroupView() {
+export default function LifegroupView({ onOpenPassage }) {
   const [studyId, setStudyId] = useState(LIFEGROUP_STUDIES[0]?.id || null);
   const [openId, setOpenId] = useState(null);
   const [notes, setNotes] = useState(loadNotes);
@@ -49,6 +65,11 @@ export default function LifegroupView() {
         [questionId]: value,
       },
     }));
+  };
+
+  const openRef = (ref) => {
+    const jump = jumpFromRef(ref);
+    if (jump) onOpenPassage?.(jump);
   };
 
   return (
@@ -85,12 +106,33 @@ export default function LifegroupView() {
       <section className="lifegroup-card">
         <h3 className="lifegroup-card-title">Scripture to open</h3>
         <ul className="lifegroup-refs">
-          {study.scriptureFocus.map((s) => (
-            <li key={s.ref}>
-              <strong>{s.ref}</strong>
-              <span>{s.note}</span>
-            </li>
-          ))}
+          {study.scriptureFocus.map((s) => {
+            const canOpen = Boolean(onOpenPassage && jumpFromRef(s.ref));
+            return (
+              <li key={s.ref}>
+                {canOpen ? (
+                  <button
+                    type="button"
+                    className="lifegroup-ref-btn"
+                    onClick={() => openRef(s.ref)}
+                  >
+                    <span className="lifegroup-ref-main">
+                      <strong>{s.ref}</strong>
+                      <span className="lifegroup-ref-open" aria-hidden="true">
+                        Open →
+                      </span>
+                    </span>
+                    <span className="lifegroup-ref-note">{s.note}</span>
+                  </button>
+                ) : (
+                  <>
+                    <strong>{s.ref}</strong>
+                    <span>{s.note}</span>
+                  </>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </section>
 

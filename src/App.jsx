@@ -284,7 +284,7 @@ function App() {
                 </>
               )}
 
-              {tab === 'lifegroup' && <LifegroupView />}
+              {tab === 'lifegroup' && <LifegroupView onOpenPassage={openPassage} />}
 
               {tab === 'family' && <GroupView myStats={myStats} totalDays={planMeta.days} />}
 

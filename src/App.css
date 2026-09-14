@@ -6791,6 +6791,56 @@ html.reading-immersive-open .study-overlay.reading-immersive {
   color: var(--text-dim);
 }
 
+.lifegroup-ref-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-alt) 70%, var(--surface));
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.lifegroup-ref-btn:active {
+  transform: scale(0.99);
+  background: color-mix(in srgb, var(--accent-soft) 45%, var(--surface));
+}
+
+.lifegroup-ref-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.lifegroup-ref-main strong {
+  color: var(--accent);
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.lifegroup-ref-open {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
+.lifegroup-ref-note {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
 .lifegroup-questions {
   list-style: none;
   margin: 4px 0 0;
