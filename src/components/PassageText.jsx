@@ -863,7 +863,10 @@ export default function PassageText({
                   <button
                     type="button"
                     className={`tool-chip done-chip${readingDone ? ' active' : ''}`}
-                    onClick={() => onToggleReading(readingId)}
+                    onClick={() => {
+                      setToolsOpen(false);
+                      onToggleReading(readingId);
+                    }}
                     aria-pressed={readingDone}
                   >
                     {readingDone ? 'Done' : 'Mark done'}

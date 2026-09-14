@@ -6384,8 +6384,10 @@ html.reading-immersive-open .study-overlay.reading-immersive {
   display: none;
 }
 
-/* Immersive Logos toolbar */
+/* Immersive Logos toolbar — above reading-options scrim so Mark done stays tappable */
 .immersive-toolbar {
+  position: relative;
+  z-index: 50;
   gap: 8px;
   padding-left: 8px;
   padding-right: 8px;
