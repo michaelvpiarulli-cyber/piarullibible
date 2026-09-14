@@ -42,6 +42,23 @@ function pick(list, rand) {
   return list[Math.floor(rand() * list.length)];
 }
 
+function normalizeOption(text) {
+  return String(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+/** Build a shuffled MC list with no duplicate option text. */
+function buildOptions(correct, distractors, rand) {
+  const seen = new Set();
+  const out = [];
+  for (const opt of [correct, ...distractors]) {
+    const key = normalizeOption(opt);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(String(opt).trim());
+  }
+  return shuffle(out, rand);
+}
+
 function refLabel(v) {
   return `${v.book} ${v.chapter}:${v.number}`;
 }
@@ -320,11 +337,11 @@ function teachingFromSpeech(speech) {
     };
   }
 
-  // Generic divine speech — still anchored to the quote
+  // Generic divine speech — anchor the answer to this specific word
   if (isDivine) {
     return {
       prompt: `In today’s reading (${ref}), ${speaker} says, “${snip(q, 110)}” Which response fits that word?`,
-      answer: 'Take God at His word — trust what He says and align your life with it',
+      answer: `Trust and obey what God says here: “${snip(q, 85)}” (${ref})`,
       wrong: [
         'Treat it as optional inspiration with no claim on you',
         'Assume God did not mean what He clearly said',
@@ -337,7 +354,7 @@ function teachingFromSpeech(speech) {
   // Human speech — ask what it reveals about their heart toward God
   return {
     prompt: `In ${ref}, ${speaker} says, “${snip(q, 110)}” What does this moment expose?`,
-    answer: 'A heart either turning toward God or away from Him in a real situation',
+    answer: `"${snip(q, 85)}" — in ${ref}, ${speaker} shows a real response to God`,
     wrong: [
       'That Bible characters never struggle',
       'That words in Scripture have no connection to the heart',
@@ -615,7 +632,7 @@ function extractReadingBeats(verses) {
         verse: v,
         kind: 'result',
         prompt: `After what comes before, ${ref} records: “${snip(t, 100)}” What kind of moment is this?`,
-        answer: 'A response to God that moves from hearing into action',
+        answer: `In ${ref}: “${snip(t, 75)}” — a response that connects to what God said before`,
         wrong: [
           'A pause where nothing connects to God’s prior word',
           'Proof that Scripture stories never ask for a response',
@@ -639,7 +656,7 @@ function makeSpeechQuestion(speech, rand, used) {
     type: 'passage',
     prompt: built.prompt,
     passage: null,
-    options: shuffle([built.answer, ...built.wrong], rand),
+    options: buildOptions(built.answer, built.wrong, rand),
     answer: built.answer,
     explain: built.explain,
   };
@@ -654,7 +671,7 @@ function makeClaimQuestion(claim, rand, used) {
     type: 'passage',
     prompt: claim.prompt,
     passage: null,
-    options: shuffle([claim.answer, ...claim.wrong], rand),
+    options: buildOptions(claim.answer, claim.wrong, rand),
     answer: claim.answer,
     explain: claim.explain,
   };
@@ -680,7 +697,7 @@ function makeBeatQuestion(beat, verses, rand, used) {
       type: 'passage',
       prompt: beat.prompt,
       passage: null,
-      options: shuffle([beat.answer, ...beat.wrong], rand),
+      options: buildOptions(beat.answer, beat.wrong, rand),
       answer: beat.answer,
       explain: beat.explain,
     };
@@ -692,10 +709,20 @@ function makeBeatQuestion(beat, verses, rand, used) {
       .filter((v) => v !== beat.verse && v.text.split(/\s+/).length >= 10)
       .map((v) => snip(v.text, 110)),
     rand
-  ).filter((s) => s !== beat.answer);
-  const distractors = others.slice(0, 3);
+  ).filter((s) => normalizeOption(s) !== normalizeOption(beat.answer));
+  const distractors = [];
+  for (const s of others) {
+    if (distractors.length >= 3) break;
+    if (distractors.some((d) => normalizeOption(d) === normalizeOption(s))) continue;
+    distractors.push(s);
+  }
   while (distractors.length < 3) {
-    distractors.push(EVENT_DISTRACTORS[distractors.length % EVENT_DISTRACTORS.length]);
+    const filler = EVENT_DISTRACTORS[distractors.length % EVENT_DISTRACTORS.length];
+    if (!distractors.some((d) => normalizeOption(d) === normalizeOption(filler))) {
+      distractors.push(filler);
+    } else {
+      distractors.push(`${filler} (${distractors.length + 1})`);
+    }
   }
 
   return {
@@ -703,7 +730,7 @@ function makeBeatQuestion(beat, verses, rand, used) {
     type: 'passage',
     prompt: beat.prompt,
     passage: `Stay with ${refLabel(beat.verse)} — what does the text actually recount?`,
-    options: shuffle([beat.answer, ...distractors.slice(0, 3)], rand),
+    options: buildOptions(beat.answer, distractors.slice(0, 3), rand),
     answer: beat.answer,
     explain: beat.explain,
   };
@@ -735,10 +762,21 @@ function makeQuoteComprehension(speeches, rand, used) {
     const distractors = shuffle(
       speeches.filter((s) => s.quote !== chosen.quote).map((s) => snip(s.quote, 130)),
       rand
-    ).slice(0, 3);
+    ).filter((d) => normalizeOption(d) !== normalizeOption(answer));
+    const uniqueDistractors = [];
+    for (const d of distractors) {
+      if (uniqueDistractors.length >= 3) break;
+      if (uniqueDistractors.some((x) => normalizeOption(x) === normalizeOption(d))) continue;
+      uniqueDistractors.push(d);
+    }
 
-    while (distractors.length < 3) {
-      distractors.push(QUOTE_DISTRACTORS[distractors.length % QUOTE_DISTRACTORS.length]);
+    while (uniqueDistractors.length < 3) {
+      const filler = QUOTE_DISTRACTORS[uniqueDistractors.length % QUOTE_DISTRACTORS.length];
+      if (!uniqueDistractors.some((d) => normalizeOption(d) === normalizeOption(filler))) {
+        uniqueDistractors.push(filler);
+      } else {
+        uniqueDistractors.push(`${filler} (${uniqueDistractors.length + 1})`);
+      }
     }
 
     return {
@@ -746,7 +784,7 @@ function makeQuoteComprehension(speeches, rand, used) {
       type: 'quote',
       prompt: `In ${refLabel(chosen.verse)}, what does ${chosen.speaker} say?`,
       passage: 'Catch what was actually spoken in today’s reading.',
-      options: shuffle([answer, ...distractors.slice(0, 3)], rand),
+      options: buildOptions(answer, uniqueDistractors.slice(0, 3), rand),
       answer,
       explain: `${refLabel(chosen.verse)} — “${snip(chosen.quote, 180)}”`,
     };
@@ -762,22 +800,23 @@ function makeVerseMeaning(verse, rand, used) {
   used.add(id);
 
   const snippet = snip(verse.text, 140);
+  const ref = refLabel(verse);
   return {
     id,
     type: 'passage',
-    prompt: `Read ${refLabel(verse)} carefully. What is this verse doing in the story?`,
+    prompt: `Read ${ref} carefully. What is this verse doing in the story?`,
     passage: `“${snippet}”`,
-    options: shuffle(
+    options: buildOptions(
+      `In ${ref}, the text records: “${snip(verse.text, 80)}” — something God wants us to notice`,
       [
-        'Recording something God wants noticed — a word, act, or response that shapes faith',
         'Filling space with detail that has no claim on how we trust God',
         'Proving that ordinary obedience never matters in Scripture',
         'Showing that God stays silent and uninvolved in real lives',
       ],
       rand
     ),
-    answer: 'Recording something God wants noticed — a word, act, or response that shapes faith',
-    explain: `${refLabel(verse)} belongs to today’s word from God — receive it as such.`,
+    answer: `In ${ref}, the text records: “${snip(verse.text, 80)}” — something God wants us to notice`,
+    explain: `${ref} belongs to today’s word from God — receive it as such.`,
   };
 }
 
@@ -789,7 +828,9 @@ function teachKeyForSpeech(s) {
   if (/save .+ sins|immanuel/i.test(s.quote)) return 'jesus-save';
   if (/leave your country|go to the land/i.test(s.quote)) return 'call-leave';
   if (/I will bless|I will make of you/i.test(s.quote)) return 'promise-bless';
-  return `${s.verse.book}:${s.verse.chapter}:${s.verse.number}`;
+  const isDivine = /^(lord|god|jesus|christ|angel)/i.test(s.speaker);
+  if (isDivine) return `generic-divine:${s.verse.book}:${s.verse.chapter}:${s.verse.number}`;
+  return `generic-human:${s.verse.book}:${s.verse.chapter}:${s.verse.number}`;
 }
 
 /**
@@ -811,6 +852,7 @@ export function buildQuiz(readingId, parts, meta = {}) {
   const booksCovered = new Set();
   const seenTeachKeys = new Set();
   const seenKinds = new Map(); // kind -> count
+  const usedAnswers = new Set();
 
   const noteKind = (kind) => {
     if (!kind) return true;
@@ -818,6 +860,15 @@ export function buildQuiz(readingId, parts, meta = {}) {
     // Allow at most one of each teaching template (keeps the quiz varied).
     if (n >= 1) return false;
     seenKinds.set(kind, n + 1);
+    return true;
+  };
+
+  const addQuestion = (q) => {
+    if (!q || questions.length >= QUESTIONS_PER_QUIZ) return false;
+    const answerKey = normalizeOption(q.answer);
+    if (!answerKey || usedAnswers.has(answerKey)) return false;
+    usedAnswers.add(answerKey);
+    questions.push(q);
     return true;
   };
 
@@ -837,8 +888,7 @@ export function buildQuiz(readingId, parts, meta = {}) {
     const teachKey = teachKeyForSpeech(best);
     if (seenTeachKeys.has(teachKey)) continue;
     const q = makeSpeechQuestion(best, rand, used);
-    if (q) {
-      questions.push(q);
+    if (q && addQuestion(q)) {
       booksCovered.add(best.verse.book);
       seenTeachKeys.add(teachKey);
     }
@@ -849,8 +899,7 @@ export function buildQuiz(readingId, parts, meta = {}) {
     if (questions.length >= QUESTIONS_PER_QUIZ) break;
     if (!noteKind(claim.kind)) continue;
     const q = makeClaimQuestion(claim, rand, used);
-    if (q) {
-      questions.push(q);
+    if (q && addQuestion(q)) {
       booksCovered.add(claim.verse.book);
     }
   }
@@ -860,8 +909,7 @@ export function buildQuiz(readingId, parts, meta = {}) {
     if (booksCovered.has(beat.verse.book) && questions.length >= 6) continue;
     if (!noteKind(beat.kind)) continue;
     const q = makeBeatQuestion(beat, verses, rand, used);
-    if (q) {
-      questions.push(q);
+    if (q && addQuestion(q)) {
       booksCovered.add(beat.verse.book);
     }
   }
@@ -873,23 +921,22 @@ export function buildQuiz(readingId, parts, meta = {}) {
     const teachKey = teachKeyForSpeech(s);
     if (seenTeachKeys.has(teachKey)) continue;
     const q = makeSpeechQuestion(s, rand, used);
-    if (q) {
-      questions.push(q);
+    if (q && addQuestion(q)) {
       seenTeachKeys.add(teachKey);
     }
   }
 
   while (questions.length < QUESTIONS_PER_QUIZ) {
     const q = makeQuoteComprehension(speeches, rand, used);
-    if (!q) break;
-    questions.push(q);
+    if (!q || !addQuestion(q)) break;
   }
 
-  // 4) Remaining beats (allow more event variety), then limited meaning fillers.
+  // 4) Remaining beats — allow more events, but only one result template.
   for (const beat of shuffle(beats, rand)) {
     if (questions.length >= QUESTIONS_PER_QUIZ) break;
+    if (beat.kind === 'result' && !noteKind(beat.kind)) continue;
     const q = makeBeatQuestion(beat, verses, rand, used);
-    if (q) questions.push(q);
+    addQuestion(q);
   }
 
   const versePool = shuffle(
@@ -901,8 +948,7 @@ export function buildQuiz(readingId, parts, meta = {}) {
     if (questions.length >= QUESTIONS_PER_QUIZ) break;
     if (meaningCount >= 2) break;
     const q = makeVerseMeaning(v, rand, used);
-    if (q) {
-      questions.push(q);
+    if (q && addQuestion(q)) {
       meaningCount += 1;
     }
   }
@@ -913,21 +959,18 @@ export function buildQuiz(readingId, parts, meta = {}) {
     const id = `anchor-${refLabel(v)}`;
     if (!used.has(id)) {
       used.add(id);
-      questions.push({
+      const answer = 'Ask what this shows about God and how you should respond';
+      addQuestion({
         id,
         type: 'passage',
         prompt: `Holding ${refLabel(v)} with the rest of ${meta.labels || 'today’s reading'}, what is a faithful next step?`,
         passage: `“${snip(v.text, 120)}”`,
-        options: shuffle(
-          [
-            'Ask what this shows about God and how you should respond',
-            'Skim for trivia and move on unchanged',
-            'Only keep the parts that already agree with you',
-            'Treat it as optional background noise',
-          ],
-          rand
-        ),
-        answer: 'Ask what this shows about God and how you should respond',
+        options: buildOptions(answer, [
+          'Skim for trivia and move on unchanged',
+          'Only keep the parts that already agree with you',
+          'Treat it as optional background noise',
+        ], rand),
+        answer,
         explain: 'Scripture is for knowing God and being shaped by Him — starting with today’s text.',
       });
     }
@@ -942,16 +985,27 @@ export function buildQuiz(readingId, parts, meta = {}) {
     const distractors = shuffle(
       versePool.filter((x) => x !== v).map((x) => snip(x.text, 110)),
       rand
-    ).slice(0, 3);
-    while (distractors.length < 3) {
-      distractors.push(EVENT_DISTRACTORS[distractors.length % EVENT_DISTRACTORS.length]);
+    ).filter((d) => normalizeOption(d) !== normalizeOption(answer));
+    const uniqueDistractors = [];
+    for (const d of distractors) {
+      if (uniqueDistractors.length >= 3) break;
+      if (uniqueDistractors.some((x) => normalizeOption(x) === normalizeOption(d))) continue;
+      uniqueDistractors.push(d);
     }
-    questions.push({
+    while (uniqueDistractors.length < 3) {
+      const filler = EVENT_DISTRACTORS[uniqueDistractors.length % EVENT_DISTRACTORS.length];
+      if (!uniqueDistractors.some((d) => normalizeOption(d) === normalizeOption(filler))) {
+        uniqueDistractors.push(filler);
+      } else {
+        uniqueDistractors.push(`${filler} (${uniqueDistractors.length + 1})`);
+      }
+    }
+    addQuestion({
       id,
       type: 'passage',
       prompt: `Which line is actually in ${refLabel(v)} from today’s reading?`,
       passage: 'Stay close to the text you just read.',
-      options: shuffle([answer, ...distractors.slice(0, 3)], rand),
+      options: buildOptions(answer, uniqueDistractors.slice(0, 3), rand),
       answer,
       explain: `${refLabel(v)} — “${snip(v.text, 160)}”`,
     });
@@ -966,12 +1020,16 @@ export function buildQuiz(readingId, parts, meta = {}) {
 /** Prefer AI questions, then pad with local until exactly QUESTIONS_PER_QUIZ. */
 export function mergeQuizQuestions(aiQuestions, localQuestions) {
   const out = [];
-  const seen = new Set();
+  const seenIds = new Set();
+  const seenAnswers = new Set();
   for (const q of [...(aiQuestions || []), ...(localQuestions || [])]) {
     if (!q || out.length >= QUESTIONS_PER_QUIZ) break;
-    const key = String(q.id || q.prompt || '');
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
+    const idKey = String(q.id || q.prompt || '');
+    const answerKey = normalizeOption(q.answer);
+    if (!idKey || seenIds.has(idKey)) continue;
+    if (answerKey && seenAnswers.has(answerKey)) continue;
+    seenIds.add(idKey);
+    if (answerKey) seenAnswers.add(answerKey);
     out.push(q);
   }
   return out;
