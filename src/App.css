@@ -6695,6 +6695,15 @@ html.reading-immersive-open .study-overlay.reading-immersive {
   padding-bottom: 28px;
 }
 
+.lifegroup-weeks {
+  margin-bottom: 2px;
+}
+
+.lifegroup-weeks .chip.this-week:not(.active) {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  color: var(--accent);
+}
+
 .lifegroup-hero {
   padding: 4px 2px 8px;
 }

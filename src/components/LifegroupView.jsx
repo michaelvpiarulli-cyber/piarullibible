@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { LIFEGROUP_STUDIES, getStudyById } from '../data/lifegroupStudies';
+import {
+  LIFEGROUP_STUDIES,
+  getStudyById,
+  getCurrentStudy,
+} from '../data/lifegroupStudies';
 import { parsePassage } from '../data/bookRefs';
 
 const NOTES_KEY = 'bible-plan-lifegroup-notes';
+const STUDY_KEY = 'bible-plan-lifegroup-study';
 
 function loadNotes() {
   try {
@@ -11,6 +16,16 @@ function loadNotes() {
   } catch {
     return {};
   }
+}
+
+function initialStudyId() {
+  try {
+    const saved = localStorage.getItem(STUDY_KEY);
+    if (saved && getStudyById(saved)) return saved;
+  } catch {
+    /* ignore */
+  }
+  return getCurrentStudy()?.id || LIFEGROUP_STUDIES[0]?.id || null;
 }
 
 /** Turn a study ref into a Read jump target (multi-chapter ranges expanded). */
@@ -32,15 +47,20 @@ function jumpFromRef(ref) {
  * Lifegroup discussion guides — open questions for shared study.
  */
 export default function LifegroupView({ onOpenPassage }) {
-  const [studyId, setStudyId] = useState(LIFEGROUP_STUDIES[0]?.id || null);
+  const [studyId, setStudyId] = useState(initialStudyId);
   const [openId, setOpenId] = useState(null);
   const [notes, setNotes] = useState(loadNotes);
 
   const study = useMemo(() => getStudyById(studyId), [studyId]);
+  const current = getCurrentStudy();
 
   useEffect(() => {
     localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
   }, [notes]);
+
+  useEffect(() => {
+    if (studyId) localStorage.setItem(STUDY_KEY, studyId);
+  }, [studyId]);
 
   useEffect(() => {
     setOpenId(null);
@@ -56,6 +76,7 @@ export default function LifegroupView({ onOpenPassage }) {
   }
 
   const studyNotes = notes[study.id] || {};
+  const isThisWeek = study.id === current?.id;
 
   const setAnswer = (questionId, value) => {
     setNotes((prev) => ({
@@ -75,22 +96,29 @@ export default function LifegroupView({ onOpenPassage }) {
   return (
     <div className="lifegroup-view">
       {LIFEGROUP_STUDIES.length > 1 && (
-        <div className="filter-row section-switch">
-          {LIFEGROUP_STUDIES.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              className={`chip${studyId === s.id ? ' active' : ''}`}
-              onClick={() => setStudyId(s.id)}
-            >
-              Ch. {s.chapter}
-            </button>
-          ))}
+        <div className="filter-row section-switch lifegroup-weeks" role="tablist" aria-label="Study week">
+          {LIFEGROUP_STUDIES.map((s) => {
+            const active = studyId === s.id;
+            const thisWeek = s.id === current?.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                className={`chip${active ? ' active' : ''}${thisWeek ? ' this-week' : ''}`}
+                onClick={() => setStudyId(s.id)}
+              >
+                {thisWeek ? 'This week' : `Ch. ${s.chapter}`}
+              </button>
+            );
+          })}
         </div>
       )}
 
       <header className="lifegroup-hero">
         <span className="eyebrow">
+          {isThisWeek ? 'This week · ' : 'Past week · '}
           {study.series} · Chapter {study.chapter}
         </span>
         <h2>{study.title}</h2>

@@ -1,9 +1,84 @@
 /**
  * Lifegroup discussion guides — open questions for shared study nights.
  * Not scored quizzes; meant to be read aloud and talked through together.
+ *
+ * Newest / “this week” study is listed first so the portal opens there by default.
  */
 
 export const LIFEGROUP_STUDIES = [
+  {
+    id: 'epic-of-eden-ch6',
+    series: 'Epic of Eden',
+    chapter: 6,
+    title: 'Noah and Abraham',
+    author: 'Sandra L. Richter',
+    current: true,
+    blurb:
+      'The rescue plan begins in earnest: God reboots a corrupt world through Noah, then names a people, a place, and his presence through Abraham.',
+    scriptureFocus: [
+      { ref: 'Genesis 6–9', note: 'Flood, ark, and Noah’s covenant' },
+      { ref: 'Genesis 8:20–9:17', note: 'Rainbow promise — never again' },
+      { ref: 'Genesis 12:1–9', note: 'Abram’s call: go, and I will bless' },
+      { ref: 'Genesis 15', note: 'Covenant ceremony — God walks alone' },
+      { ref: 'Genesis 17:1–8', note: 'New names: Abraham and Sarah' },
+    ],
+    bigIdea:
+      'God answers human ruin with a second chance (Noah) and then begins gathering a covenant family (Abraham)—people, place, and presence back on the table.',
+    icebreaker:
+      'Have you ever needed a true reset—a clean slate after something you could not fix yourself? What did “second chance” feel like in that season?',
+    questions: [
+      {
+        id: 'q1',
+        prompt:
+          'Richter frames the flood as a de-creational event, not only a natural disaster—God returning the world toward chaos so he can start again. How does that change the way you hear Genesis 6–9?',
+        followUp:
+          'Where do you still picture the flood mainly as “kids’ ark art,” and what would it mean to take its terror and mercy more seriously?',
+      },
+      {
+        id: 'q2',
+        prompt:
+          'Unlike some ancient flood stories that treat the cataclysm as the start of an inferior age, Genesis presents the flood as rescue—God saving humanity from itself. Where do you need to believe that God’s judgment and mercy can arrive in the same act?',
+        followUp:
+          'Is there a hard providence in your life that you have only named as loss, and not yet as a severe mercy?',
+      },
+      {
+        id: 'q3',
+        prompt:
+          'After the flood, God reestablishes contact with fallen humanity through the Noahic covenant. What does it mean that God binds himself with a promise (“never again”) before humanity has proven trustworthy?',
+        followUp: 'Read Genesis 9:8–17 together. What detail in the rainbow covenant steadies you?',
+      },
+      {
+        id: 'q4',
+        prompt:
+          'Richter traces an expanding rescue: Eden welcomed everyone; the Fall excluded all; Noah saves one family; Abraham welcomes an extended family permanently. How does watching the circle widen help you trust God’s patience with history—and with you?',
+        followUp:
+          'Who is someone “outside the circle” you are tempted to write off, and how might Abraham’s call challenge that?',
+      },
+      {
+        id: 'q5',
+        prompt:
+          'With Abraham, the pattern of people / place / presence comes into focus: offspring, the land of Canaan, and Yahweh as “your very great reward.” Which of those three feels hardest for you to believe God still offers in Christ?',
+        followUp:
+          'How does “I am your shield, your very great reward” (Genesis 15:1) reframe what you are asking God for right now?',
+      },
+      {
+        id: 'q6',
+        prompt:
+          'When God renames Abram and Sarai, Richter says he is designating a new Adam and Eve—parents of a chosen line. What does it mean that redemption advances through renamed, imperfect people rather than through a return to flawless Eden stock?',
+        followUp:
+          'If God put a new name over a weary part of your story this week, what would that name need to declare?',
+      },
+      {
+        id: 'q7',
+        prompt:
+          'In Genesis 15 God alone walks between the pieces—he takes on the covenant curse himself. How does that scene prepare you to see the cross, and how should it change the way this group carries one another’s failures?',
+        followUp:
+          'Where do you need to stop trying to “keep the covenant” for God, and instead rest in the God who keeps it for you?',
+      },
+    ],
+    closingPrayer:
+      'Lord of the flood and the promise, thank you that you do not abandon a ruined world. You gave Noah a second chance and called Abraham into a family of blessing. Teach us to trust your widening mercy, to walk by faith toward the land you show us, and to rest in the God who keeps covenant when we cannot. Through Jesus, the true offspring of Abraham—Amen.',
+  },
   {
     id: 'epic-of-eden-ch5',
     series: 'Epic of Eden',
@@ -78,4 +153,9 @@ export const LIFEGROUP_STUDIES = [
 
 export function getStudyById(id) {
   return LIFEGROUP_STUDIES.find((s) => s.id === id) || null;
+}
+
+/** The guide marked current, else the newest chapter. */
+export function getCurrentStudy() {
+  return LIFEGROUP_STUDIES.find((s) => s.current) || LIFEGROUP_STUDIES[0] || null;
 }
