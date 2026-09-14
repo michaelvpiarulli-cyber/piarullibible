@@ -51,7 +51,7 @@ const MORE = [
   {
     id: 'lifegroup',
     label: 'Lifegroup',
-    blurb: 'Epic of Eden · full book',
+    blurb: 'Study + prayer requests',
     icon: (
       <>
         <path d="M4 19.5V6.2c0-.7.4-1.3 1-1.6L12 2l7 2.6c.6.3 1 .9 1 1.6v13.3" />

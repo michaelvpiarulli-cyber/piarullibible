@@ -6990,3 +6990,265 @@ html.reading-immersive-open .study-overlay.reading-immersive {
   outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
   outline-offset: 1px;
 }
+
+/* ── Lifegroup prayer requests ─────────────────────────────────────── */
+
+.prayer-req {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-bottom: 1.5rem;
+}
+
+.prayer-req-hero h2 {
+  margin: 0.15rem 0 0.4rem;
+  font-family: var(--font-display, 'Source Serif 4', Georgia, serif);
+  font-weight: 600;
+  font-size: clamp(1.45rem, 4vw, 1.85rem);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.prayer-req-blurb {
+  margin: 0;
+  color: var(--text-muted, #5c574e);
+  font-size: 0.98rem;
+  line-height: 1.45;
+  max-width: 36rem;
+}
+
+.prayer-req-meta {
+  margin: 0.55rem 0 0;
+  font-size: 0.88rem;
+  color: var(--text-muted, #5c574e);
+}
+
+.prayer-req-banner {
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface, #fff));
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.prayer-req-banner.warn {
+  background: color-mix(in srgb, #b45309 10%, var(--surface, #fff));
+  border-color: color-mix(in srgb, #b45309 28%, transparent);
+}
+
+.prayer-req-banner p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--text-muted, #5c574e);
+}
+
+.prayer-req-card {
+  padding: 1rem 1.05rem 1.1rem;
+  border-radius: 12px;
+  background: var(--surface, #fff);
+  border: 1px solid color-mix(in srgb, var(--border, #e5e0d6) 90%, transparent);
+}
+
+.prayer-req-card-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted, #5c574e);
+}
+
+.prayer-req-setup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.prayer-req-setup-head .prayer-req-card-title {
+  margin: 0;
+}
+
+.prayer-req-setup-summary {
+  margin: 0.25rem 0 0;
+  font-size: 0.98rem;
+  line-height: 1.4;
+}
+
+.prayer-req-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.prayer-req-label {
+  margin: 0.35rem 0 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text, #1c1915);
+}
+
+.prayer-req-label span {
+  font-weight: 450;
+  color: var(--text-muted, #5c574e);
+}
+
+.prayer-req-input,
+.prayer-req-notes {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid var(--border, #e5e0d6);
+  background: var(--bg, #f7f4ee);
+  color: var(--text, #1c1915);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.prayer-req-notes {
+  resize: vertical;
+  min-height: 5rem;
+  line-height: 1.45;
+}
+
+.prayer-req-input:focus,
+.prayer-req-notes:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.prayer-req-gender,
+.prayer-req-circles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.prayer-req-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--text-muted, #5c574e);
+}
+
+.prayer-req-filters {
+  margin-top: 0.15rem;
+}
+
+.prayer-req-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.prayer-req-item {
+  padding: 0.95rem 1rem;
+  border-radius: 12px;
+  background: var(--surface, #fff);
+  border: 1px solid color-mix(in srgb, var(--border, #e5e0d6) 90%, transparent);
+}
+
+.prayer-req-item.answered {
+  opacity: 0.72;
+}
+
+.prayer-req-item.answered .prayer-req-body {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.prayer-req-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.prayer-req-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent-ink, var(--accent));
+}
+
+.prayer-req-badge.circle-guys {
+  background: color-mix(in srgb, #3b6ea5 16%, transparent);
+  color: #2a4f78;
+}
+
+.prayer-req-badge.circle-girls {
+  background: color-mix(in srgb, #a85a7a 16%, transparent);
+  color: #7a3d58;
+}
+
+.prayer-req-badge.circle-group {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.prayer-req-badge.circle-wife {
+  background: color-mix(in srgb, #8a6a3d 16%, transparent);
+  color: #5c4524;
+}
+
+.prayer-req-when {
+  font-size: 0.78rem;
+  color: var(--text-muted, #5c574e);
+}
+
+.prayer-req-body {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.prayer-req-item-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.prayer-req-author {
+  font-size: 0.86rem;
+  color: var(--text-muted, #5c574e);
+}
+
+.prayer-req-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.prayer-req-msg {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-muted, #5c574e);
+}
+
+.empty-state.compact {
+  padding: 1.5rem 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .prayer-req-card {
+    padding: 0.9rem 0.85rem 1rem;
+  }
+
+  .prayer-req-item-foot {
+    align-items: flex-start;
+  }
+}

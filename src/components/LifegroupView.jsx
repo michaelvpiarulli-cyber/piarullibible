@@ -6,9 +6,16 @@ import {
   getCurrentStudy,
 } from '../data/lifegroupStudies';
 import { parsePassage } from '../data/bookRefs';
+import PrayerRequestsPanel from './PrayerRequestsPanel';
 
 const NOTES_KEY = 'bible-plan-lifegroup-notes';
 const STUDY_KEY = 'bible-plan-lifegroup-study';
+const SECTION_KEY = 'bible-plan-lifegroup-section';
+
+const SECTIONS = [
+  { id: 'study', label: 'Study' },
+  { id: 'prayer', label: 'Prayer requests' },
+];
 
 function loadNotes() {
   try {
@@ -44,10 +51,21 @@ function jumpFromRef(ref) {
   };
 }
 
+function initialSection() {
+  try {
+    const saved = localStorage.getItem(SECTION_KEY);
+    if (saved && SECTIONS.some((s) => s.id === saved)) return saved;
+  } catch {
+    /* ignore */
+  }
+  return 'study';
+}
+
 /**
- * Lifegroup discussion guides — open questions for shared study.
+ * Lifegroup discussion guides + shared prayer request circles.
  */
-export default function LifegroupView({ onOpenPassage }) {
+export default function LifegroupView({ onOpenPassage, myStats }) {
+  const [section, setSection] = useState(initialSection);
   const [studyId, setStudyId] = useState(initialStudyId);
   const [openId, setOpenId] = useState(null);
   const [notes, setNotes] = useState(loadNotes);
@@ -65,8 +83,34 @@ export default function LifegroupView({ onOpenPassage }) {
   }, [studyId]);
 
   useEffect(() => {
+    localStorage.setItem(SECTION_KEY, section);
+  }, [section]);
+
+  useEffect(() => {
     setOpenId(null);
   }, [studyId]);
+
+  if (section === 'prayer') {
+    return (
+      <div className="lifegroup-view">
+        <div className="filter-row section-switch" role="tablist" aria-label="Lifegroup section">
+          {SECTIONS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              role="tab"
+              aria-selected={section === s.id}
+              className={`chip${section === s.id ? ' active' : ''}`}
+              onClick={() => setSection(s.id)}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+        <PrayerRequestsPanel myStats={myStats} />
+      </div>
+    );
+  }
 
   if (!study) {
     return (
@@ -104,6 +148,21 @@ export default function LifegroupView({ onOpenPassage }) {
 
   return (
     <div className="lifegroup-view">
+      <div className="filter-row section-switch" role="tablist" aria-label="Lifegroup section">
+        {SECTIONS.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            role="tab"
+            aria-selected={section === s.id}
+            className={`chip${section === s.id ? ' active' : ''}`}
+            onClick={() => setSection(s.id)}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
       {studiesOrdered.length > 1 && (
         <div className="lifegroup-week-bar">
           <p className="lifegroup-week-label">Epic of Eden · Chapters</p>
