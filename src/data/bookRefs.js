@@ -56,6 +56,18 @@ export function parsePassage(input) {
   if (!book) return null;
 
   const rest = raw.slice(book.length).trim().replace(/^[\s.:]+/, '');
+  // Chapter range: "Genesis 2–3" / "Revelation 21-22"
+  const chapterRange = rest.match(/^(\d+)\s*[–—-]\s*(\d+)\s*$/);
+  if (chapterRange) {
+    const start = Number(chapterRange[1]);
+    const end = Number(chapterRange[2]);
+    const from = Math.min(start, end);
+    const to = Math.max(start, end);
+    const chapters = [];
+    for (let c = from; c <= to; c++) chapters.push({ book, chapter: c });
+    return { book, chapter: from, verse: 1, chapters };
+  }
+
   const m = rest.match(/^(\d+)(?:\s*[:.]\s*(\d+))?/);
   if (!m) return { book, chapter: 1, verse: 1 };
   return {
