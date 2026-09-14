@@ -19,6 +19,7 @@ import RuleView from './components/RuleView';
 import YearReview from './components/YearReview';
 import ProgressView from './components/ProgressView';
 import GroupView from './components/GroupView';
+import LifegroupView from './components/LifegroupView';
 import VerseActionSheet from './components/VerseActionSheet';
 import AccountMenu from './components/AccountMenu';
 import ThemeToggle from './components/ThemeToggle';
@@ -32,6 +33,7 @@ const TITLES = {
   prayer: 'Prayer & Practice',
   memorize: 'Memorize',
   notes: 'Notes',
+  lifegroup: 'Lifegroup',
   family: 'Family',
   progress: 'Progress',
 };
@@ -281,6 +283,8 @@ function App() {
                   )}
                 </>
               )}
+
+              {tab === 'lifegroup' && <LifegroupView />}
 
               {tab === 'family' && <GroupView myStats={myStats} totalDays={planMeta.days} />}
 
