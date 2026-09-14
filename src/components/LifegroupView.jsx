@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   LIFEGROUP_STUDIES,
+  getStudiesInOrder,
   getStudyById,
   getCurrentStudy,
 } from '../data/lifegroupStudies';
@@ -53,6 +54,7 @@ export default function LifegroupView({ onOpenPassage }) {
 
   const study = useMemo(() => getStudyById(studyId), [studyId]);
   const current = getCurrentStudy();
+  const studiesOrdered = useMemo(() => getStudiesInOrder(), []);
 
   useEffect(() => {
     localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
@@ -77,6 +79,13 @@ export default function LifegroupView({ onOpenPassage }) {
 
   const studyNotes = notes[study.id] || {};
   const isThisWeek = study.id === current?.id;
+  const weekLabel = isThisWeek
+    ? 'This week'
+    : current && study.chapter < current.chapter
+      ? 'Earlier'
+      : current && study.chapter > current.chapter
+        ? 'Upcoming'
+        : 'Study';
 
   const setAnswer = (questionId, value) => {
     setNotes((prev) => ({
@@ -95,31 +104,33 @@ export default function LifegroupView({ onOpenPassage }) {
 
   return (
     <div className="lifegroup-view">
-      {LIFEGROUP_STUDIES.length > 1 && (
-        <div className="filter-row section-switch lifegroup-weeks" role="tablist" aria-label="Study week">
-          {LIFEGROUP_STUDIES.map((s) => {
-            const active = studyId === s.id;
-            const thisWeek = s.id === current?.id;
-            return (
-              <button
-                key={s.id}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                className={`chip${active ? ' active' : ''}${thisWeek ? ' this-week' : ''}`}
-                onClick={() => setStudyId(s.id)}
-              >
-                {thisWeek ? 'This week' : `Ch. ${s.chapter}`}
-              </button>
-            );
-          })}
+      {studiesOrdered.length > 1 && (
+        <div className="lifegroup-week-bar">
+          <p className="lifegroup-week-label">Epic of Eden · Chapters</p>
+          <div className="filter-row section-switch lifegroup-weeks" role="tablist" aria-label="Study chapter">
+            {studiesOrdered.map((s) => {
+              const active = studyId === s.id;
+              const thisWeek = s.id === current?.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  className={`chip${active ? ' active' : ''}${thisWeek ? ' this-week' : ''}`}
+                  onClick={() => setStudyId(s.id)}
+                >
+                  {thisWeek ? `This week · ${s.chapter}` : `${s.chapter}`}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
       <header className="lifegroup-hero">
         <span className="eyebrow">
-          {isThisWeek ? 'This week · ' : 'Past week · '}
-          {study.series} · Chapter {study.chapter}
+          {weekLabel} · {study.series} · Chapter {study.chapter}
         </span>
         <h2>{study.title}</h2>
         <p className="lifegroup-blurb">{study.blurb}</p>

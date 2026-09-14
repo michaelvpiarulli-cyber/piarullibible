@@ -6695,8 +6695,36 @@ html.reading-immersive-open .study-overlay.reading-immersive {
   padding-bottom: 28px;
 }
 
+.lifegroup-week-bar {
+  margin-bottom: 10px;
+}
+
+.lifegroup-week-label {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
 .lifegroup-weeks {
-  margin-bottom: 2px;
+  margin-bottom: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.lifegroup-weeks::-webkit-scrollbar {
+  display: none;
+}
+
+.lifegroup-weeks .chip {
+  flex-shrink: 0;
+  min-width: 2.5rem;
+  justify-content: center;
 }
 
 .lifegroup-weeks .chip.this-week:not(.active) {
