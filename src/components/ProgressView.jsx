@@ -1,6 +1,7 @@
 import { TRACKS } from '../data/books';
 import { PLANS } from '../data/plans';
 import { ROMANS_SECTIONS } from '../data/romansPlan';
+import { OT_SECTIONS, NT_SECTIONS } from '../data/testamentPlans';
 import { computeStreak } from '../data/streaks';
 import { formatPrettyDate, pregnancyWeekFromDueDate, daysLeftInPregnancy } from '../data/pregnancyDates';
 
@@ -11,6 +12,15 @@ const TRIMESTERS = [
   { id: 't2', name: 'Second trimester', weeks: [14, 27] },
   { id: 't3', name: 'Third trimester', weeks: [28, 40] },
 ];
+
+function themedSectionStats(plan, sections, sectionStats) {
+  return sections
+    .map((s) => {
+      const days = plan.filter((d) => d.sectionId === s.id || d.theme === s.name);
+      return { name: s.name, ...sectionStats(days) };
+    })
+    .filter((t) => t.chapters > 0);
+}
 
 export default function ProgressView({
   plan,
@@ -66,20 +76,24 @@ export default function ProgressView({
           const days = plan.filter((d) => d.week === i + 1);
           return { name: s.name, ...sectionStats(days) };
         }).filter((t) => t.chapters > 0)
-      : TRACK_LIST.map((name) => {
-          const readings = allReadings.filter((r) => r.trackName === name);
-          const done = readings.filter((r) => isDone(r.id)).length;
-          const chapters = readings.reduce((n, r) => n + r.chapters.length, 0);
-          const chaptersDone = readings
-            .filter((r) => isDone(r.id))
-            .reduce((n, r) => n + r.chapters.length, 0);
-          return {
-            name,
-            chapters,
-            chaptersDone,
-            pct: readings.length ? Math.round((done / readings.length) * 100) : 0,
-          };
-        });
+      : planId === 'old-testament'
+        ? themedSectionStats(plan, OT_SECTIONS, sectionStats)
+        : planId === 'new-testament'
+          ? themedSectionStats(plan, NT_SECTIONS, sectionStats)
+          : TRACK_LIST.map((name) => {
+              const readings = allReadings.filter((r) => r.trackName === name);
+              const done = readings.filter((r) => isDone(r.id)).length;
+              const chapters = readings.reduce((n, r) => n + r.chapters.length, 0);
+              const chaptersDone = readings
+                .filter((r) => isDone(r.id))
+                .reduce((n, r) => n + r.chapters.length, 0);
+              return {
+                name,
+                chapters,
+                chaptersDone,
+                pct: readings.length ? Math.round((done / readings.length) * 100) : 0,
+              };
+            });
 
   return (
     <div className="progress-view">

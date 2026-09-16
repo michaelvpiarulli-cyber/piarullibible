@@ -11,6 +11,17 @@ import {
   ROMANS_DAYS,
   ROMANS_WEEKS,
 } from './romansPlan';
+import {
+  buildOldTestamentPlan,
+  buildNewTestamentPlan,
+  testamentTotalChapters,
+  OT_SECTIONS,
+  NT_SECTIONS,
+  OT_DAYS,
+  OT_WEEKS,
+  NT_DAYS,
+  NT_WEEKS,
+} from './testamentPlans';
 import { pregnancyWeekFromDueDate } from './pregnancyDates';
 
 export { DAYS_PER_WEEK };
@@ -26,6 +37,26 @@ export const PLANS = [
     build: buildPlan,
     totalChapters: TOTAL_CHAPTERS,
     groupSections: 'tracks', // Progress “By section” uses Law/Wisdom/Prophets/NT
+  },
+  {
+    id: 'old-testament',
+    title: 'Old Testament',
+    blurb: `All 39 books, Genesis → Malachi — about 3 chapters a day (${OT_DAYS} days).`,
+    days: OT_DAYS,
+    weeks: OT_WEEKS,
+    build: buildOldTestamentPlan,
+    totalChapters: testamentTotalChapters(OT_SECTIONS),
+    groupSections: 'old-testament',
+  },
+  {
+    id: 'new-testament',
+    title: 'New Testament',
+    blurb: `All 27 books, Matthew → Revelation — about 2 chapters a day (${NT_DAYS} days).`,
+    days: NT_DAYS,
+    weeks: NT_WEEKS,
+    build: buildNewTestamentPlan,
+    totalChapters: testamentTotalChapters(NT_SECTIONS),
+    groupSections: 'new-testament',
   },
   {
     id: 'romans',
