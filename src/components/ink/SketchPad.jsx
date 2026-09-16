@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PAGE_RATIO, pagesNeededForInk } from './padMetrics';
-import { paintStroke, pressureOf, r3, strokeNear } from './strokes';
+import {
+  appendInkPoints,
+  getInkContext,
+  paintStroke,
+  pointerSamples,
+  pressureOf,
+  r3,
+  strokeNear,
+  withPredictedTail,
+} from './strokes';
 
 export { PAGE_RATIO, pagesNeededForInk } from './padMetrics';
 
@@ -47,6 +56,7 @@ export default function SketchPad({
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
   const sheetRef = useRef(null);
+  const committedRef = useRef(null); // offscreen bitmap of finished strokes
 
   const [tool, setTool] = useState({ mode: 'pen', color: INKS[0].value, width: NIBS[0].width });
   const [pagesLocal, setPagesLocal] = useState(() => pagesNeededForInk(strokes, 1));
@@ -57,12 +67,14 @@ export default function SketchPad({
   const strokesRef = useRef(strokes);
   strokesRef.current = strokes;
   const draftRef = useRef(null);
+  const pressureRef = useRef(0.5);
   const activePointerRef = useRef(null); // only this pointer may extend/end the stroke
   const fingerScrollRef = useRef(null); // { pointerId, y, scroller } — manual pan
   const toolRef = useRef(tool);
   toolRef.current = tool;
   const pagesRef = useRef(pages);
   pagesRef.current = pages;
+  const dirtyCommittedRef = useRef(true);
 
   const findScroller = useCallback(() => {
     const el = wrapRef.current;
@@ -93,6 +105,7 @@ export default function SketchPad({
       }
 
       pagesRef.current = next;
+      dirtyCommittedRef.current = true;
       if (onPagesChange) onPagesChange(next);
       if (!controlled) setPagesLocal(next);
     },
@@ -118,18 +131,46 @@ export default function SketchPad({
     if (needed > pages) growPages(needed);
   }, [strokes, pages, growPages]);
 
-  const redraw = useCallback(() => {
+  const ensureCommitted = useCallback((w, h, dpr) => {
+    const needW = Math.round(w * dpr);
+    const needH = Math.round(h * dpr);
+    let off = committedRef.current;
+    if (!off || off.width !== needW || off.height !== needH) {
+      off = document.createElement('canvas');
+      off.width = needW;
+      off.height = needH;
+      committedRef.current = off;
+      dirtyCommittedRef.current = true;
+    }
+    if (dirtyCommittedRef.current) {
+      const ctx = getInkContext(off) || off.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      for (const s of strokesRef.current) paintStroke(ctx, s, w, h);
+      dirtyCommittedRef.current = false;
+    }
+    return off;
+  }, []);
+
+  const redraw = useCallback((liveStroke = draftRef.current) => {
     const c = canvasRef.current;
     if (!c) return;
-    const ctx = c.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const ctx = getInkContext(c) || c.getContext('2d');
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = c.width / dpr;
     const h = c.height / dpr;
-    ctx.clearRect(0, 0, w, h);
-    for (const s of strokesRef.current) paintStroke(ctx, s, w, h);
-    if (draftRef.current) paintStroke(ctx, draftRef.current, w, h);
-  }, []);
+    if (!w || !h) return;
+
+    const committed = ensureCommitted(w, h, dpr);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.drawImage(committed, 0, 0);
+
+    if (liveStroke) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      paintStroke(ctx, liveStroke, w, h);
+    }
+  }, [ensureCommitted]);
 
   useEffect(() => {
     const c = canvasRef.current;
@@ -147,6 +188,7 @@ export default function SketchPad({
       if (c.width !== nextW || c.height !== nextH) {
         c.width = nextW;
         c.height = nextH;
+        dirtyCommittedRef.current = true;
       }
       c.style.width = `${w}px`;
       c.style.height = `${h}px`;
@@ -166,7 +208,10 @@ export default function SketchPad({
     };
   }, [redraw, pages, expanded]);
 
-  useEffect(redraw, [strokes, redraw]);
+  useEffect(() => {
+    dirtyCommittedRef.current = true;
+    redraw();
+  }, [strokes, redraw]);
 
   /*
    * touch-action:none kills native scroll on the canvas (needed so Pencil
@@ -226,8 +271,13 @@ export default function SketchPad({
     releasePointer(e.currentTarget, e.pointerId);
     const d = draftRef.current;
     draftRef.current = null;
-    if (d) onChange([...strokesRef.current, d]);
-    else redraw();
+    pressureRef.current = 0.5;
+    if (d) {
+      dirtyCommittedRef.current = true;
+      onChange([...strokesRef.current, d]);
+    } else {
+      redraw();
+    }
   };
 
   const onPointerDown = (e) => {
@@ -267,11 +317,13 @@ export default function SketchPad({
       eraseAt(x, y);
       return;
     }
+    const press = pressureOf(e);
+    pressureRef.current = press;
     draftRef.current = {
       type: 'draw',
       color: t.color,
       width: t.width,
-      points: [[r3(x), r3(y), pressureOf(e)]],
+      points: [[r3(x), r3(y), r3(press)]],
     };
     redraw();
   };
@@ -290,14 +342,17 @@ export default function SketchPad({
     // Always cancel while inking — don’t wait on e.buttons (iOS Pencil is flaky).
     e.preventDefault();
     if (e.buttons === 0 && e.pointerType === 'mouse') return;
-    const { x, y } = toNorm(e);
-    if (toolRef.current.mode === 'erase') return eraseAt(x, y);
+    if (toolRef.current.mode === 'erase') {
+      const { x, y } = toNorm(e);
+      return eraseAt(x, y);
+    }
     const d = draftRef.current;
     if (!d) return;
-    const last = d.points[d.points.length - 1];
-    if (Math.hypot(x - last[0], y - last[1]) < 0.0015) return; // downsample
-    d.points.push([r3(x), r3(y), pressureOf(e)]);
-    redraw();
+
+    const samples = pointerSamples(e, toNorm);
+    const { pressure } = appendInkPoints(d.points, samples, pressureRef.current);
+    pressureRef.current = pressure;
+    redraw(withPredictedTail(d, samples));
   };
 
   const addSpace = () => {
