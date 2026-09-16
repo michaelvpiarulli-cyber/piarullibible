@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { HIGHLIGHT_COLORS } from '../hooks/useAnnotations';
 
 function VersePreview({ text, segments }) {
@@ -53,7 +54,9 @@ export default function VerseActionSheet({
 
   const refs = verse.crossRefs || [];
 
-  return (
+  // Portal to body so the sheet stays visible in fullscreen study mode
+  // (html.study-expanded hides .app with visibility: hidden).
+  return createPortal(
     <>
       <div className="sheet-scrim" onClick={onClose} />
       <div className="verse-sheet" role="dialog" aria-modal="true" aria-label={`Actions for ${verse.id}`}>
@@ -184,6 +187,7 @@ export default function VerseActionSheet({
           </div>
         )}
       </div>
-    </>
+    </>,
+    document.body
   );
 }
