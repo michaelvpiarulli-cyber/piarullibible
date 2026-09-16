@@ -8,12 +8,13 @@ import {
   importSubsplashNote,
   textToSermonFields,
   summarizeImport,
+  parsePaperSections,
 } from '../lib/subsplash';
 import SketchPad from './ink/SketchPad';
 import InkPreview from './ink/InkPreview';
 import PaperUnderlay from './ink/PaperUnderlay';
+import OutlineRichText from './OutlineRichText';
 import { pagesNeededForInk } from './ink/padMetrics';
-import { parsePaperSections } from '../lib/subsplash';
 
 const BLANK = {
   title: '',
@@ -813,6 +814,20 @@ export default function SermonView() {
                       <span>pages</span>
                     </li>
                   </ul>
+                  {importPreview.fields?.notes && (
+                    <div className="sermon-import-preview-outline">
+                      <OutlineRichText
+                        text={
+                          parsePaperSections(importPreview.fields.notes)
+                            .filter((s) => s.kind !== 'answers')
+                            .slice(0, 4)
+                            .map((s) => s.text)
+                            .join('\n\n') || importPreview.fields.notes
+                        }
+                        compact
+                      />
+                    </div>
+                  )}
                   <p className="sermon-import-preview-note">
                     Opens as lined paper with room to write between points. Answer key stays at the
                     end for after the sermon.
@@ -1028,7 +1043,29 @@ export default function SermonView() {
                     {s.ink?.length > 0 && (
                       <InkPreview strokes={s.ink} pages={s.inkPages || pagesNeededForInk(s.ink, 1)} />
                     )}
-                    {s.notes && <p className="sermon-notes">{s.notes}</p>}
+                    {s.notes && (
+                      <div className="sermon-notes">
+                        {(() => {
+                          const sections = parsePaperSections(s.notes);
+                          const useSections = sections.length > 1 || Boolean(s.sourceUrl);
+                          if (!useSections) {
+                            return <OutlineRichText text={s.notes} />;
+                          }
+                          return (
+                            <div className="sermon-notes-outline">
+                              {sections.map((section, i) => (
+                                <div
+                                  key={`${section.kind}-${i}`}
+                                  className={`sermon-notes-section is-${section.kind}`}
+                                >
+                                  <OutlineRichText text={section.text} />
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
                     {s.takeaway && (
                       <div className="sermon-takeaway">
                         <span className="takeaway-label">Takeaway</span>

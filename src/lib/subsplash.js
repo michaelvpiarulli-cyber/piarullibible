@@ -46,9 +46,10 @@ export function splitOutlineBlocks(text) {
     .trim();
   if (!raw) return [];
 
-  // Break before numbered / lettered points and markdown-ish headings that survived.
+  // Break before numbered / lettered points and markdown headings.
+  // Do not break before em-dash citations — those belong with the quote above.
   const withBreaks = raw
-    .replace(/\n(?=(?:\d+[).]\s|[A-Z][).]\s|[-•*]\s|#{1,3}\s))/g, '\n\n')
+    .replace(/\n(?=(?:\d+[).]\s|[A-Z][).]\s|[-•*]\s|#{1,6}\s))/g, '\n\n')
     .replace(/\n{3,}/g, '\n\n');
 
   return withBreaks
@@ -72,16 +73,14 @@ export function parsePaperSections(notes) {
   for (const part of parts) {
     const text = part.trim();
     if (!text || text === WRITE_GAP) continue;
-    sections.push({
-      text,
-      kind: /^answer key\b/i.test(text) ? 'answers' : 'outline',
-    });
+    const kind = classifyOutlineSection(text);
+    sections.push({ text, kind });
   }
 
   if (!sections.length) {
     return splitOutlineBlocks(raw).map((text) => ({
       text,
-      kind: /^answer key\b/i.test(text) ? 'answers' : 'outline',
+      kind: classifyOutlineSection(text),
     }));
   }
 
@@ -118,10 +117,175 @@ function blankFor(word) {
   return '_'.repeat(len);
 }
 
+function unwrapQuoteText(quote) {
+  return String(quote || '')
+    .replace(/^["“„]\s*/, '')
+    .replace(/\s*["”]$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Scripture / teaching block classification for rich display. */
+export function classifyOutlineSection(text, kind = 'outline') {
+  if (kind === 'answers' || /^answer key\b/i.test(text || '')) return 'answers';
+  const raw = String(text || '').trim();
+  if (!raw) return 'outline';
+
+  const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
+  if (!lines.length) return 'outline';
+
+  const first = lines[0];
+  const second = lines[1] || '';
+  const isQuoted =
+    /^["“].+["”]$/.test(first) ||
+    (/^["“].+["”]?$/.test(first) && /^[—–-]/.test(second));
+  const hasCite =
+    /^[—–-]\s*\S/.test(second) ||
+    /\(([^()\n]{3,80})\)$/.test(first) ||
+    lines.some((l) => /^[—–-]\s+\S/.test(l));
+
+  if (isQuoted || (hasCite && lines.length <= 3 && !/_{3,}/.test(raw))) {
+    return 'quote';
+  }
+  if (/^#{1,6}\s+\S/.test(first) && lines.length === 1) return 'heading';
+  return 'outline';
+}
+
+/**
+ * Inline segments for a single outline line — blanks, bold, italic, plain.
+ * @returns {{ type: 'text'|'blank'|'bold'|'italic'|'cite', value: string, width?: number }[]}
+ */
+export function parseInlineSegments(line) {
+  const src = String(line || '');
+  if (!src) return [];
+
+  // Whole-line citation: — John 3:16
+  const citeOnly = src.match(/^[—–-]\s*(.+)$/);
+  if (citeOnly && !/_{3,}|\*\*|__/.test(src)) {
+    return [{ type: 'cite', value: citeOnly[1].trim() }];
+  }
+
+  const segments = [];
+  // bold **…**, italic *…*, blanks ____, trailing (Cite Ref)
+  const tokenRe =
+    /(\*\*([^*]+)\*\*|\*([^*]+)\*|_{3,}|\(([^()\n]{3,80})\)$)/g;
+  let last = 0;
+  let m;
+  while ((m = tokenRe.exec(src))) {
+    if (m.index > last) {
+      segments.push({ type: 'text', value: src.slice(last, m.index) });
+    }
+    if (m[0].startsWith('**')) {
+      segments.push({ type: 'bold', value: m[2] });
+    } else if (m[0].startsWith('*')) {
+      segments.push({ type: 'italic', value: m[3] });
+    } else if (m[0].startsWith('_')) {
+      segments.push({ type: 'blank', value: m[0], width: m[0].length });
+    } else if (m[4]) {
+      segments.push({ type: 'cite', value: cleanCiteRef(m[4]) });
+    }
+    last = m.index + m[0].length;
+  }
+  if (last < src.length) {
+    segments.push({ type: 'text', value: src.slice(last) });
+  }
+  return segments.length ? segments : [{ type: 'text', value: src }];
+}
+
+/**
+ * Structured lines for rich outline rendering (paper, cards, preview).
+ * @returns {{ type: string, text: string, segments: ReturnType<typeof parseInlineSegments>, level?: number }[]}
+ */
+export function parseOutlineLines(text) {
+  const raw = String(text || '').replace(/\r\n/g, '\n');
+  if (!raw.trim()) return [];
+
+  const out = [];
+  for (const line of raw.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed === WRITE_GAP || /^[·.\s]+$/.test(trimmed)) {
+      continue;
+    }
+
+    if (/^answer key\b/i.test(trimmed)) {
+      out.push({ type: 'answer-title', text: 'Answer key', segments: [] });
+      continue;
+    }
+
+    const heading = trimmed.match(/^(#{1,6})\s+(.+)$/);
+    if (heading) {
+      out.push({
+        type: 'heading',
+        text: heading[2],
+        level: heading[1].length,
+        segments: parseInlineSegments(heading[2]),
+      });
+      continue;
+    }
+
+    if (/^[—–-]\s*\S/.test(trimmed)) {
+      out.push({
+        type: 'cite',
+        text: trimmed.replace(/^[—–-]\s*/, ''),
+        segments: [{ type: 'cite', value: trimmed.replace(/^[—–-]\s*/, '') }],
+      });
+      continue;
+    }
+
+    if (/^["“].+["”]$/.test(trimmed) || /^["“].+["”]\s*$/.test(trimmed)) {
+      const body = unwrapQuoteText(trimmed);
+      out.push({
+        type: 'quote',
+        text: body,
+        segments: parseInlineSegments(body),
+      });
+      continue;
+    }
+
+    // Legacy: quote with trailing (Ref) on the same line
+    const legacyQuote = trimmed.match(/^(.+?)\s*\(([^()\n]{3,80})\)$/);
+    if (
+      legacyQuote &&
+      !/_{3,}/.test(legacyQuote[1]) &&
+      legacyQuote[1].length > 40 &&
+      /\d/.test(legacyQuote[2])
+    ) {
+      out.push({
+        type: 'quote',
+        text: unwrapQuoteText(legacyQuote[1]),
+        segments: parseInlineSegments(unwrapQuoteText(legacyQuote[1])),
+      });
+      out.push({
+        type: 'cite',
+        text: cleanCiteRef(legacyQuote[2]),
+        segments: [{ type: 'cite', value: cleanCiteRef(legacyQuote[2]) }],
+      });
+      continue;
+    }
+
+    if (/^\d+\.\s+\S/.test(trimmed) && out.some((l) => l.type === 'answer-title')) {
+      out.push({
+        type: 'answer',
+        text: trimmed,
+        segments: parseInlineSegments(trimmed),
+      });
+      continue;
+    }
+
+    out.push({
+      type: 'body',
+      text: trimmed,
+      segments: parseInlineSegments(trimmed),
+    });
+  }
+  return out;
+}
+
 /**
  * Turn Subsplash markdown-ish content into a paper outline:
- * fill-ins become blanks, {note} becomes a write gap, cites become refs,
- * and sections are spaced so you can write between them.
+ * fill-ins become blanks, scripture becomes quoted + cited lines,
+ * headings/bold/italic stay marked for rich display, {note} becomes a
+ * write gap, and sections are spaced so you can write between them.
  *
  * @param {string} content
  * @param {{ title?: string }} [opts] — strip a leading title line when it matches the page title
@@ -136,15 +300,25 @@ export function formatSubsplashContent(content, opts = {}) {
     return blankFor(clean);
   });
 
+  // Blockquote + cite → curly quote + em-dash reference (reads well plain + rich).
+  text = text.replace(
+    /^>\s*([\s\S]*?)<cite>\s*-{0,3}\s*([^<]+?)\s*<\/cite>\s*$/gim,
+    (_, quote, ref) => {
+      const body = unwrapQuoteText(quote.replace(/\n+/g, ' '));
+      return `“${body}”\n— ${cleanCiteRef(ref)}`;
+    }
+  );
+
+  // Remaining cites (inline) → em-dash line when at end of a quote-ish block.
+  text = text.replace(CITE_CAPTURE_RE, (_, ref) => `\n— ${cleanCiteRef(ref)}`);
+
   text = text
-    .replace(CITE_CAPTURE_RE, (_, ref) => `(${cleanCiteRef(ref)})`)
     // Explicit Subsplash note slots → our write-gap marker.
     .replace(/\{note\}/gi, `\n\n${WRITE_GAP}\n\n`)
     .replace(/<\/?[^>]+>/g, '') // stray HTML
-    .replace(/^>\s*/gm, '')
-    .replace(/^#{1,6}\s*/gm, '')
-    .replace(/\*\*([^*]+)\*\*/g, '$1')
-    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/^>\s+/gm, '') // leftover blockquote markers
+    .replace(/^---+$/gm, '')
+    // Keep # headings, **bold**, *italic* for OutlineRichText.
     .replace(/[ \t]+\n/g, '\n')
     .replace(/[ \t]{2,}/g, ' ')
     .replace(/^[ \t]+/gm, '')
@@ -155,27 +329,20 @@ export function formatSubsplashContent(content, opts = {}) {
     const title = opts.title.trim();
     if (title) {
       const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      text = text.replace(new RegExp(`^${escaped}\\s*\\n+`, 'i'), '').trim();
+      text = text.replace(new RegExp(`^#{0,6}\\s*${escaped}\\s*\\n+`, 'i'), '').trim();
     }
   }
 
-  // Keep a scripture quote on its own block when the next teaching point follows.
-  text = text.replace(/(\([^()\n]{3,80}\))\n(?!\n)/g, '$1\n\n');
+  // Keep a scripture citation on its own block when the next teaching point follows.
+  text = text.replace(/(—\s[^\n]{3,80})\n(?!\n)/g, '$1\n\n');
 
   const blocks = splitOutlineBlocks(text);
   const outline = [];
   const answerBlocks = [];
 
-  const pushGap = () => {
-    if (outline.length && outline[outline.length - 1] !== WRITE_GAP) {
-      outline.push(WRITE_GAP);
-    }
-  };
-
   for (const block of blocks) {
     if (block === WRITE_GAP || /^[·.\s]+$/.test(block)) {
-      // Keep intentional gaps from {note}; avoid stacking duplicates.
-      pushGap();
+      // Intentional {note} gaps become blank-line breathing room at join time.
       continue;
     }
     if (/^answer key\b/i.test(block)) {
@@ -183,26 +350,22 @@ export function formatSubsplashContent(content, opts = {}) {
       continue;
     }
     outline.push(block);
-    // Default breathing room after every outline block.
-    pushGap();
   }
 
-  // Trim trailing gap before answer key / end.
-  while (outline.length && outline[outline.length - 1] === WRITE_GAP) outline.pop();
-
-  let paper = outline.join('\n\n');
+  // Triple newlines → parsePaperSections write bands (no ugly ···· markers).
+  let paper = outline.join('\n\n\n');
 
   if (answers.length) {
     const key = `Answer key\n${answers.map((a, i) => `${i + 1}. ${a}`).join('\n')}`;
-    paper = paper ? `${paper}\n\n${WRITE_GAP}\n\n${key}` : key;
+    paper = paper ? `${paper}\n\n\n${key}` : key;
   } else if (answerBlocks.length) {
     paper = paper
-      ? `${paper}\n\n${WRITE_GAP}\n\n${answerBlocks.join('\n\n')}`
+      ? `${paper}\n\n\n${answerBlocks.join('\n\n')}`
       : answerBlocks.join('\n\n');
   }
 
-  // Soften runaway blank lines without touching write-gap spacing.
-  paper = paper.replace(/\n{5,}/g, '\n\n\n\n').trim();
+  // Soften runaway blank lines.
+  paper = paper.replace(/\n{6,}/g, '\n\n\n\n\n').trim();
 
   return paper;
 }

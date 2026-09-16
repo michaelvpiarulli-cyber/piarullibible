@@ -1,4 +1,5 @@
-import { parsePaperSections } from '../../lib/subsplash';
+import { classifyOutlineSection, parsePaperSections } from '../../lib/subsplash';
+import OutlineRichText from '../OutlineRichText';
 
 /**
  * Printed outline sitting under the SketchPad canvas — notebook margins and
@@ -16,17 +17,20 @@ export default function PaperUnderlay({ notes }) {
       <div className="paper-underlay-body">
         {sections.map((section, i) => {
           const isLast = i === sections.length - 1;
+          const kind = section.kind || classifyOutlineSection(section.text);
           return (
-            <div key={`${section.kind}-${i}`} className="paper-block-chunk">
-              <p
-                className={`paper-block-text${section.kind === 'answers' ? ' is-answers' : ''}`}
-              >
-                {section.text}
-              </p>
+            <div key={`${kind}-${i}`} className={`paper-block-chunk is-${kind}`}>
               <div
-                className={`paper-write-gap${section.kind === 'answers' ? ' is-tight' : ''}${
-                  isLast ? ' is-end' : ''
-                }`}
+                className={`paper-block-text${kind === 'answers' ? ' is-answers' : ''}${
+                  kind === 'quote' ? ' is-quote' : ''
+                }${kind === 'heading' ? ' is-heading' : ''}`}
+              >
+                <OutlineRichText text={section.text} />
+              </div>
+              <div
+                className={`paper-write-gap${kind === 'answers' || kind === 'heading' ? ' is-tight' : ''}${
+                  kind === 'quote' ? ' is-quote-gap' : ''
+                }${isLast ? ' is-end' : ''}`}
               />
             </div>
           );
