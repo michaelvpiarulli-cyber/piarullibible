@@ -1070,6 +1070,8 @@
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.15s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .verse:hover {
