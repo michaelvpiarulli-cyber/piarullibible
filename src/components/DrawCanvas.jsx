@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useChapterDrawing } from '../hooks/useDrawings';
-import { paintStroke, pressureOf, r3, strokeNear } from './ink/strokes';
+import {
+  appendInkPoints,
+  getInkContext,
+  paintStroke,
+  pointerSamples,
+  pressureOf,
+  r3,
+  strokeNear,
+  withPredictedTail,
+} from './ink/strokes';
 
 /** True stylus / Apple Pencil. Fingers are `touch`; desktop testing keeps `mouse`. */
 function isInkPointer(e) {
@@ -70,36 +79,72 @@ function mapStrokeToCanvas(stroke, body, canvas) {
 
 export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
   const canvasRef = useRef(null);
+  const committedRef = useRef(null);
   const [strokes, saveStrokes] = useChapterDrawing(chapterKey);
 
   const strokesRef = useRef(strokes);
   strokesRef.current = strokes;
   const draftRef = useRef(null); // stroke in progress (body-normalized)
+  const pressureRef = useRef(0.5);
   const activePointerRef = useRef(null);
   const fingerScrollRef = useRef(null);
   const toolRef = useRef(tool);
   toolRef.current = tool;
+  const dirtyCommittedRef = useRef(true);
 
-  const redraw = useCallback(() => {
-    const c = canvasRef.current;
-    if (!c) return;
-    const body = bodyEl(c);
-    const ctx = c.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const w = c.width / dpr;
-    const h = c.height / dpr;
-    ctx.clearRect(0, 0, w, h);
-
-    const paint = (stroke) => {
-      if (!stroke) return;
-      const mapped = body ? mapStrokeToCanvas(stroke, body, c) : stroke;
-      paintStroke(ctx, mapped, w, h);
-    };
-
-    for (const s of strokesRef.current) paint(s);
-    if (draftRef.current) paint(draftRef.current);
+  const paintMapped = useCallback((ctx, stroke, body, canvas, w, h) => {
+    if (!stroke) return;
+    const mapped = body ? mapStrokeToCanvas(stroke, body, canvas) : stroke;
+    paintStroke(ctx, mapped, w, h);
   }, []);
+
+  const ensureCommitted = useCallback(
+    (c, body, w, h, dpr) => {
+      const needW = Math.round(w * dpr);
+      const needH = Math.round(h * dpr);
+      let off = committedRef.current;
+      if (!off || off.width !== needW || off.height !== needH) {
+        off = document.createElement('canvas');
+        off.width = needW;
+        off.height = needH;
+        committedRef.current = off;
+        dirtyCommittedRef.current = true;
+      }
+      if (dirtyCommittedRef.current) {
+        const ctx = getInkContext(off) || off.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, w, h);
+        for (const s of strokesRef.current) paintMapped(ctx, s, body, c, w, h);
+        dirtyCommittedRef.current = false;
+      }
+      return off;
+    },
+    [paintMapped]
+  );
+
+  const redraw = useCallback(
+    (liveStroke = draftRef.current) => {
+      const c = canvasRef.current;
+      if (!c) return;
+      const body = bodyEl(c);
+      const ctx = getInkContext(c) || c.getContext('2d');
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = c.width / dpr;
+      const h = c.height / dpr;
+      if (!w || !h) return;
+
+      const committed = ensureCommitted(c, body, w, h, dpr);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, c.width, c.height);
+      ctx.drawImage(committed, 0, 0);
+
+      if (liveStroke) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        paintMapped(ctx, liveStroke, body, c, w, h);
+      }
+    },
+    [ensureCommitted, paintMapped]
+  );
 
   // Match the canvas to its parent box (and stay crisp on retina).
   useEffect(() => {
@@ -111,9 +156,14 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
       const w = parent.clientWidth;
       const h = parent.clientHeight;
       if (!w || !h) return;
-      const dpr = window.devicePixelRatio || 1;
-      c.width = Math.round(w * dpr);
-      c.height = Math.round(h * dpr);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const nextW = Math.round(w * dpr);
+      const nextH = Math.round(h * dpr);
+      if (c.width !== nextW || c.height !== nextH) {
+        c.width = nextW;
+        c.height = nextH;
+        dirtyCommittedRef.current = true;
+      }
       c.style.width = `${w}px`;
       c.style.height = `${h}px`;
       redraw();
@@ -127,7 +177,10 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
     return () => ro.disconnect();
   }, [redraw]);
 
-  useEffect(redraw, [strokes, redraw]);
+  useEffect(() => {
+    dirtyCommittedRef.current = true;
+    redraw();
+  }, [strokes, redraw]);
 
   useEffect(() => {
     if (!registerApi) return;
@@ -194,6 +247,7 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
 
     const d = draftRef.current;
     draftRef.current = null;
+    pressureRef.current = 0.5;
     if (!d) return redraw();
 
     // Drop accidental taps / zero-size circles.
@@ -202,8 +256,12 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
         ? Math.abs(d.points[1][0] - d.points[0][0]) > 0.01 &&
           Math.abs(d.points[1][1] - d.points[0][1]) > 0.005
         : true;
-    if (meaningful) saveStrokes([...strokesRef.current, d]);
-    else redraw();
+    if (meaningful) {
+      dirtyCommittedRef.current = true;
+      saveStrokes([...strokesRef.current, d]);
+    } else {
+      redraw();
+    }
   };
 
   const onPointerDown = (e) => {
@@ -245,10 +303,12 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
       eraseAt(x, y);
       return;
     }
+    const press = pressureOf(e);
+    pressureRef.current = press;
     draftRef.current =
       t.mode === 'circle'
         ? { type: 'ellipse', color: t.color, width: t.width, points: [[r3(x), r3(y)], [r3(x), r3(y)]] }
-        : { type: 'draw', color: t.color, width: t.width, points: [[r3(x), r3(y), pressureOf(e)]] };
+        : { type: 'draw', color: t.color, width: t.width, points: [[r3(x), r3(y), r3(press)]] };
     redraw();
   };
 
@@ -267,9 +327,9 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
     if (activePointerRef.current !== e.pointerId) return;
     e.preventDefault();
     if (e.buttons === 0 && e.pointerType === 'mouse') return;
-    const { x, y } = toNorm(e);
 
     if (toolRef.current.mode === 'erase') {
+      const { x, y } = toNorm(e);
       eraseAt(x, y);
       return;
     }
@@ -277,13 +337,16 @@ export default function DrawCanvas({ chapterKey, active, tool, registerApi }) {
     if (!d) return;
 
     if (d.type === 'ellipse') {
+      const { x, y } = toNorm(e);
       d.points[1] = [r3(x), r3(y)];
-    } else {
-      const last = d.points[d.points.length - 1];
-      if (Math.hypot(x - last[0], y - last[1]) < 0.002) return; // downsample
-      d.points.push([r3(x), r3(y), pressureOf(e)]);
+      redraw();
+      return;
     }
-    redraw();
+
+    const samples = pointerSamples(e, toNorm);
+    const { pressure } = appendInkPoints(d.points, samples, pressureRef.current);
+    pressureRef.current = pressure;
+    redraw(withPredictedTail(d, samples));
   };
 
   return (
