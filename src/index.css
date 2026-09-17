@@ -232,13 +232,18 @@ html.study-expanded body::before {
   z-index: 150;
 }
 
-/* Keep verse note sheet above the study overlay. */
-html.study-expanded .sheet-scrim {
+/* Keep verse note sheet above the study overlay and visible even though
+   .app is visibility:hidden while study-expanded (sheet is portaled to body). */
+html.study-expanded .sheet-scrim,
+html.notes-expanded .sheet-scrim {
   z-index: 220;
+  visibility: visible;
 }
 
-html.study-expanded .verse-sheet {
+html.study-expanded .verse-sheet,
+html.notes-expanded .verse-sheet {
   z-index: 230;
+  visibility: visible;
 }
 
 button {
