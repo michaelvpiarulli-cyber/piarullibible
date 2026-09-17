@@ -1,6 +1,24 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
+/** Turn opaque browser/network failures into something actionable. */
+function formatAuthError(error) {
+  const raw = (error?.message || error || '').toString().trim();
+  if (!raw) return 'Something went wrong. Please try again.';
+  const lower = raw.toLowerCase();
+  if (
+    lower === 'load failed' ||
+    lower === 'failed to fetch' ||
+    lower.includes('networkerror') ||
+    lower.includes('network request failed') ||
+    lower.includes('fetch failed')
+  ) {
+    return "Can't reach sync — the database project may be paused. Open supabase.com/dashboard, Restore the PiarulliBible project, then try Sign in again.";
+  }
+  return raw;
+}
+
+
 /**
  * Wraps Supabase email + password auth. Without configured keys it reports a
  * stable "logged out, unavailable" state so the app runs in local-only mode.
@@ -26,7 +44,7 @@ export function useAuth() {
   const signIn = useCallback(async (email, password) => {
     if (!isSupabaseConfigured) return { error: 'Sync is not configured.' };
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message || null };
+    return { error: error ? formatAuthError(error) : null };
   }, []);
 
   const signUp = useCallback(async (email, password) => {
@@ -37,7 +55,7 @@ export function useAuth() {
       // Confirmation email (if enabled) sends the user back to this same site.
       options: { emailRedirectTo: window.location.origin },
     });
-    if (error) return { error: error.message };
+    if (error) return { error: formatAuthError(error) };
     // With email confirmation enabled, signUp returns a user but no session.
     const needsConfirm = data.user && !data.session;
     return { error: null, needsConfirm };

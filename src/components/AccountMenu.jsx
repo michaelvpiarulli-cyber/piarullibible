@@ -144,8 +144,13 @@ export default function AccountMenu() {
             >
               {mode === 'signup'
                 ? 'Already have an account? Sign in'
-                : "New here? Create an account"}
+                : 'New here? Create an account'}
             </button>
+            {message?.type === 'error' && /paused|Can't reach sync/i.test(message.text) && (
+              <p className="account-form-sub account-restore-hint">
+                Tip: on the Create account screen, switch to Sign in if you already signed up before.
+              </p>
+            )}
           </div>
         </>
       )}
