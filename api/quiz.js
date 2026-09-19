@@ -29,21 +29,39 @@ function trimPassages(passages) {
   }));
 }
 
+function normalizeOption(text) {
+  return String(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function dedupeOptions(options) {
+  const seen = new Set();
+  const out = [];
+  for (const opt of options) {
+    const key = normalizeOption(opt);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(String(opt).trim());
+  }
+  return out;
+}
+
 function normalizeQuestions(raw) {
   const list = Array.isArray(raw) ? raw : raw?.questions;
   if (!Array.isArray(list)) return [];
   return list
     .map((q, i) => {
-      const options = Array.isArray(q.options) ? q.options.map(String).slice(0, 4) : [];
       const answer = String(q.answer || '');
+      let options = dedupeOptions(Array.isArray(q.options) ? q.options.map(String) : []);
       if (options.length < 2 || !answer || !options.includes(answer)) return null;
+      // Ensure answer is present even if dedupe dropped a near-duplicate
+      if (!options.includes(answer)) options = dedupeOptions([answer, ...options]);
       while (options.length < 4) options.push(`Option ${options.length + 1}`);
       return {
         id: String(q.id || `ai-${i}`),
         type: 'ai',
         prompt: String(q.prompt || '').trim(),
         passage: q.passage ? String(q.passage) : null,
-        options,
+        options: options.slice(0, 4),
         answer,
         explain: String(q.explain || '').trim(),
       };
