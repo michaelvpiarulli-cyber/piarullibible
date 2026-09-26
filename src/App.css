@@ -772,9 +772,7 @@
   padding: 28px 24px 26px;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background:
-    radial-gradient(90% 80% at 50% 0%, var(--accent-wash), transparent 65%),
-    var(--surface);
+  background: var(--surface);
   text-align: center;
   box-shadow: var(--shadow-lift);
 }
@@ -1549,9 +1547,7 @@
   padding: 18px 16px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background:
-    linear-gradient(180deg, var(--accent-wash), transparent 48%),
-    var(--surface-alt);
+  background: var(--surface-alt);
 }
 
 /* Sits under the chapter text so the quiz is clearly “after you read”. */
@@ -1559,9 +1555,7 @@
   margin: 8px 8px 18px;
   padding: 20px 16px 18px;
   border-radius: var(--radius-lg);
-  background:
-    radial-gradient(90% 80% at 50% 0%, var(--accent-wash), transparent 65%),
-    var(--surface);
+  background: var(--surface);
   box-shadow: var(--shadow-lift);
 }
 
@@ -1569,9 +1563,7 @@
   margin: 18px 0 0;
   padding: 22px 18px 18px;
   border-radius: var(--radius-lg);
-  background:
-    radial-gradient(90% 80% at 50% 0%, var(--accent-wash), transparent 65%),
-    var(--surface);
+  background: var(--surface);
   box-shadow: var(--shadow-lift);
 }
 
@@ -1841,8 +1833,7 @@
 .week-card.current {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
   box-shadow: 0 0 0 3px var(--accent-wash);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface) 85%, var(--accent-soft)), var(--surface));
+  background: var(--surface);
 }
 
 .week-card-header {
@@ -2397,9 +2388,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 22px 18px;
-  background:
-    radial-gradient(80% 60% at 50% 0%, var(--accent-wash), transparent 70%),
-    color-mix(in srgb, var(--surface) 70%, transparent);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
 }
 
 .group-actions-lead {
@@ -3475,8 +3464,7 @@
   border-radius: var(--radius-lg);
   padding: 18px 20px 20px;
   margin: -8px 0 20px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface) 88%, var(--accent-soft)), var(--surface));
+  background: var(--surface);
   box-shadow: var(--shadow-lift);
   display: flex;
   flex-direction: column;
@@ -3532,8 +3520,7 @@
   border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
   border-radius: var(--radius-md);
   padding: 14px 16px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 70%, var(--surface)), var(--surface));
+  background: var(--surface);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -5992,8 +5979,7 @@ html.reading-immersive-open .study-overlay.reading-immersive {
   box-shadow:
     0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent),
     var(--shadow-lift);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 55%, var(--surface)), var(--surface));
+  background: var(--surface);
 }
 
 .today-pill {
@@ -6104,8 +6090,7 @@ html.reading-immersive-open .study-overlay.reading-immersive {
 .verse-sheet {
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, var(--accent-soft)), var(--surface));
+  background: var(--surface);
   box-shadow: 0 -16px 48px color-mix(in srgb, var(--shadow) 55%, transparent);
   border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
 }
@@ -6140,9 +6125,7 @@ html.reading-immersive-open .study-overlay.reading-immersive {
 
 .study-guide-head {
   padding: 18px 18px 12px;
-  background:
-    radial-gradient(90% 120% at 0% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
-    var(--surface);
+  background: var(--surface);
   border-bottom: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
 }
 
@@ -6273,9 +6256,7 @@ html.reading-immersive-open .study-overlay.reading-immersive {
 .empty-state {
   border: none;
   border-radius: var(--radius-lg);
-  background:
-    radial-gradient(80% 60% at 50% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
-    var(--surface);
+  background: var(--surface);
   box-shadow: var(--shadow-lift);
 }
 
@@ -6954,12 +6935,7 @@ html.reading-immersive-open .study-overlay.reading-immersive {
 }
 
 .lifegroup-card.icebreaker {
-  background:
-    linear-gradient(
-      165deg,
-      color-mix(in srgb, var(--accent-soft) 55%, var(--surface)) 0%,
-      var(--surface) 100%
-    );
+  background: var(--surface);
 }
 
 .lifegroup-card.closing {
