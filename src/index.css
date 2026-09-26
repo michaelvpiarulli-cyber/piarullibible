@@ -65,6 +65,8 @@
   --app-height: 100dvh;
   --reader-size: 1.125rem;
   --reader-leading: 1.75;
+  --bp-tablet: 768px;
+  --bp-wide: 1024px;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -252,6 +254,13 @@ button {
   cursor: pointer;
   color: inherit;
   touch-action: manipulation;
+}
+
+/* Avoid iOS zoom-on-focus for form fields (16px floor). */
+input,
+textarea,
+select {
+  font-size: max(16px, 1em);
 }
 
 /* Bigger hit targets when a finger / Pencil is the primary pointer (iPad). */

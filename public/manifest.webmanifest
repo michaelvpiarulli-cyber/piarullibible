@@ -4,7 +4,7 @@
   "description": "Bible reading plan with Logos-style study tools",
   "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "background_color": "#f4f4f5",
   "theme_color": "#c8102e",
   "categories": ["books", "education", "lifestyle"],
