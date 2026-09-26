@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Piarulli Bible">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e01838"/>
+      <stop offset="100%" stop-color="#b40e28"/>
+    </linearGradient>
+    <linearGradient id="page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f7f7f8"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g transform="translate(56 56) scale(0.78)">
+    <path d="M256 132 C214 148 168 156 128 156 C116 156 108 164 108 176 V352 C108 364 116 372 128 372 C174 372 220 360 256 340 Z" fill="url(#page)"/>
+    <path d="M256 132 C298 148 344 156 384 156 C396 156 404 164 404 176 V352 C404 364 396 372 384 372 C338 372 292 360 256 340 Z" fill="url(#page)"/>
+    <path d="M256 138 V346" stroke="#c8102e" stroke-width="14" stroke-linecap="round"/>
+    <g stroke="#c8102e" stroke-width="18" stroke-linecap="round">
+      <path d="M148 214 H220"/>
+      <path d="M148 248 H220"/>
+      <path d="M148 282 H204"/>
+      <path d="M292 214 H364"/>
+      <path d="M292 248 H364"/>
+      <path d="M292 282 H348"/>
+    </g>
+    <path d="M248 112 H264 V170 L256 160 L248 170 Z" fill="#ffe9ed"/>
+  </g>
+</svg>

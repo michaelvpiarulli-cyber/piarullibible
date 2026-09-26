@@ -9,7 +9,7 @@
       <stop offset="100%" stop-color="#f7f7f8"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
   <path d="M256 132 C214 148 168 156 128 156 C116 156 108 164 108 176 V352 C108 364 116 372 128 372 C174 372 220 360 256 340 Z" fill="url(#page)"/>
   <path d="M256 132 C298 148 344 156 384 156 C396 156 404 164 404 176 V352 C404 364 396 372 384 372 C338 372 292 360 256 340 Z" fill="url(#page)"/>
   <path d="M256 138 V346" stroke="#c8102e" stroke-width="12" stroke-linecap="round"/>
