@@ -101,6 +101,22 @@ function TabIcon({ children }) {
   );
 }
 
+function NavButton({ tab, active, onSelect }) {
+  return (
+    <button
+      type="button"
+      className={`nav-tab${active === tab.id ? ' active' : ''}`}
+      onClick={() => onSelect(tab.id)}
+      aria-current={active === tab.id ? 'page' : undefined}
+      aria-label={tab.label}
+    >
+      <TabIcon>{tab.icon}</TabIcon>
+      <span className="nav-label-full">{tab.label}</span>
+      <span className="nav-label-short">{tab.label}</span>
+    </button>
+  );
+}
+
 export default function BottomNav({ active, onChange, planTitle = 'Bible in a Year' }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const moreActive = MORE_IDS.has(active);
@@ -114,6 +130,22 @@ export default function BottomNav({ active, onChange, planTitle = 'Bible in a Ye
     return () => window.removeEventListener('keydown', onKey);
   }, [moreOpen]);
 
+  // Close the phone "More" sheet if the viewport grows into sidebar mode.
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const closeIfWide = (e) => {
+      if (e.matches) setMoreOpen(false);
+    };
+    mq.addEventListener('change', closeIfWide);
+    if (mq.matches) setMoreOpen(false);
+    return () => mq.removeEventListener('change', closeIfWide);
+  }, []);
+
+  const select = (id) => {
+    setMoreOpen(false);
+    onChange(id);
+  };
+
   return (
     <>
       <nav className="app-nav" aria-label="Main">
@@ -122,23 +154,9 @@ export default function BottomNav({ active, onChange, planTitle = 'Bible in a Ye
           <span className="brand-sub">{planTitle}</span>
         </div>
 
-        <div className="nav-tabs">
+        <div className="nav-tabs nav-tabs-primary">
           {PRIMARY.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              className={`nav-tab${active === tab.id ? ' active' : ''}`}
-              onClick={() => {
-                setMoreOpen(false);
-                onChange(tab.id);
-              }}
-              aria-current={active === tab.id ? 'page' : undefined}
-              aria-label={tab.label}
-            >
-              <TabIcon>{tab.icon}</TabIcon>
-              <span className="nav-label-full">{tab.label}</span>
-              <span className="nav-label-short">{tab.label}</span>
-            </button>
+            <NavButton key={tab.id} tab={tab} active={active} onSelect={select} />
           ))}
 
           <button
@@ -156,6 +174,14 @@ export default function BottomNav({ active, onChange, planTitle = 'Bible in a Ye
             <span className="nav-label-full">More</span>
             <span className="nav-label-short">More</span>
           </button>
+        </div>
+
+        {/* Full secondary list on iPad/desktop sidebar — hidden on phones. */}
+        <div className="nav-tabs nav-tabs-secondary" aria-label="More">
+          <p className="nav-section-label">More</p>
+          {MORE.map((tab) => (
+            <NavButton key={tab.id} tab={tab} active={active} onSelect={select} />
+          ))}
         </div>
       </nav>
 
@@ -176,10 +202,7 @@ export default function BottomNav({ active, onChange, planTitle = 'Bible in a Ye
                   <button
                     type="button"
                     className={`more-sheet-item${active === item.id ? ' active' : ''}`}
-                    onClick={() => {
-                      setMoreOpen(false);
-                      onChange(item.id);
-                    }}
+                    onClick={() => select(item.id)}
                   >
                     <span className="more-sheet-icon">
                       <TabIcon>{item.icon}</TabIcon>

@@ -31,6 +31,12 @@
   flex: 1;
 }
 
+/* Secondary destinations live in the iPad sidebar; phone uses More sheet. */
+.nav-tabs-secondary,
+.nav-section-label {
+  display: none;
+}
+
 .nav-tab {
   position: relative;
   flex: 1;
@@ -2783,6 +2789,34 @@
     flex: none;
   }
 
+  .nav-tabs-primary {
+    flex: none;
+  }
+
+  .nav-tabs-secondary {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .nav-section-label {
+    display: block;
+    margin: 0 10px 6px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .more-tab,
+  .more-sheet-root {
+    display: none !important;
+  }
+
   .nav-tab {
     flex: none;
     flex-direction: row;
@@ -2833,7 +2867,8 @@
   .app-main {
     padding: 22px 24px;
     max-width: 1080px;
-    margin: 0;
+    margin: 0 auto;
+    width: 100%;
   }
 
   @media (min-width: 1024px) {
@@ -2888,11 +2923,120 @@
     animation: pop-in 0.16s ease;
   }
 
+  .study-sheet-root {
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+  }
+
+  .study-sheet {
+    width: min(720px, calc(100vw - 64px));
+    height: min(88dvh, 900px);
+    max-height: min(88dvh, 900px);
+    border-radius: 20px;
+    padding-bottom: 0;
+    animation: sheet-pop 0.18s ease;
+  }
+
+  .study-sheet-handle-zone {
+    display: none;
+  }
+
+  .study-sheet-body {
+    padding: 16px 22px 28px;
+  }
+
+  .reader-tools-sheet-root {
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+  }
+
+  .reader-tools-sheet {
+    width: min(480px, calc(100vw - 64px));
+    max-height: min(70vh, 560px);
+    border-radius: 20px;
+    padding: 16px 20px 22px;
+    box-shadow: var(--shadow-float);
+  }
+
+  .reading-immersive .immersive-reader {
+    max-width: min(72ch, 100%);
+    padding: 12px 8px 56px;
+  }
+
+  .study-overlay-body.parallel-split .immersive-reader {
+    max-width: none;
+    margin: 0;
+  }
+
+  .book-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+  }
+
+  .read-search input {
+    font-size: 1rem;
+    padding: 13px 16px;
+  }
+
   @keyframes pop-in {
     from {
       opacity: 0;
       transform: translateX(-50%) translateY(10px);
     }
+  }
+
+  @keyframes sheet-pop {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.98);
+    }
+  }
+}
+
+/* iPad landscape — tighter sidebar, wider reading column */
+@media (min-width: 768px) and (orientation: landscape) {
+  .app-nav {
+    width: 200px;
+    padding: 14px 10px;
+  }
+
+  .nav-brand {
+    padding-bottom: 16px;
+  }
+
+  .nav-tabs-secondary {
+    margin-top: 12px;
+    padding-top: 10px;
+  }
+
+  .app-main {
+    max-width: 1200px;
+    padding: 18px 28px;
+  }
+
+  .reading-immersive .immersive-reader {
+    max-width: min(78ch, 100%);
+  }
+
+  .reader {
+    max-height: none;
+  }
+}
+
+/* iPad Split View / Stage Manager mid widths still get usable chrome */
+@media (min-width: 600px) and (max-width: 767px) {
+  .app-main {
+    padding: 18px 20px;
+  }
+
+  .nav-tab {
+    min-height: 48px;
+  }
+
+  .book-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   }
 }
 
@@ -6702,7 +6846,7 @@ html.reading-immersive-open .study-overlay.reading-immersive {
   gap: 0;
 }
 
-@media (min-width: 860px) {
+@media (min-width: 768px) {
   .study-overlay-body.parallel-split {
     grid-template-columns: 1fr 1fr;
   }
@@ -6717,7 +6861,7 @@ html.reading-immersive-open .study-overlay.reading-immersive {
   max-height: 48vh;
 }
 
-@media (min-width: 860px) {
+@media (min-width: 768px) {
   .parallel-pane {
     border-top: 0;
     border-left: 1px solid var(--border);
