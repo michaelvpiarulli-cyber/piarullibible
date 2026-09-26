@@ -2454,8 +2454,7 @@
   bottom: 0;
   max-height: min(85vh, 640px);
   overflow-y: auto;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, var(--accent-soft)), var(--surface));
+  background: var(--surface);
   border-top-left-radius: 22px;
   border-top-right-radius: 22px;
   border-top: 1px solid var(--border);
@@ -4125,9 +4124,7 @@
   flex-direction: column;
   gap: 12px;
   background-color: var(--bg);
-  background-image:
-    radial-gradient(100% 70% at 0% 0%, var(--accent-wash), transparent 55%),
-    linear-gradient(180deg, var(--bg), var(--bg-deep));
+  background-image: linear-gradient(180deg, var(--bg), var(--bg-deep));
   padding:
     calc(12px + env(safe-area-inset-top, 0px))
     calc(16px + env(safe-area-inset-right, 0px))
