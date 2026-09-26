@@ -476,9 +476,7 @@
   margin-bottom: 28px;
   padding: 18px 18px 16px;
   border-radius: var(--radius-lg);
-  background:
-    radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 55%),
-    linear-gradient(165deg, var(--surface) 0%, color-mix(in srgb, var(--surface) 88%, var(--accent-soft)) 100%);
+  background: var(--surface);
   border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
   box-shadow: var(--shadow-lift);
 }
@@ -2761,9 +2759,7 @@
     border-right: 1px solid var(--border);
     box-shadow: none;
     padding: 22px 12px;
-    background:
-      linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, var(--accent-soft)) 0%, var(--surface) 40%),
-      var(--surface);
+    background: var(--surface);
     backdrop-filter: none;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
