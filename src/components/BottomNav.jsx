@@ -1,19 +1,17 @@
 import { useEffect, useState } from 'react';
 
+/** Primary chrome — Life Group is the app home. */
 const PRIMARY = [
   {
     id: 'lifegroup',
-    label: 'Home',
-    icon: (
-      <>
-        <path d="M4 19.5V6.2c0-.7.4-1.3 1-1.6L12 2l7 2.6c.6.3 1 .9 1 1.6v13.3" />
-        <path d="M12 2v17.5M8 10h2M8 13h2M14 10h2M14 13h2" />
-      </>
-    ),
+    label: 'Life Group',
+    shortLabel: 'Group',
+    icon: <path d="M3 10.5 12 3l9 7.5M5.5 9.5V20h13V9.5" />,
   },
   {
     id: 'read',
     label: 'Read',
+    shortLabel: 'Read',
     icon: (
       <>
         <path d="M12 7.5C10.5 5.5 8 5 4.5 5.5v12C8 17 10.5 17.5 12 19.5c1.5-2 4-2.5 7.5-2v-12C16 5 13.5 5.5 12 7.5Z" />
@@ -22,18 +20,25 @@ const PRIMARY = [
     ),
   },
   {
-    id: 'today',
-    label: 'Today',
-    icon: <path d="M3 10.5 12 3l9 7.5M5.5 9.5V20h13V9.5" />,
-  },
-  {
     id: 'notes',
     label: 'Notes',
+    shortLabel: 'Notes',
     icon: <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />,
   },
 ];
 
 const MORE = [
+  {
+    id: 'today',
+    label: 'Today',
+    blurb: 'Personal daily reading',
+    icon: (
+      <>
+        <rect x="4" y="3.5" width="16" height="17" rx="2.5" />
+        <path d="M8 2.5v2.5M16 2.5v2.5M4 9h16" />
+      </>
+    ),
+  },
   {
     id: 'plan',
     label: 'Plan',
@@ -126,7 +131,7 @@ export default function BottomNav({ active, onChange, navSubtitle = 'Life Group'
             >
               <TabIcon>{tab.icon}</TabIcon>
               <span className="nav-label-full">{tab.label}</span>
-              <span className="nav-label-short">{tab.label}</span>
+              <span className="nav-label-short">{tab.shortLabel || tab.label}</span>
             </button>
           ))}
 

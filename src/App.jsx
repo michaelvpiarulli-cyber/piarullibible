@@ -117,7 +117,7 @@ function App() {
   }, []);
 
   const openReading = useCallback(
-    (reading, returnTab = 'plan') => {
+    (reading, returnTab = 'lifegroup') => {
       const first = reading?.chapters?.[0];
       if (!first) return;
       openPassage({
@@ -135,7 +135,7 @@ function App() {
 
   const handleFullscreenClose = useCallback(() => {
     setReadJump((jump) => {
-      const back = jump?.returnTab || 'plan';
+      const back = jump?.returnTab || 'lifegroup';
       // Defer tab change so we don't update during PassageText unmount cleanup.
       queueMicrotask(() => setTab(back));
       return null;
