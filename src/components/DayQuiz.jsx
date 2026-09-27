@@ -319,7 +319,7 @@ export default function DayQuiz({ day, readings }) {
       </div>
 
       <ul className="quiz-options">
-        {question.options.map((opt) => {
+        {question.options.map((opt, optIdx) => {
           let cls = 'quiz-option';
           if (revealed) {
             if (opt === question.answer) cls += ' correct';
@@ -329,7 +329,7 @@ export default function DayQuiz({ day, readings }) {
             cls += ' selected';
           }
           return (
-            <li key={opt}>
+            <li key={`${index}-${optIdx}`}>
               <button type="button" className={cls} onClick={() => choose(opt)} disabled={revealed}>
                 {opt}
               </button>
