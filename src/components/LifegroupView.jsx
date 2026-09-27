@@ -7,14 +7,16 @@ import {
 } from '../data/lifegroupStudies';
 import { parsePassage } from '../data/bookRefs';
 import PrayerRequestsPanel from './PrayerRequestsPanel';
+import GroupView from './GroupView';
 
 const NOTES_KEY = 'bible-plan-lifegroup-notes';
 const STUDY_KEY = 'bible-plan-lifegroup-study';
 const SECTION_KEY = 'bible-plan-lifegroup-section';
 
 const SECTIONS = [
-  { id: 'study', label: 'Study' },
+  { id: 'study', label: 'Reading plan' },
   { id: 'prayer', label: 'Prayer requests' },
+  { id: 'groups', label: 'Groups' },
 ];
 
 function loadNotes() {
@@ -61,10 +63,29 @@ function initialSection() {
   return 'study';
 }
 
+function SectionSwitch({ section, onChange }) {
+  return (
+    <div className="filter-row section-switch" role="tablist" aria-label="Life group section">
+      {SECTIONS.map((s) => (
+        <button
+          key={s.id}
+          type="button"
+          role="tab"
+          aria-selected={section === s.id}
+          className={`chip${section === s.id ? ' active' : ''}`}
+          onClick={() => onChange(s.id)}
+        >
+          {s.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /**
- * Lifegroup discussion guides + shared prayer request circles.
+ * Life group home — reading plans, prayer requests, and groups.
  */
-export default function LifegroupView({ onOpenPassage, myStats }) {
+export default function LifegroupView({ onOpenPassage, myStats, totalDays = 364 }) {
   const [section, setSection] = useState(initialSection);
   const [studyId, setStudyId] = useState(initialStudyId);
   const [openId, setOpenId] = useState(null);
@@ -93,21 +114,21 @@ export default function LifegroupView({ onOpenPassage, myStats }) {
   if (section === 'prayer') {
     return (
       <div className="lifegroup-view">
-        <div className="filter-row section-switch" role="tablist" aria-label="Lifegroup section">
-          {SECTIONS.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              role="tab"
-              aria-selected={section === s.id}
-              className={`chip${section === s.id ? ' active' : ''}`}
-              onClick={() => setSection(s.id)}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
+        <SectionSwitch section={section} onChange={setSection} />
         <PrayerRequestsPanel myStats={myStats} />
+      </div>
+    );
+  }
+
+  if (section === 'groups') {
+    return (
+      <div className="lifegroup-view">
+        <SectionSwitch section={section} onChange={setSection} />
+        <header className="lifegroup-section-intro">
+          <h2>Your groups</h2>
+          <p>Create or join life groups to share reading progress and cheer each other on.</p>
+        </header>
+        <GroupView myStats={myStats} totalDays={totalDays} />
       </div>
     );
   }
@@ -116,7 +137,7 @@ export default function LifegroupView({ onOpenPassage, myStats }) {
     return (
       <div className="empty-state">
         <p className="empty-title">No studies yet</p>
-        <p className="empty-sub">Lifegroup discussion guides will show up here.</p>
+        <p className="empty-sub">Life group reading plans will show up here.</p>
       </div>
     );
   }
@@ -148,25 +169,16 @@ export default function LifegroupView({ onOpenPassage, myStats }) {
 
   return (
     <div className="lifegroup-view">
-      <div className="filter-row section-switch" role="tablist" aria-label="Lifegroup section">
-        {SECTIONS.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            role="tab"
-            aria-selected={section === s.id}
-            className={`chip${section === s.id ? ' active' : ''}`}
-            onClick={() => setSection(s.id)}
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
+      <SectionSwitch section={section} onChange={setSection} />
 
       {studiesOrdered.length > 1 && (
         <div className="lifegroup-week-bar">
-          <p className="lifegroup-week-label">Epic of Eden · Chapters</p>
-          <div className="filter-row section-switch lifegroup-weeks" role="tablist" aria-label="Study chapter">
+          <p className="lifegroup-week-label">{study.series} · Chapters</p>
+          <div
+            className="filter-row section-switch lifegroup-weeks"
+            role="tablist"
+            aria-label="Study chapter"
+          >
             {studiesOrdered.map((s) => {
               const active = studyId === s.id;
               const thisWeek = s.id === current?.id;

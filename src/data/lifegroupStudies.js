@@ -1,9 +1,9 @@
 /**
- * Lifegroup discussion guides — open questions for shared study nights.
+ * Life group reading plans — open questions for shared study nights.
  * Not scored quizzes; meant to be read aloud and talked through together.
  *
  * Full *Epic of Eden* series (Sandra L. Richter). Mark one study with
- * `current: true` for “this week”; the portal opens there by default.
+ * `current: true` for “this week”; home opens there by default.
  */
 
 export const LIFEGROUP_STUDIES = [

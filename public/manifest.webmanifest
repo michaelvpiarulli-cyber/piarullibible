@@ -1,7 +1,7 @@
 {
-  "name": "Piarulli Bible",
+  "name": "Piarulli Life Group",
   "short_name": "Piarulli",
-  "description": "Bible reading plan with Logos-style study tools",
+  "description": "Life group reading plans, prayer requests, and shared progress",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",

@@ -21,7 +21,7 @@ export default function GroupView({ myStats, totalDays = 364 }) {
         </svg>
         <p className="empty-title">Sync isn’t configured</p>
         <p className="empty-sub">
-          Add Supabase credentials to enable family groups and cheer each other on.
+          Add Supabase credentials to enable life groups and cheer each other on.
         </p>
       </div>
     );
@@ -34,8 +34,10 @@ export default function GroupView({ myStats, totalDays = 364 }) {
           <circle cx="9" cy="8" r="3.2" />
           <path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 6.5a3 3 0 0 1 0 5.8M15.5 20a6.5 6.5 0 0 0-1.8-4.5" />
         </svg>
-        <p className="empty-title">Read together</p>
-        <p className="empty-sub">Sign in (top right) to start a family group and cheer each other on through the year.</p>
+        <p className="empty-title">Grow together</p>
+        <p className="empty-sub">
+          Sign in (top right) to start or join a life group and share reading progress.
+        </p>
       </div>
     );
   }
@@ -47,7 +49,7 @@ export default function GroupView({ myStats, totalDays = 364 }) {
     setMsg(null);
     const res =
       mode === 'create'
-        ? await createGroup(name.trim() || 'Our Group', displayName.trim())
+        ? await createGroup(name.trim() || 'Our Life Group', displayName.trim())
         : await joinGroup(code, displayName.trim());
     setBusy(false);
     if (res.error) {
@@ -108,9 +110,9 @@ export default function GroupView({ myStats, totalDays = 364 }) {
         <div className={`group-actions${groups.length === 0 ? ' has-lead' : ''}`}>
           {groups.length === 0 && (
             <div className="group-actions-lead">
-              <p className="empty-title">Start a family group</p>
+              <p className="empty-title">Start a life group</p>
               <p className="empty-sub">
-                Create a group or join with a code to share reading streaks — progress only, never
+                Create a group or join with a code to share reading progress — progress only, never
                 private notes.
               </p>
             </div>
@@ -132,7 +134,7 @@ export default function GroupView({ myStats, totalDays = 364 }) {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Group name (e.g. Piarulli Family)"
+              placeholder="Group name (e.g. Tuesday Night)"
             />
           ) : (
             <input
