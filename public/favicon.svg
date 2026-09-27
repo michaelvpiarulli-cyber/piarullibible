@@ -1,6 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="10" fill="#f1f1ef"/>
-  <text x="32" y="45" text-anchor="middle"
-        font-family="Kalam, 'Brush Script MT', cursive"
-        font-size="42" font-weight="700" fill="#3e5782">P</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Piarulli Bible">
+  <rect width="64" height="64" rx="14" fill="#c8102e"/>
+  <path d="M32 14C26.5 16.2 20.5 17.2 15.5 17.2C13.8 17.2 12.5 18.4 12.5 20.1V45.2C12.5 46.9 13.8 48.1 15.5 48.1C22 48.1 27.8 46.4 32 43.5V14Z" fill="#fff"/>
+  <path d="M32 14C37.5 16.2 43.5 17.2 48.5 17.2C50.2 17.2 51.5 18.4 51.5 20.1V45.2C51.5 46.9 50.2 48.1 48.5 48.1C42 48.1 36.2 46.4 32 43.5V14Z" fill="#fff"/>
+  <path d="M32 15.5V44.5" stroke="#c8102e" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M18.5 26h9M18.5 32h9M18.5 38h7M36.5 26h9M36.5 32h9M36.5 38h7" stroke="#c8102e" stroke-width="3.2" stroke-linecap="round"/>
 </svg>
