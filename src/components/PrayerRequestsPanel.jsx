@@ -19,7 +19,7 @@ function circleMeta(id) {
 }
 
 /**
- * Lifegroup prayer wall — guys / girls / whole group / wife circles.
+ * Life group prayer wall — guys / girls / whole group / wife circles.
  */
 export default function PrayerRequestsPanel({ myStats }) {
   const { groups } = useGroups(myStats);
@@ -102,7 +102,7 @@ export default function PrayerRequestsPanel({ myStats }) {
   return (
     <div className="prayer-req">
       <header className="prayer-req-hero">
-        <span className="eyebrow">Lifegroup · Prayer</span>
+        <span className="eyebrow">Life group · Prayer</span>
         <h2>Prayer requests</h2>
         <p className="prayer-req-blurb">
           Share what you’re carrying — guys only, girls only, the whole group, or just with your wife.
@@ -111,7 +111,7 @@ export default function PrayerRequestsPanel({ myStats }) {
           <p className="prayer-req-meta">Sharing with <strong>{groupName}</strong></p>
         ) : available && user ? (
           <p className="prayer-req-meta">
-            Join a family group (More → Family) for guys / girls / group circles. Wife circle only needs a couple code.
+            Join a life group (Home → Groups) for guys / girls / group circles. Wife circle only needs a couple code.
           </p>
         ) : null}
       </header>

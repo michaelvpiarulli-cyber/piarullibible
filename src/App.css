@@ -2268,7 +2268,7 @@
   line-height: 1.55;
 }
 
-/* ---------- family groups ---------- */
+/* ---------- life groups ---------- */
 
 .group-view {
   display: flex;
@@ -6879,6 +6879,26 @@ html.reading-immersive-open .study-overlay.reading-immersive {
 }
 
 /* ---------- lifegroup study ---------- */
+
+.lifegroup-section-intro {
+  margin: 0 0 1rem;
+}
+
+.lifegroup-section-intro h2 {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-reader);
+  font-size: 1.35rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.lifegroup-section-intro p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
 
 .lifegroup-view {
   display: flex;

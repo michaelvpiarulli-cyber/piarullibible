@@ -18,7 +18,6 @@ import ExamenView from './components/ExamenView';
 import RuleView from './components/RuleView';
 import YearReview from './components/YearReview';
 import ProgressView from './components/ProgressView';
-import GroupView from './components/GroupView';
 import LifegroupView from './components/LifegroupView';
 import VerseActionSheet from './components/VerseActionSheet';
 import AccountMenu from './components/AccountMenu';
@@ -33,8 +32,7 @@ const TITLES = {
   prayer: 'Prayer & Practice',
   memorize: 'Memorize',
   notes: 'Notes',
-  lifegroup: 'Lifegroup',
-  family: 'Family',
+  lifegroup: 'Life Group',
   progress: 'Progress',
 };
 
@@ -77,7 +75,7 @@ function App() {
   );
   const currentWeek = plan[currentDay - 1]?.week ?? Math.ceil(currentDay / 7);
   const { highlights, notes, setHighlight, setNote } = useAnnotations();
-  const [tab, setTab] = useState('today');
+  const [tab, setTab] = useState('lifegroup');
   const [noteSection, setNoteSection] = useState('sermons');
   const [prayerSection, setPrayerSection] = useState('journal');
   const [progressSection, setProgressSection] = useState('stats');
@@ -119,7 +117,7 @@ function App() {
   }, []);
 
   const openReading = useCallback(
-    (reading, returnTab = 'plan') => {
+    (reading, returnTab = 'lifegroup') => {
       const first = reading?.chapters?.[0];
       if (!first) return;
       openPassage({
@@ -137,7 +135,7 @@ function App() {
 
   const handleFullscreenClose = useCallback(() => {
     setReadJump((jump) => {
-      const back = jump?.returnTab || 'plan';
+      const back = jump?.returnTab || 'lifegroup';
       // Defer tab change so we don't update during PassageText unmount cleanup.
       queueMicrotask(() => setTab(back));
       return null;
@@ -149,7 +147,7 @@ function App() {
     [highlights, notes, openPassage]
   );
 
-  // Shared summary for family groups — progress only, no notes/highlights.
+  // Shared summary for life groups — progress only, no notes/highlights.
   // Keys must match the group_members columns exactly (they're written as-is).
   const myStats = useMemo(() => {
     const { current } = computeStreak(plan, isDone, currentDay);
@@ -162,7 +160,7 @@ function App() {
   return (
     <AnnotationsProvider value={annotations}>
       <div className="app">
-        <BottomNav active={tab} onChange={setTab} planTitle={planMeta.title} />
+        <BottomNav active={tab} onChange={setTab} navSubtitle="Life Group" />
 
         <div className="app-body">
           <header className="app-bar">
@@ -285,10 +283,12 @@ function App() {
               )}
 
               {tab === 'lifegroup' && (
-                <LifegroupView onOpenPassage={openPassage} myStats={myStats} />
+                <LifegroupView
+                  onOpenPassage={openPassage}
+                  myStats={myStats}
+                  totalDays={planMeta.days}
+                />
               )}
-
-              {tab === 'family' && <GroupView myStats={myStats} totalDays={planMeta.days} />}
 
               {tab === 'progress' && (
                 <>

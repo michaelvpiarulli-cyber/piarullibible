@@ -1,24 +1,17 @@
 import { useEffect, useState } from 'react';
 
+/** Primary chrome — Life Group is the app home. */
 const PRIMARY = [
   {
-    id: 'today',
-    label: 'Today',
+    id: 'lifegroup',
+    label: 'Life Group',
+    shortLabel: 'Group',
     icon: <path d="M3 10.5 12 3l9 7.5M5.5 9.5V20h13V9.5" />,
-  },
-  {
-    id: 'plan',
-    label: 'Plan',
-    icon: (
-      <>
-        <rect x="4" y="3.5" width="16" height="17" rx="2.5" />
-        <path d="M8.5 9.5h7M8.5 13.5h7M8.5 17h4" />
-      </>
-    ),
   },
   {
     id: 'read',
     label: 'Read',
+    shortLabel: 'Read',
     icon: (
       <>
         <path d="M12 7.5C10.5 5.5 8 5 4.5 5.5v12C8 17 10.5 17.5 12 19.5c1.5-2 4-2.5 7.5-2v-12C16 5 13.5 5.5 12 7.5Z" />
@@ -29,14 +22,37 @@ const PRIMARY = [
   {
     id: 'notes',
     label: 'Notes',
+    shortLabel: 'Notes',
     icon: <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />,
   },
 ];
 
 const MORE = [
   {
+    id: 'today',
+    label: 'Today',
+    blurb: 'Personal daily reading',
+    icon: (
+      <>
+        <rect x="4" y="3.5" width="16" height="17" rx="2.5" />
+        <path d="M8 2.5v2.5M16 2.5v2.5M4 9h16" />
+      </>
+    ),
+  },
+  {
+    id: 'plan',
+    label: 'Plan',
+    blurb: 'Full reading schedule',
+    icon: (
+      <>
+        <rect x="4" y="3.5" width="16" height="17" rx="2.5" />
+        <path d="M8.5 9.5h7M8.5 13.5h7M8.5 17h4" />
+      </>
+    ),
+  },
+  {
     id: 'prayer',
-    label: 'Prayer',
+    label: 'Practices',
     blurb: 'Journal, Examen, Rule of Life',
     icon: <path d="M12 21c-1.2-1.6-2-3-2-4.7 0-2 1-3.4 2-5 1 1.6 2 3 2 5 0 1.7-.8 3.1-2 4.7Z" />,
   },
@@ -46,28 +62,6 @@ const MORE = [
     blurb: 'Verse memorization',
     icon: (
       <path d="M12 3.5a5.5 5.5 0 0 0-3.4 9.8c.6.5.9 1.1.9 1.8v.4h5v-.4c0-.7.3-1.3.9-1.8A5.5 5.5 0 0 0 12 3.5ZM9.5 18.5h5M10.5 21h3" />
-    ),
-  },
-  {
-    id: 'lifegroup',
-    label: 'Lifegroup',
-    blurb: 'Study + prayer requests',
-    icon: (
-      <>
-        <path d="M4 19.5V6.2c0-.7.4-1.3 1-1.6L12 2l7 2.6c.6.3 1 .9 1 1.6v13.3" />
-        <path d="M12 2v17.5M8 10h2M8 13h2M14 10h2M14 13h2" />
-      </>
-    ),
-  },
-  {
-    id: 'family',
-    label: 'Family',
-    blurb: 'Shared progress',
-    icon: (
-      <>
-        <circle cx="9" cy="8" r="3" />
-        <path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 6.2a3 3 0 0 1 0 5.6M15.6 20a6.5 6.5 0 0 0-1.6-4.3" />
-      </>
     ),
   },
   {
@@ -101,7 +95,7 @@ function TabIcon({ children }) {
   );
 }
 
-export default function BottomNav({ active, onChange, planTitle = 'Bible in a Year' }) {
+export default function BottomNav({ active, onChange, navSubtitle = 'Life Group' }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const moreActive = MORE_IDS.has(active);
 
@@ -119,7 +113,7 @@ export default function BottomNav({ active, onChange, planTitle = 'Bible in a Ye
       <nav className="app-nav" aria-label="Main">
         <div className="nav-brand">
           <span className="brand-lockup">Piarulli</span>
-          <span className="brand-sub">{planTitle}</span>
+          <span className="brand-sub">{navSubtitle}</span>
         </div>
 
         <div className="nav-tabs">
@@ -137,7 +131,7 @@ export default function BottomNav({ active, onChange, planTitle = 'Bible in a Ye
             >
               <TabIcon>{tab.icon}</TabIcon>
               <span className="nav-label-full">{tab.label}</span>
-              <span className="nav-label-short">{tab.label}</span>
+              <span className="nav-label-short">{tab.shortLabel || tab.label}</span>
             </button>
           ))}
 

@@ -10,10 +10,10 @@ function genCode() {
   return c;
 }
 
-const TABLE_MISSING = 'Family groups aren’t set up yet. Run supabase/groups.sql.';
+const TABLE_MISSING = 'Life groups aren’t set up yet. Run supabase/groups.sql.';
 
 /**
- * Family groups: create/join by code and see everyone's reading progress.
+ * Life groups: create/join by code and see everyone's reading progress.
  * `myStats` is the caller's shared summary ({ current_day, streak,
  * completed_days }); it's pushed to the caller's own rows on load so peers see
  * fresh numbers. Notes/highlights are never touched here.

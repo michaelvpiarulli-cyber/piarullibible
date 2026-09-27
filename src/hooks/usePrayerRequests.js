@@ -179,7 +179,7 @@ export function usePrayerRequests(groupId) {
         return { error: 'Add a couple code (with your spouse) to use the wife circle.' };
       }
       if (circle !== 'wife' && !groupId && remoteReady) {
-        return { error: 'Join a family group first so the guys / girls / group circles have somewhere to live.' };
+        return { error: 'Join a life group first so the guys / girls / group circles have somewhere to live.' };
       }
 
       if (available && user && remoteReady) {
